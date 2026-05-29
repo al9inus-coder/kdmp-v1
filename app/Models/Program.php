@@ -7,15 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 class Program extends Model
 {
     protected $fillable = [
-        'skpd_id',
         'kode',
         'nama',
-        'tahun',
-        'pagu'
+        'is_active',
     ];
 
-    public function skpd()
-    {
-        return $this->belongsTo(Skpd::class);
-    }
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
 }
