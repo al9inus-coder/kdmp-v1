@@ -1,12 +1,12 @@
 @extends('adminlte::page')
 
-@section('title', 'Master Program')
+@section('title', 'Master Sub Kegiatan')
 
 @section('content_header')
     <h1>
-        Master Program
+        Master Sub Kegiatan
         <small class="text-muted">
-            ({{ $programs->total() }} Data)
+            ({{ $subActivities->total() }} Data)
         </small>
     </h1>
 @stop
@@ -20,35 +20,35 @@
 
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
-            <a href="{{ route('programs.create') }}" class="btn btn-primary">
-                Tambah Program
+            <a href="{{ route('sub-activities.create') }}" class="btn btn-primary">
+                Tambah Sub Kegiatan
             </a>
 
-            <form action="{{ route('programs.index') }}" method="GET" class="form-inline">
+            <form action="{{ route('sub-activities.index') }}" method="GET" class="form-inline">
                 <div class="input-group">
                     <input type="text"
                            name="q"
                            class="form-control"
-                           placeholder="Cari kode / nama program"
+                           placeholder="Cari kode / nama sub kegiatan"
                            value="{{ $search }}">
-                           <select name="status" class="form-control ml-2">
-                                <option value="">Semua Status</option>
-                                <option value="1"
-                                    @selected($status === '1')>
-                                    Aktif
-                                </option>
-                                <option value="0"
-                                    @selected($status === '0')>
-                                    Nonaktif
-                                </option>
-                            </select>
+                    <select name="status" class="form-control ml-2">
+                        <option value="">Semua Status</option>
+                        <option value="1" @selected($status === '1')>Aktif</option>
+                        <option value="0" @selected($status === '0')>Nonaktif</option>
+                    </select>
+                    <select name="activity_id" class="form-control ml-2">
+                        <option value="">Semua Kegiatan</option>
+                        @foreach($activities as $activity)
+                            <option value="{{ $activity->id }}" @selected((string) $activityId === (string) $activity->id)>
+                                {{ $activity->kode }} - {{ $activity->nama }}
+                            </option>
+                        @endforeach
+                    </select>
                     <div class="input-group-append">
                         <button class="btn btn-outline-primary" type="submit">
                             Cari
                         </button>
-
-                        <a href="{{ route('programs.index') }}"
-                        class="btn btn-outline-secondary">
+                        <a href="{{ route('sub-activities.index') }}" class="btn btn-outline-secondary">
                             Reset
                         </a>
                     </div>
@@ -63,26 +63,28 @@
                         <tr>
                             <th style="width: 70px;">No</th>
                             <th>Kode</th>
-                            <th>Nama Program</th>
+                            <th>Nama Sub Kegiatan</th>
+                            <th>Kegiatan</th>
                             <th style="width: 140px;">Status</th>
                             <th style="width: 120px;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($programs as $program)
+                        @forelse($subActivities as $subActivity)
                             <tr>
-                                <td>{{ $programs->firstItem() + $loop->index }}</td>
-                                <td>{{ $program->kode }}</td>
-                                <td>{{ $program->nama }}</td>
+                                <td>{{ $subActivities->firstItem() + $loop->index }}</td>
+                                <td>{{ $subActivity->kode }}</td>
+                                <td>{{ $subActivity->nama }}</td>
+                                <td>{{ $subActivity->activity->kode }} - {{ $subActivity->activity->nama }}</td>
                                 <td>
-                                    @if($program->is_active)
+                                    @if($subActivity->is_active)
                                         <span class="badge badge-success">Aktif</span>
                                     @else
                                         <span class="badge badge-secondary">Nonaktif</span>
                                     @endif
                                 </td>
                                 <td>
-                                    <a href="{{ route('programs.edit', $program) }}"
+                                    <a href="{{ route('sub-activities.edit', $subActivity) }}"
                                        class="btn btn-sm btn-warning">
                                         Edit
                                     </a>
@@ -90,12 +92,12 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center py-4">
+                                <td colspan="6" class="text-center py-4">
                                     <div>
-                                        <strong>Belum ada data Program.</strong>
+                                        <strong>Belum ada data Sub Kegiatan.</strong>
                                     </div>
                                     <div class="text-muted">
-                                        Klik tombol Tambah Program untuk membuat data pertama.
+                                        Klik tombol Tambah Sub Kegiatan untuk membuat data pertama.
                                     </div>
                                 </td>
                             </tr>
@@ -105,9 +107,9 @@
             </div>
         </div>
 
-        @if($programs->hasPages())
+        @if($subActivities->hasPages())
             <div class="card-footer clearfix">
-                {{ $programs->links() }}
+                {{ $subActivities->links() }}
             </div>
         @endif
     </div>

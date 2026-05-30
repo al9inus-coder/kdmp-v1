@@ -329,6 +329,11 @@ return [
     'icon' => 'fas fa-project-diagram',
     ],
     [
+    'text' => 'Kegiatan',
+    'route' => 'activities.index',
+    'icon' => 'fas fa-tasks',
+    ],
+    [
         'header' => 'PERENCANAAN',
     ],
 

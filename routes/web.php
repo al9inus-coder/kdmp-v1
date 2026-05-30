@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SkpdController;
 use App\Http\Controllers\ProgramController;
+use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\SubActivityController;
 use App\Http\Controllers\FiscalYearController;
 
 Route::get('/', function () {
@@ -18,7 +20,9 @@ Route::get('/dashboard', function () {
 Route::middleware('auth')->group(function () {
     Route::resource('users', UserController::class);
     Route::resource('skpds', SkpdController::class);
-    Route::resource('programs', ProgramController::class);
+    Route::resource('programs', ProgramController::class)->except('destroy');
+    Route::resource('activities', ActivityController::class)->except('destroy');
+    Route::resource('sub-activities', SubActivityController::class)->except('destroy');
     Route::resource('fiscal-years', FiscalYearController::class);
     Route::post(
         'fiscal-years/{fiscalYear}/activate',

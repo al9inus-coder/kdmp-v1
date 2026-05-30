@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Program extends Model
+class SubActivity extends Model
 {
     protected $fillable = [
+        'activity_id',
         'kode',
         'nama',
         'is_active',
@@ -17,8 +18,8 @@ class Program extends Model
         'is_active' => 'boolean',
     ];
 
-    public function activities(): HasMany
+    public function activity(): BelongsTo
     {
-        return $this->hasMany(Activity::class);
+        return $this->belongsTo(Activity::class);
     }
 }
