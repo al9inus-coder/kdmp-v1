@@ -1,5 +1,25 @@
 <?php
 
+$packageProgramSubmenu = [];
+
+try {
+    if (class_exists(\App\Models\Program::class)) {
+        $programs = \App\Models\Program::query()
+            ->orderBy('kode')
+            ->get(['id', 'kode', 'nama']);
+
+            foreach ($programs as $program) {
+            $packageProgramSubmenu[] = [
+                'text' => trim($program->kode.' - '.$program->nama),
+                'url' => 'packages/program/'.$program->id,
+                'icon' => 'far fa-dot-circle',
+            ];
+        }
+    }
+} catch (\Throwable) {
+    $packageProgramSubmenu = [];
+}
+
 return [
 
     /*
@@ -334,28 +354,49 @@ return [
     'icon' => 'fas fa-tasks',
     ],
     [
-        'header' => 'PERENCANAAN',
+    'text' => 'Sub Kegiatan',
+    'route' => 'sub-activities.index',
+    'icon' => 'fas fa-list',
+    ],
+    [
+    'text' => 'Rekening Belanja',
+    'route' => 'accounts.index',
+    'icon' => 'fas fa-wallet',
+    ],
+    [
+        'header' => 'PERENCANAAN PENGADAAN',
+    ],
+    [
+        'text' => 'Paket Pekerjaan',
+        'icon' => 'fas fa-briefcase',
+        'submenu' => [
+            [
+                'text' => 'Semua Paket',
+                'route' => 'packages.index',
+                'icon' => 'far fa-circle',
+            ],
+            [
+                'text' => 'Program',
+                'icon' => 'far fa-circle',
+                'submenu' => $packageProgramSubmenu !== []
+                    ? $packageProgramSubmenu
+                    : [
+                        [
+                            'text' => 'Belum ada program',
+                            'url' => '#',
+                            'icon' => 'far fa-dot-circle',
+                        ],
+                    ],
+            ],
+        ],
     ],
 
     [
-        'text' => 'Budget Master',
-        'url'  => '#',
-        'icon' => 'fas fa-money-bill',
+        'header' => 'PAKET PENGADAAN',
     ],
-
     [
-        'text' => 'RUP',
-        'url'  => '#',
-        'icon' => 'fas fa-list',
-    ],
-
-    [
-        'header' => 'PENGADAAN',
-    ],
-
-    [
-        'text' => 'Paket Pengadaan',
-        'url'  => '#',
+        'text' => 'Daftar Paket Pengadaan',
+        'route' => 'procurement-packages.index',
         'icon' => 'fas fa-shopping-cart',
     ],
 

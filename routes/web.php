@@ -1,36 +1,154 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\SkpdController;
-use App\Http\Controllers\ProgramController;
+use App\Http\Controllers\AccountController;
 use App\Http\Controllers\ActivityController;
-use App\Http\Controllers\SubActivityController;
 use App\Http\Controllers\FiscalYearController;
+use App\Http\Controllers\ImportBatchController;
+use App\Http\Controllers\PackageController;
+use App\Http\Controllers\TechnicalSpecificationItemController;
+use App\Http\Controllers\PriceReferenceController;
+use App\Http\Controllers\ProcurementPackageController;
+use App\Http\Controllers\ProcurementRequestController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProgramController;
+use App\Http\Controllers\SkpdController;
+use App\Http\Controllers\SubActivityController;
+use App\Http\Controllers\TechnicalSpecificationController;
+use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Route;
 
+// Public Route
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth'])->name('dashboard');
-
+// Route dengan Middleware Auth
 Route::middleware('auth')->group(function () {
+
+    // Dashboard
+    Route::get('/dashboard', function () {
+        return view('dashboard');
+    })->name('dashboard');
+
+    // Resource Routes
     Route::resource('users', UserController::class);
     Route::resource('skpds', SkpdController::class);
     Route::resource('programs', ProgramController::class)->except('destroy');
     Route::resource('activities', ActivityController::class)->except('destroy');
     Route::resource('sub-activities', SubActivityController::class)->except('destroy');
+    Route::resource('accounts', AccountController::class)->except('destroy');
     Route::resource('fiscal-years', FiscalYearController::class);
-    Route::post(
-        'fiscal-years/{fiscalYear}/activate',
-        [FiscalYearController::class,'activate']
-        )->name('fiscal-years.activate');
+
+    // Procurement Packages Routes
+    Route::get('procurement-packages', [ProcurementPackageController::class, 'index'])
+        ->name('procurement-packages.index');
+    
+    Route::get('/procurement-packages/{package}', [ProcurementPackageController::class, 'show'])
+        ->name('procurement-packages.show');
+
+    //Route::get('procurement-packages/{procurementPackage}', [ProcurementPackageController::class, 'show'])
+    //    ->name('procurement-packages.show');
+    
+    Route::post('packages/{package}/procurement-packages', [ProcurementPackageController::class, 'store'])
+        ->name('packages.procurement-packages.store');
+
+        // Procurement Requests Routes
+    Route::get('procurement-packages/{package}/procurement-request/create', [ProcurementRequestController::class, 'create'])
+        ->name('procurement-packages.procurement-request.create');
+    
+    Route::post('procurement-packages/{package}/procurement-request', [ProcurementRequestController::class, 'store'])
+        ->name('procurement-packages.procurement-request.store');
+    
+    Route::get('procurement-packages/{package}/procurement-request', [ProcurementRequestController::class, 'show'])
+        ->name('procurement-packages.procurement-request.show');
+    
+    Route::get('procurement-packages/{package}/procurement-request/edit', [ProcurementRequestController::class, 'edit'])
+        ->name('procurement-packages.procurement-request.edit');
+    
+    Route::put('procurement-packages/{package}/procurement-request', [ProcurementRequestController::class, 'update'])
+        ->name('procurement-packages.procurement-request.update');
+
+    // Price References Routes
+    Route::get('procurement-packages/{package}/price-references', [PriceReferenceController::class, 'index'])
+        ->name('procurement-packages.price-references.index');
+    
+    Route::get('procurement-packages/{package}/price-references/create', [PriceReferenceController::class, 'create'])
+        ->name('procurement-packages.price-references.create');
+    
+    Route::post('procurement-packages/{package}/price-references', [PriceReferenceController::class, 'store'])
+        ->name('procurement-packages.price-references.store');
+    
+    Route::get('procurement-packages/{package}/price-references/{priceReference}/edit', [PriceReferenceController::class, 'edit'])
+        ->name('procurement-packages.price-references.edit');
+    
+    Route::put('procurement-packages/{package}/price-references/{priceReference}', [PriceReferenceController::class, 'update'])
+        ->name('procurement-packages.price-references.update');
+    
+    Route::delete('procurement-packages/{package}/price-references/{priceReference}', [PriceReferenceController::class, 'destroy'])
+        ->name('procurement-packages.price-references.destroy');
+
+    // Packages & Imports Routes
+    Route::get('packages/import', [ImportBatchController::class, 'index'])->name('packages.import.index');
+    Route::post('packages/import', [ImportBatchController::class, 'store'])->name('packages.import.store');
+    Route::get('/packages/import/{batch}', [ImportBatchController::class, 'show'])->name('packages.import.show');    
+    
+    Route::get('packages/program/{program}', [PackageController::class, 'byProgram'])->name('packages.program');
+    Route::get('packages/program-menu', [PackageController::class, 'programMenu'])->name('packages.program-menu');
+    
+    Route::get('packages/{package}/procurement', [PackageController::class, 'procurement'])->name('packages.procurement');
+    Route::put('packages/{package}/procurement', [PackageController::class, 'updateProcurement'])->name('packages.procurement.update');
+    
+    Route::resource('packages', PackageController::class)->except('destroy');
+    
+    Route::post('packages/{package}/submit', [PackageController::class, 'submit'])->name('packages.submit');
+    Route::post('packages/{package}/approve', [PackageController::class, 'approve'])->name('packages.approve');
+    Route::post('packages/{package}/return', [PackageController::class, 'returnToDraft'])->name('packages.return');
+    
+    Route::post('fiscal-years/{fiscalYear}/activate', [FiscalYearController::class, 'activate'])->name('fiscal-years.activate');
+    
+    // Profile Routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Procurement Package Meta & Items Routes (Dipindahkan ke dalam grup auth agar aman)
+    Route::patch('/procurement-packages/{procurementPackage}/meta', [ProcurementPackageController::class, 'updateMeta'])
+        ->name('procurement-packages.meta.update');
+
+    Route::get('/technical-specifications/{technicalSpecification}/items/create', [TechnicalSpecificationItemController::class, 'create'])
+        ->name('technical-items.create');
+
+    Route::post('/technical-specifications/{technicalSpecification}/items', [TechnicalSpecificationItemController::class, 'store'])
+        ->name('technical-items.store');
+
+    Route::get('/technical-specifications/{technicalSpecification}/edit', [TechnicalSpecificationController::class, 'editByTechnicalSpecification'])
+        ->name('technical-specifications.edit');
+
+    Route::put('/technical-specifications/{technicalSpecification}', [TechnicalSpecificationController::class, 'updateByTechnicalSpecification'])
+        ->name('technical-specifications.update');
+
+    Route::get('/technical-specifications/{package}', [TechnicalSpecificationController::class, 'show'])->name('technical-specifications.show');
+
+    Route::get('/technical-items/{item}/edit', [TechnicalSpecificationItemController::class, 'edit'])
+        ->name('technical-items.edit');
+
+    Route::put('/technical-items/{item}', [TechnicalSpecificationItemController::class, 'update'])
+        ->name('technical-items.update');
+
+    Route::delete('/technical-items/{item}', [TechnicalSpecificationItemController::class, 'destroy'])
+        ->name('technical-items.destroy');
+
+    // AI Generate Draft Route
+    Route::post('/procurement-packages/{procurementPackage}/generate-draft', [ProcurementPackageController::class, 'generateDraft'])
+        ->name('procurement-packages.generate-draft');
+
+    Route::get(
+        'procurement-packages/{package}/procurement-request/print',
+        [ProcurementRequestController::class, 'print']
+    )->name(
+        'procurement-packages.procurement-request.print'
+    );
+
 });
 
 require __DIR__.'/auth.php';

@@ -28,4 +28,9 @@ class Activity extends Model
     {
         return $this->hasMany(SubActivity::class);
     }
+
+    public function packages(): HasMany
+    {
+        return $this->hasMany(Package::class);
+    }
 }
