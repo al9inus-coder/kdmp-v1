@@ -45,23 +45,28 @@ if (
     .ui-stepper {
         display: flex;
         justify-content: space-between;
-        margin-top: 1rem;
-        margin-bottom: 0.5rem;
+        margin-top: 0.5rem;
+        margin-bottom: 0;
     }
-    .ui-stepper-item {
+    a.ui-stepper-item {
         flex: 1;
         display: flex;
         flex-direction: column;
         align-items: center;
         text-align: center;
         position: relative;
+        text-decoration: none !important;
+        cursor: pointer;
+    }
+    a.ui-stepper-item:hover .ui-step-title {
+        color: #007bff;
     }
     
     /* Garis Penghubung Antar Tahapan */
     .ui-stepper-item::after {
         content: "";
         position: absolute;
-        top: 22px; /* Tengah ikon 45px */
+        top: 20px; /* Tengah ikon 40px */
         width: 100%;
         left: 50%;
         height: 4px;
@@ -76,8 +81,8 @@ if (
     
     /* Lingkaran Ikon Base */
     .ui-step-icon {
-        width: 48px;
-        height: 48px;
+        width: 40px;
+        height: 40px;
         border-radius: 50%;
         background: #f8f9fa;
         border: 3px solid #fff;
@@ -85,12 +90,12 @@ if (
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.15rem;
+        font-size: 1rem;
         position: relative;
         z-index: 2;
         box-shadow: 0 3px 10px rgba(0,0,0,0.06);
-        margin-bottom: 12px;
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Efek membal saat berubah state */
+        margin-bottom: 8px;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
     /* Teks Judul Tahapan */
@@ -98,7 +103,7 @@ if (
         font-size: 0.95rem;
         font-weight: 700;
         color: #6c757d;
-        margin-bottom: 8px;
+        margin-bottom: 0;
         letter-spacing: 0.3px;
         transition: color 0.3s ease;
     }
@@ -111,7 +116,7 @@ if (
         color: #fff;
         border: 2px solid #fff;
         transform: scale(1.15);
-        animation: pulse-blue 2s infinite; /* Menambahkan efek denyut */
+        animation: pulse-blue 2s infinite;
     }
     .ui-stepper-item.active .ui-step-title {
         color: #0056b3;
@@ -130,15 +135,7 @@ if (
         color: #1e7e34;
     }
     .ui-stepper-item.completed::after {
-        background: linear-gradient(to right, #28a745, #20c997); /* Garis gradasi hijau ke tosca */
-    }
-
-    /* Badge Custom Styling */
-    .badge-modern {
-        font-weight: 600;
-        letter-spacing: 0.5px;
-        padding: 6px 14px !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        background: linear-gradient(to right, #28a745, #20c997);
     }
 
     /* Kartu Progress Bar Premium */
@@ -155,22 +152,22 @@ if (
             flex-direction: column;
             align-items: flex-start;
         }
-        .ui-stepper-item {
+        a.ui-stepper-item {
             flex-direction: row;
             text-align: left;
             width: 100%;
-            margin-bottom: 25px;
+            margin-bottom: 15px;
         }
         .ui-stepper-item::after {
             width: 4px;
-            height: calc(100% + 25px);
-            left: 22px; 
-            top: 45px;
-            background: linear-gradient(to bottom, #28a745, #20c997); /* Gradasi vertikal */
+            height: calc(100% + 15px);
+            left: 18px; 
+            top: 40px;
+            background: linear-gradient(to bottom, #28a745, #20c997);
         }
         .ui-step-icon {
             margin-bottom: 0;
-            margin-right: 18px;
+            margin-right: 15px;
             flex-shrink: 0;
         }
         .ui-step-content {
@@ -187,83 +184,41 @@ if (
         </h6>
     </div>
 
-    <div class="card-body pt-0 pb-4">
+    <div class="card-body pt-0 pb-3">
         <div class="ui-stepper">
 
             {{-- STEP 1: SPESIFIKASI TEKNIS --}}
-            <div class="ui-stepper-item {{ $currentStep > 1 ? 'completed' : ($currentStep == 1 ? 'active' : '') }}">
+            <a href="{{ route('procurement-packages.technical-specifications.show', $procurementPackage->package) }}" class="ui-stepper-item {{ $currentStep > 1 ? 'completed' : ($currentStep == 1 ? 'active' : '') }}">
                 <div class="ui-step-icon">
                     <i class="fas fa-file-signature"></i>
                 </div>
 
                 <div class="ui-step-content">
                     <div class="ui-step-title">1. Spesifikasi Teknis</div>
-                    
-                    @if($currentStep > 1)
-                        <span class="badge badge-success badge-modern rounded-pill">
-                            <i class="fas fa-check-circle mr-1"></i> Selesai
-                        </span>
-                    @elseif($currentStep == 1)
-                        <span class="badge badge-primary badge-modern rounded-pill">
-                            <i class="fas fa-spinner fa-spin mr-1"></i> Dikerjakan
-                        </span>
-                    @else
-                        <span class="badge badge-light border badge-modern rounded-pill text-muted">
-                            <i class="far fa-clock mr-1"></i> Menunggu
-                        </span>
-                    @endif
                 </div>
-            </div>
+            </a>
 
             {{-- STEP 2: REFERENSI HARGA --}}
-            <div class="ui-stepper-item {{ $currentStep > 2 ? 'completed' : ($currentStep == 2 ? 'active' : '') }}">
+            <a href="{{ route('procurement-packages.price-references.index', $procurementPackage->package) }}" class="ui-stepper-item {{ $currentStep > 2 ? 'completed' : ($currentStep == 2 ? 'active' : '') }}">
                 <div class="ui-step-icon">
                     <i class="fas fa-tags"></i>
                 </div>
 
                 <div class="ui-step-content">
                     <div class="ui-step-title">2. Referensi Harga</div>
-
-                    @if($currentStep > 2)
-                        <span class="badge badge-success badge-modern rounded-pill">
-                            <i class="fas fa-check-circle mr-1"></i> Selesai
-                        </span>
-                    @elseif($currentStep == 2)
-                        <span class="badge badge-primary badge-modern rounded-pill">
-                            <i class="fas fa-spinner fa-spin mr-1"></i> Dikerjakan
-                        </span>
-                    @else
-                        <span class="badge badge-light border badge-modern rounded-pill text-muted">
-                            <i class="far fa-clock mr-1"></i> Menunggu
-                        </span>
-                    @endif
                 </div>
-            </div>
+            </a>
 
             {{-- STEP 3: SURAT PERMOHONAN --}}
-            <div class="ui-stepper-item {{ $currentStep > 3 ? 'completed' : ($currentStep == 3 ? 'active' : '') }}">
+            <a href="{{ route('procurement-packages.procurement-request.show', $procurementPackage->package) }}" class="ui-stepper-item {{ $currentStep > 3 ? 'completed' : ($currentStep == 3 ? 'active' : '') }}">
                 <div class="ui-step-icon">
                     <i class="fas fa-envelope-open-text"></i>
                 </div>
 
                 <div class="ui-step-content">
                     <div class="ui-step-title">3. Surat Permohonan</div>
-
-                    @if($currentStep > 3)
-                        <span class="badge badge-success badge-modern rounded-pill">
-                            <i class="fas fa-check-circle mr-1"></i> Selesai
-                        </span>
-                    @elseif($currentStep == 3)
-                        <span class="badge badge-primary badge-modern rounded-pill">
-                            <i class="fas fa-spinner fa-spin mr-1"></i> Dikerjakan
-                        </span>
-                    @else
-                        <span class="badge badge-light border badge-modern rounded-pill text-muted">
-                            <i class="far fa-clock mr-1"></i> Menunggu
-                        </span>
-                    @endif
                 </div>
-            </div>
+            </a>
 
         </div>
     </div>

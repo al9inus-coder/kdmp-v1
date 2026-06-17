@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
-
 class TechnicalSpecificationController extends Controller
 {
     public function create(ProcurementPackage $procurementPackage): View|RedirectResponse
@@ -145,7 +144,7 @@ class TechnicalSpecificationController extends Controller
 
         return redirect()
             ->route(
-                'technical-specifications.show',
+                'procurement-packages.technical-specifications.show',
                 $technicalSpecification
                     ->procurementPackage
                     ->package
@@ -242,17 +241,54 @@ class TechnicalSpecificationController extends Controller
     }
 
     public function updateByTechnicalSpecification(
-    Request $request,
-    TechnicalSpecification $technicalSpecification
-): RedirectResponse
-{
-    $procurementPackage =
-        $technicalSpecification->procurementPackage;
+        Request $request,
+        TechnicalSpecification $technicalSpecification
+    ): RedirectResponse
+    {
+        $procurementPackage =
+            $technicalSpecification->procurementPackage;
 
-    return $this->update(
-        $request,
-        $procurementPackage
-    );
-}
+        return $this->update(
+            $request,
+            $procurementPackage
+        );
+    }
     
+   public function print(
+        TechnicalSpecification $technicalSpecification
+    )
+    {
+        $technicalSpecification->load([
+            'items',
+            'procurementPackage.package.program',
+            'procurementPackage.package.activity',
+            'procurementPackage.package.subActivity',
+            'procurementPackage.package.account',
+            'procurementPackage.package.fiscalYear',
+        ]);
+
+        $procurementPackage =
+            $technicalSpecification->procurementPackage;
+
+        $isBarang =
+            ($procurementPackage->package->jenis_pengadaan ?? '')
+            === 'Barang';
+
+        $jangkaWaktuNilai =
+            $procurementPackage->jangka_waktu_nilai;
+
+        $jangkaWaktuSatuan =
+            $procurementPackage->jangka_waktu_satuan ?? 'hari';
+
+        return view(
+            'technical-specifications.pdf',
+            compact(
+                'technicalSpecification',
+                'procurementPackage',
+                'isBarang',
+                'jangkaWaktuNilai',
+                'jangkaWaktuSatuan'
+            )
+        );
+    }
 }

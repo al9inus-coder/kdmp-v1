@@ -9,10 +9,31 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ProcurementPackage extends Model
 {
-    protected $fillable = [
+    public const WORKFLOW_DRAFT = 'draft';
+    public const WORKFLOW_PREPARATION_COMPLETED = 'preparation_completed';
+    public const WORKFLOW_PROVIDER_SELECTION = 'provider_selection';
+    public const WORKFLOW_PURCHASE_ORDER = 'purchase_order';
+    public const WORKFLOW_EXECUTION = 'execution';
+    public const WORKFLOW_PAYMENT_PROCESS = 'payment_process';
+    public const WORKFLOW_COMPLETED = 'completed';
 
+    public static function getWorkflowStatuses(): array
+    {
+        return [
+            self::WORKFLOW_DRAFT => 'Persiapan Pengadaan',
+            self::WORKFLOW_PREPARATION_COMPLETED => 'Persiapan Selesai',
+            self::WORKFLOW_PROVIDER_SELECTION => 'Pemilihan Penyedia',
+            self::WORKFLOW_PURCHASE_ORDER => 'Surat Pesanan',
+            self::WORKFLOW_EXECUTION => 'Pelaksanaan',
+            self::WORKFLOW_PAYMENT_PROCESS => 'Pembayaran',
+            self::WORKFLOW_COMPLETED => 'Selesai',
+        ];
+    }
+
+    protected $fillable = [
     'package_id',
     'status',
+    'workflow_status',
     'number',
     'created_by',
     'nama_ppk',
@@ -57,5 +78,20 @@ class ProcurementPackage extends Model
     public function priceReferences(): HasMany
     {
         return $this->hasMany(PriceReference::class);
+    }
+
+    public function procurementProcess(): HasOne
+    {
+        return $this->hasOne(ProcurementProcess::class);
+    }
+
+    public function payment(): HasOne
+    {
+        return $this->hasOne(ProcurementPayment::class);
+    }
+
+    public function addendums(): HasMany
+    {
+        return $this->hasMany(ProcurementAddendum::class);
     }
 }

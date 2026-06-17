@@ -45,11 +45,22 @@
                                 </td>
                                 <td>Rp {{ number_format((float) $procurementPackage->package->pagu, 0, ',', '.') }}</td>
                                 <td>
-                                    @if($procurementPackage->status === 'complete')
-                                        <span class="badge badge-success">Complete</span>
-                                    @else
-                                        <span class="badge badge-warning">Draft</span>
-                                    @endif
+                                    @php
+                                        $statuses = \App\Models\ProcurementPackage::getWorkflowStatuses();
+                                        $label = $statuses[$procurementPackage->workflow_status] ?? $procurementPackage->workflow_status;
+                                        
+                                        $badgeClass = match($procurementPackage->workflow_status) {
+                                            \App\Models\ProcurementPackage::WORKFLOW_DRAFT => 'badge-warning',
+                                            \App\Models\ProcurementPackage::WORKFLOW_PREPARATION_COMPLETED => 'badge-info',
+                                            \App\Models\ProcurementPackage::WORKFLOW_PROVIDER_SELECTION => 'badge-primary',
+                                            \App\Models\ProcurementPackage::WORKFLOW_PURCHASE_ORDER => 'badge-secondary',
+                                            \App\Models\ProcurementPackage::WORKFLOW_EXECUTION => 'badge-dark',
+                                            \App\Models\ProcurementPackage::WORKFLOW_PAYMENT_PROCESS => 'badge-secondary',
+                                            \App\Models\ProcurementPackage::WORKFLOW_COMPLETED => 'badge-success',
+                                            default => 'badge-light',
+                                        };
+                                    @endphp
+                                    <span class="badge {{ $badgeClass }} px-2 py-1">{{ $label }}</span>
                                 </td>
                                 <td>
                                     <a href="{{ route('procurement-packages.show', $procurementPackage->package) }}"

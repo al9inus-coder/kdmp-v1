@@ -69,6 +69,9 @@ Route::middleware('auth')->group(function () {
         ->name('procurement-packages.procurement-request.update');
 
     // Price References Routes
+    Route::get('procurement-packages/{package}/price-references/print', [PriceReferenceController::class, 'print'])
+        ->name('procurement-packages.price-references.print');
+        
     Route::get('procurement-packages/{package}/price-references', [PriceReferenceController::class, 'index'])
         ->name('procurement-packages.price-references.index');
     
@@ -127,7 +130,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/technical-specifications/{technicalSpecification}', [TechnicalSpecificationController::class, 'updateByTechnicalSpecification'])
         ->name('technical-specifications.update');
 
-    Route::get('/technical-specifications/{package}', [TechnicalSpecificationController::class, 'show'])->name('technical-specifications.show');
+    Route::get('/procurement-packages/{package}/technical-specifications', [TechnicalSpecificationController::class, 'show'])->name('procurement-packages.technical-specifications.show');
 
     Route::get('/technical-items/{item}/edit', [TechnicalSpecificationItemController::class, 'edit'])
         ->name('technical-items.edit');
@@ -148,6 +151,31 @@ Route::middleware('auth')->group(function () {
     )->name(
         'procurement-packages.procurement-request.print'
     );
+
+    Route::get(
+    '/technical-specifications/{technicalSpecification}/print',
+    [TechnicalSpecificationController::class, 'print']
+    )->name('technical-specifications.print');
+
+    // Tahap 2: Proses Pengadaan (Surat Pesanan, dll)
+    Route::post('/procurement-packages/{package}/complete-preparation', [App\Http\Controllers\ProcurementProcessController::class, 'completePreparation'])->name('procurement-packages.complete-preparation');
+    
+    Route::get('/procurement-packages/{package}/procurement-process', [App\Http\Controllers\ProcurementProcessController::class, 'show'])->name('procurement-packages.procurement-process.show');
+    Route::put('/procurement-packages/{package}/procurement-process', [App\Http\Controllers\ProcurementProcessController::class, 'update'])->name('procurement-packages.procurement-process.update');
+    Route::get('/procurement-packages/{package}/procurement-process/preview', [App\Http\Controllers\ProcurementProcessController::class, 'previewDocument'])->name('procurement-packages.procurement-process.preview-document');
+    Route::get('/procurement-packages/{package}/procurement-process/print', [App\Http\Controllers\ProcurementProcessController::class, 'printDocument'])->name('procurement-packages.procurement-process.print-document');
+    
+    // Tahap 3: Pelaksanaan Kontrak
+    Route::get('/procurement-packages/{package}/execution', [App\Http\Controllers\ProcurementProcessController::class, 'execution'])->name('procurement-packages.execution');
+    Route::post('/procurement-packages/{package}/execution/start', [App\Http\Controllers\ProcurementProcessController::class, 'startExecution'])->name('procurement-packages.execution.start');
+
+    // Tahap 4: Pembayaran & Addendum
+    Route::post('/procurement-packages/{package}/adendum', [App\Http\Controllers\ProcurementPaymentController::class, 'storeAddendum'])->name('procurement-payments.adendum.store');
+    Route::post('/procurement-packages/{package}/payment', [App\Http\Controllers\ProcurementPaymentController::class, 'storePayment'])->name('procurement-payments.store');
+    Route::get('/procurement-packages/{package}/payment', [App\Http\Controllers\ProcurementPaymentController::class, 'show'])->name('procurement-payments.show');
+    Route::get('/procurement-packages/{package}/payment/preview', [App\Http\Controllers\ProcurementPaymentController::class, 'previewDocument'])->name('procurement-payments.preview-document');
+    Route::get('/procurement-packages/{package}/payment/print', [App\Http\Controllers\ProcurementPaymentController::class, 'printDocument'])->name('procurement-payments.print-document');
+    Route::post('/procurement-packages/{package}/payment/complete', [App\Http\Controllers\ProcurementPaymentController::class, 'complete'])->name('procurement-payments.complete');
 
 });
 

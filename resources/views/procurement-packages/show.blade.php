@@ -9,6 +9,15 @@
 @stop
 
 @section('content')
+    @include('components.workflow-progress', ['procurementPackage' => $procurementPackage])
+
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm">
+            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+            <i class="icon fas fa-ban mr-1"></i> {{ session('error') }}
+        </div>
+    @endif
+
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show shadow-sm">
             <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
@@ -145,26 +154,12 @@
 
 </div>
 
-    {{-- CALLOUT STATUS --}}
-    <div class="callout callout-warning shadow-sm mb-4 bg-white">
-        <div class="d-flex align-items-center">
-            <h4 class="text-warning mb-0 mr-3" style="font-size: 2rem;"><i class="fas fa-info-circle"></i></h4>
-            <div>
-                <h6 class="font-weight-bold text-dark mb-1">
-                        Paket ini telah disetujui
-                </h6>
-                <p class="text-muted mb-0">
-                    Lengkapi data paket ini untuk proses pelaksanaan PBJ.
-                </p>
-            </div>
-        </div>
-    </div>
-
     {{-- FORM METADATA --}}
     <form method="POST" action="{{ route('procurement-packages.meta.update', $procurementPackage) }}">
         @csrf
         @method('PATCH')
 
+        <fieldset {{ $procurementPackage->workflow_status !== \App\Models\ProcurementPackage::WORKFLOW_DRAFT ? 'disabled' : '' }}>
         <div class="row">
             {{-- KOLOM 1: INFORMASI PPK --}}
             <div class="col-md-6">
@@ -457,6 +452,7 @@
                 </div>
             </div>
         </div>
+        </fieldset>
 {{-- ACTION BAR (TOMBOL BAWAH) --}}
         <div class="row mt-4 mb-5">
             <div class="col-12">
@@ -469,17 +465,23 @@
                     </div>
                     {{-- TOMBOL KANAN (AKSI) --}}
                     <div class="d-flex flex-column flex-md-row w-100 justify-content-lg-end text-center">
-                        <button type="submit" 
-                                class="btn btn-success btn-modern mb-2 mb-md-0 mr-md-3">
-                            <i class="fas fa-save mr-1"></i> Simpan Informasi
-                        </button>
-                        {{-- Menambahkan efek gradien agar tombol AI terlihat lebih canggih & premium --}}
-                        <button type="button" 
-                                id="btn-generate-ai" 
-                                class="btn btn-primary btn-modern"
-                                style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); border: none;">
-                            <i class="fas fa-robot mr-1"></i> Buat Dokumen Pengadaan
-                        </button>
+                        @if($procurementPackage->workflow_status === \App\Models\ProcurementPackage::WORKFLOW_DRAFT)
+                            <button type="submit" 
+                                    class="btn btn-success btn-modern mb-2 mb-md-0 mr-md-3">
+                                <i class="fas fa-save mr-1"></i> Simpan Informasi
+                            </button>
+                            {{-- Menambahkan efek gradien agar tombol AI terlihat lebih canggih & premium --}}
+                            <button type="button" 
+                                    id="btn-generate-ai" 
+                                    class="btn btn-primary btn-modern"
+                                    style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); border: none;">
+                                <i class="fas fa-robot mr-1"></i> Buat Dokumen
+                            </button>
+                        @else
+                            <a href="{{ route('procurement-packages.procurement-process.show', $procurementPackage->package) }}" class="btn btn-info btn-modern" style="background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%); border: none;">
+                                <i class="fas fa-arrow-right mr-1"></i> Proses Pengadaan
+                            </a>
+                        @endif
                     </div>
                 </div>
             </div>

@@ -237,25 +237,51 @@
         <i class="fas fa-arrow-left mr-1"></i>
         Kembali
     </a>
-    @if($procurementPackage->procurementRequest)
-        <a href="{{ route(
-            'procurement-packages.procurement-request.show',
-            $procurementPackage->package
-        ) }}"
-           class="btn btn-info btn-lg shadow-sm px-4">
-            <i class="fas fa-file-alt mr-1"></i>
-            Lihat Surat Permohonan
-        </a>
-    @else
-        <a href="{{ route(
-            'procurement-packages.procurement-request.create',
-            $procurementPackage->package
-        ) }}"
-           class="btn btn-success btn-lg shadow-sm px-4">
-            Lanjut Surat Permohonan
-            <i class="fas fa-arrow-right ml-1"></i>
-        </a>
-    @endif
+    
+    <div class="d-flex align-items-center">
+        <button type="button" class="btn btn-secondary btn-lg shadow-sm px-4 mr-2" onclick="printPdf('{{ route('procurement-packages.price-references.print', $procurementPackage->package) }}')">
+            <i class="fas fa-print mr-1"></i>
+            Cetak Referensi Harga
+        </button>
+        @if($procurementPackage->procurementRequest)
+            <a href="{{ route(
+                'procurement-packages.procurement-request.show',
+                $procurementPackage->package
+            ) }}"
+               class="btn btn-info btn-lg shadow-sm px-4">
+                <i class="fas fa-file-alt mr-1"></i>
+                Lihat Surat Permohonan
+            </a>
+        @else
+            <a href="{{ route(
+                'procurement-packages.procurement-request.create',
+                $procurementPackage->package
+            ) }}"
+               class="btn btn-success btn-lg shadow-sm px-4">
+                Lanjut Surat Permohonan
+                <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+        @endif
+    </div>
 </div>
 
 @stop
+
+@push('js')
+<script>
+function printPdf(url) {
+    let iframe = document.getElementById('print-iframe');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'print-iframe';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+    }
+    iframe.src = url;
+    iframe.onload = function() {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+    };
+}
+</script>
+@endpush

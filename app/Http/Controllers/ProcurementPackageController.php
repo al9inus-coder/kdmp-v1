@@ -41,7 +41,7 @@ class ProcurementPackageController extends Controller
 
         if ($existing) {
             return redirect()
-                ->route('procurement-packages.show', $existing)
+                ->route('procurement-packages.show', $package)
                 ->with('warning', 'Paket Pengadaan untuk package ini sudah ada.');
         }
 
@@ -53,7 +53,7 @@ class ProcurementPackageController extends Controller
         ]);
 
         return redirect()
-            ->route('procurement-packages.show', $procurementPackage)
+            ->route('procurement-packages.show', $package)
             ->with('success', 'Paket Pengadaan berhasil dibuat.');
     }
 
@@ -182,7 +182,7 @@ class ProcurementPackageController extends Controller
 
         return redirect()
             ->route(
-                'technical-specifications.show',
+                'procurement-packages.technical-specifications.show',
                 $procurementPackage->package
             )
             ->with(

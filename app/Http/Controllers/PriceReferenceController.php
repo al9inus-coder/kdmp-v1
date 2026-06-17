@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
+
 class PriceReferenceController extends Controller
 {
     public function index(Package $package): View
@@ -280,5 +281,24 @@ public function create(Package $package): View|RedirectResponse
     private function calculateJumlahHarga(array $validated, array $barangJasa): float
     {
         return (float) $barangJasa['volume'] * (float) $validated['harga_satuan'];
+    }
+
+    public function print(Package $package)
+    {
+        $procurementPackage = $package->procurementPackage;
+
+        abort_if(!$procurementPackage, 404);
+
+        $procurementPackage->load([
+            'package',
+            'technicalSpecification.items',
+            'priceReferences'
+        ]);
+
+        $technicalItems = $procurementPackage->technicalSpecification?->items ?? collect();
+        $priceReferences = $procurementPackage->priceReferences ?? collect();
+        $groupedReferences = $priceReferences->groupBy('nama_barang_jasa');
+
+        return view('price-references.pdf', compact('procurementPackage', 'technicalItems', 'groupedReferences'));
     }
 }

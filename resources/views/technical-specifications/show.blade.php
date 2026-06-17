@@ -78,30 +78,6 @@
         font-size: 11pt; /* Lebih proporsional untuk cetak */
         color: #000;
         box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-        
-        /* TRICK: Garis penanda batas halaman A4 otomatis (setiap 297mm) */
-        background-image: repeating-linear-gradient(
-            to bottom,
-            transparent,
-            transparent 296mm,
-            rgba(255, 0, 0, 0.6) 296mm,
-            rgba(255, 0, 0, 0.6) 297mm
-        );
-        position: relative;
-    }
-
-    .document-paper::after {
-        content: "--- Batas Halaman A4 ---";
-        position: absolute;
-        top: 297mm;
-        left: 0;
-        right: 0;
-        text-align: center;
-        color: rgba(255, 0, 0, 0.6);
-        font-size: 10pt;
-        font-weight: bold;
-        margin-top: -15px; /* Menyesuaikan dengan garis merah */
-        pointer-events: none;
     }
 
 .kop-pemerintah{
@@ -279,16 +255,21 @@
                     <i class="fas fa-arrow-left mr-1"></i> Kembali
                 </a>
             </div>
-            {{-- Bagian Kanan: Tombol Edit & Cetak --}}
-            <div class="action-right">
-                <button type="submit" class="btn btn-success btn-floating">
-                    Simpan <i class="fas fa-save mr-1"></i> 
-                </button>
-                <a href="{{ route('procurement-packages.price-references.index', $procurementPackage->package) }}"
-                   class="btn btn-primary btn-floating">
-                    Ref. Harga <i class="fas fa-arrow-right mr-1"></i>
-                </a>
-            </div>
+        {{-- Bagian Kanan: Tombol Edit & Cetak --}}
+        <div class="action-right">
+            <button type="submit" class="btn btn-success btn-floating">
+                Simpan <i class="fas fa-save mr-1"></i>
+            </button>
+
+            <a href="{{ route('procurement-packages.price-references.index', $procurementPackage->package) }}"
+            class="btn btn-primary btn-floating">
+                Ref. Harga <i class="fas fa-arrow-right mr-1"></i>
+            </a>
+
+            <button type="button" class="btn btn-secondary btn-floating" onclick="printPdf('{{ route('technical-specifications.print', $technicalSpecification) }}')">
+                Cetak PDF <i class="fas fa-print mr-1"></i>
+            </button>
+        </div>
             
         </div>
         <div class="document-paper">
@@ -802,16 +783,27 @@
                         NIP.
                         {{ $procurementPackage->nip_ppk ?? '-' }}
                     </div>
-                </div>
             </div>
+        </div>
     </div>
-
-    {{-- Tambahkan Tombol Submit di sini agar form bisa disimpan --}}
-    <div class="mt-3 d-flex justify-content-between">
-<p class="text-align:justify">  FILIPI 3 : 14 </div>
-        
-    </div>
-
-</div>
 </form>    
 @stop
+
+@push('js')
+<script>
+function printPdf(url) {
+    let iframe = document.getElementById('print-iframe');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'print-iframe';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+    }
+    iframe.src = url;
+    iframe.onload = function() {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+    };
+}
+</script>
+@endpush

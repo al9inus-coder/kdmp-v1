@@ -6,37 +6,54 @@
 @stop
 
 <style>
-/* FLOATING ACTION BUTTONS (FAB) */
-    .floating-container {
-        position: fixed;
-        bottom: 40px;
-        right: 40px;
-        z-index: 9999;
-        display: flex;
-        flex-direction: column; /* Mengubah arah susunan menjadi atas-bawah */
-        align-items: flex-end;  /* Membuat tombol rata ke kanan */
-        gap: 15px;              /* Jarak antar tombol atas-bawah */
-    }
-    
+/* TOMBOL MELENGKUNG (PILL) & EFEK HOVER */
     .btn-floating {
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
-        border-radius: 50px !important; /* Membuat tombol berbentuk melengkung (pill) */
+        border-radius: 50px !important;
         padding: 12px 25px !important;
         font-weight: bold;
         font-size: 1.05rem;
         transition: transform 0.2s ease, box-shadow 0.2s ease;
-        min-width: 120px;
-        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
     }
 
     .btn-floating:hover {
-        transform: translateY(-5px); /* Efek terangkat saat di-hover */
+        transform: translateY(-5px);
         box-shadow: 0 6px 15px rgba(0,0,0,0.4) !important;
     }
 
-    /* Memastikan warna teks tombol edit (warning) tetap putih/gelap rapi */
     .btn-warning.btn-floating {
         color: #212529 !important; 
+    }
+
+    /* WADAH TOMBOL STICKY (Otomatis menyesuaikan lebar document-viewer) */
+    .viewer-sticky-actions {
+        position: sticky;
+        /* Menahan posisi tombol agar selalu ~160px dari dasar layar monitor */
+        top: calc(100vh - 160px); 
+        z-index: 999;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        
+        /* Jarak tombol dari tepi kiri dan tepi kanan document-viewer (kotak abu-abu) */
+        padding: 0 40px; 
+        
+        /* Tinggi dibuat 0 agar tidak memakan ruang dan mendorong kertas ke bawah */
+        height: 0; 
+        pointer-events: none; /* Area kosong transparan tidak menghalangi klik ke dokumen */
+    }
+
+    /* Kembalikan fungsi klik khusus untuk area yang ada tombolnya */
+    .viewer-sticky-actions .action-left,
+    .viewer-sticky-actions .action-right {
+        pointer-events: auto;
+    }
+
+    /* Susun tombol ke bawah rata kanan */
+    .viewer-sticky-actions .action-right {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
     }
 
     /* Latar Belakang bergaya PDF Viewer */
@@ -45,8 +62,6 @@
         padding: 30px 0;
         border-radius: 5px;
         box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-        /* Tambahkan margin bawah agar dokumen tidak tertutup tombol floating saat mentok di bawah */
-        margin-bottom: 80px; 
     }
 
     /* Pengaturan Kertas A4 Dinamis */
@@ -63,30 +78,7 @@
         font-size: 11pt; /* Lebih proporsional untuk cetak */
         color: #000;
         box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-        
-        /* TRICK: Garis penanda batas halaman A4 otomatis (setiap 297mm) */
-        background-image: repeating-linear-gradient(
-            to bottom,
-            transparent,
-            transparent 296mm,
-            rgba(255, 0, 0, 0.6) 296mm,
-            rgba(255, 0, 0, 0.6) 297mm
-        );
         position: relative;
-    }
-
-    .document-paper::after {
-        content: "--- Batas Halaman A4 ---";
-        position: absolute;
-        top: 297mm;
-        left: 0;
-        right: 0;
-        text-align: center;
-        color: rgba(250, 82, 82, 0.6);
-        font-size: 10pt;
-        font-weight: bold;
-        margin-top: -11px; /* Menyesuaikan dengan garis merah */
-        pointer-events: none;
     }
 
     .kop-pemerintah{
@@ -203,20 +195,6 @@
 
 @section('content')
 
-    {{-- TOMBOL FLOATING --}}
-    <div class="floating-container">
-        <a href="{{ route('procurement-packages.procurement-request.edit', $procurementPackage->package) }}"
-           class="btn btn-warning btn-floating">
-            <i class="fas fa-edit mr-1"></i> Edit
-        </a>
-
-        <a href="{{ route('procurement-packages.procurement-request.print', $procurementPackage->package) }}"
-           target="_blank"
-           class="btn btn-success btn-floating">
-            <i class="fas fa-print mr-1"></i> Cetak
-        </a>
-    </div>
-
     @include('components.procurement-progress', [
         'procurementPackage' => $procurementPackage
     ])
@@ -229,203 +207,77 @@
     
     {{-- DOKUMEN VIEWER (A4) --}}
     <div class="document-viewer">
+        {{-- TOMBOL FLOATING (OTOMATIS TERKURUNG DI DALAM VIEWER) --}}
+        <div class="viewer-sticky-actions">
+            {{-- Bagian Kiri: Tombol Kembali --}}
+            <div class="action-left">
+                <a href="{{ route('procurement-packages.show', $procurementPackage->package) }}" 
+                   class="btn btn-secondary btn-floating">
+                    <i class="fas fa-arrow-left mr-1"></i> Kembali
+                </a>
+            </div>
+            {{-- Bagian Kanan: Tombol Edit & Cetak --}}
+            <div class="action-right">
+                <a href="{{ route('procurement-packages.procurement-request.edit', $procurementPackage->package) }}"
+                   class="btn btn-warning btn-floating">
+                    <i class="fas fa-edit mr-1"></i> Edit
+                </a>
+
+                <button type="button"
+                   class="btn btn-success btn-floating"
+                   onclick="printPdf('{{ route('procurement-packages.procurement-request.print', $procurementPackage->package) }}')">
+                    <i class="fas fa-print mr-1"></i> Cetak PDF
+                </button>
+                
+                @if($procurementPackage->workflow_status === \App\Models\ProcurementPackage::WORKFLOW_DRAFT)
+                    <button type="button" 
+                            id="btn-complete-preparation" 
+                            class="btn btn-primary btn-floating"
+                            style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border: none;">
+                        <i class="fas fa-check-double mr-1"></i> Selesaikan Persiapan
+                    </button>
+                @endif
+            </div>
+        </div>
+
+        <form id="complete-preparation-form"
+            action="{{ route('procurement-packages.complete-preparation', $procurementPackage->package) }}"
+            method="POST"
+            style="display:none;">
+            @csrf
+        </form>
+
         <div class="document-paper">
-            <div class="row">
-                <div class="col-2 text-center">
-                    <img src="{{ asset('images/logo-bengkayang.png') }}" style="width:70px;">
-                </div>
-                <div class="col-10 text-center">
-                    <div class="kop-pemerintah">PEMERINTAH KABUPATEN BENGKAYANG</div>
-                    <div class="kop-dinas">DINAS PERUMAHAN RAKYAT DAN KAWASAN PERMUKIMAN, PERTANAHAN DAN LINGKUNGAN HIDUP</div>
-                    <div class="kop-alamat">Jalan Guna Baru Trans Rangkang, Bengkayang, Kalimantan Barat</div>
-                    <div class="kop-alamat">Situs : bengkayangkab.go.id</div>
-                </div>
-            </div>
-            <hr style="border-top:3px solid #000; border-bottom:1px solid #000; margin-top:5px; margin-bottom: 2px; padding-bottom: 2px;">
-
-            <div class="row mt-2">
-                <div class="col-12 text-right">
-                    Bengkayang, {{ $procurementRequest->tanggal_surat?->translatedFormat('d F Y') }}
-                </div>
-            </div>
-            <div class="row mb-2">
-                <div class="col-12">
-                    <table class="admin-table">
-                        <tr>
-                            <td width="70">Nomor</td>
-                            <td class="colon-col">:</td>
-                            <td>{{ $nomorSuratLengkap }}</td>
-                        </tr>
-                        <tr>
-                            <td width="70">Sifat</td>
-                            <td class="colon-col">:</td>
-                            <td>Segera</td>
-                        </tr>
-                        <tr>
-                            <td width="70">Lampiran</td>
-                            <td class="colon-col">:</td>
-                            <td>1 (satu) berkas</td>
-                        </tr>
-                        <tr>
-                            <td width="70">Hal</td>
-                            <td class="colon-col">:</td>
-                            <td>
-                                Permohonan Pemesanan Barang/Jasa melalui {{ $procurementPackage->package->metode_pengadaan }}
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-
-<div class="mb-2">
-    Yth.<br>
-    Sdr.
-    <strong>
-        {{ $procurementRequest->nama_pejabat_pengadaan }}
-    </strong>
-    <br>
-    Pejabat Pengadaan {{ $skpd->nama }}
-    <br>
-    di -
-    <div class="ml-4">
-        TEMPAT
-    </div>
-</div>
-
-            <div style="text-align:justify">
-                Dengan hormat,
-                <br>
-                Dalam rangka memenuhi kebutuhan barang dan jasa pada di lingkungan Dinas Perumahan Rakyat dan Kawasan Permukiman, 
-                Pertanahan dan Lingkungan Hidup Kabupaten Bengkayang, maka dengan ini diminta kepada Saudara untuk dapat melaksanakan 
-                proses pengadaan barang/jasa melalui metode {{ $procurementPackage->package->metode_pengadaan }} dengan data paket sebagai berikut :
-            </div>
-
-            {{--tabel spesifikasi teknis--}}
-            @php
-                $items = $procurementPackage->technicalSpecification?->items ?? collect();
-                $grandTotal = 0;
-            @endphp
-            <table class="spesifikasi-table mt-1">
-                <thead>
-                    <tr>
-                        <th width="40">No</th>
-                        <th>Uraian Barang</th>
-                        <th width="70">Satuan</th>
-                        <th width="80">Jumlah</th>
-                        <th width="170">Harga Satuan DPA</th>
-                        <th width="140">Jumlah</th>
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach($items as $item)
-                    @php
-                        $hargaSatuanDpa = (float) $item->harga_satuan_dpa;
-                        $jumlah = $hargaSatuanDpa * (float) $item->volume;
-                        $grandTotal += $jumlah;
-                    @endphp
-                    <tr>
-                        <td class="text-center">{{ $loop->iteration }}</td>
-                        <td>{{ $item->nama_barang_jasa }}</td>
-                        <td class="text-center">{{ $item->satuan }}</td>
-                        <td class="text-center">
-                            {{ number_format((float) $item->volume, 0, ',', '.') }}
-                        </td>
-                        <td class="text-right">
-                            Rp {{ number_format($hargaSatuanDpa, 0, ',', '.') }}
-                        </td>
-                        <td class="text-right">
-                            Rp {{ number_format($jumlah, 0, ',', '.') }}
-                        </td>
-                    </tr>
-                @endforeach
-                <tr>
-                    <td colspan="5" class="text-center font-weight-bold">Jumlah Total</td>
-                    <td class="text-right font-weight-bold">
-                        Rp {{ number_format($grandTotal, 0, ',', '.') }}
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-            <div class="mt-1">
-                <em>* Harga sudah termasuk pajak (PPN)</em>
-            </div>
-            <div class="row mt-1">
-                <div class="col-12">
-                    <table class="admin-table">
-                        <tr>
-                            <td class="label-col">Nama Paket</td>
-                            <td class="colon-col">:</td>
-                            <td>{{ $procurementPackage->package->nama_paket }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label-col">Lokasi Pelaksanaan</td>
-                            <td class="colon-col">:</td>
-                            <td>Kabupaten Bengkayang</td>
-                        </tr>
-                        <tr>
-                            <td class="label-col">Sumber Dana</td>
-                            <td class="colon-col">:</td>
-                            <td>APBD Tahun Anggaran {{ $procurementPackage->package->fiscalYear?->tahun }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label-col">Kode Rekening</td>
-                            <td class="colon-col">:</td>
-                            <td>{{ $procurementPackage->package->account?->kode ?? '-' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label-col">Pagu Anggaran</td>
-                            <td class="colon-col">:</td>
-                            <td>Rp {{ number_format((float) $procurementPackage->package->pagu, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label-col">Tahun Anggaran</td>
-                            <td class="colon-col">:</td>
-                            <td>Tahun Anggaran {{ $procurementPackage->package->fiscalYear?->tahun }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label-col">User Akun PPK</td>
-                            <td class="colon-col">:</td>
-                            <td>{{ $procurementPackage->user_ppk ?? '-' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label-col">Email PPK</td>
-                            <td class="colon-col">:</td>
-                            <td>{{ $procurementPackage->email_ppk }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label-col">Kode RUP</td>
-                            <td class="colon-col">:</td>
-                            <td>{{ $procurementPackage->package->id_rup }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label-col">Rekomendasi Penyedia</td>
-                            <td class="colon-col">:</td>
-                            <td>{{ $procurementRequest->nama_penyedia ?: '-' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label-col">Alasan Pemilihan Penyedia</td>
-                            <td class="colon-col">:</td>
-                            <td style="text-align: justify;">{{ $procurementRequest->alasan_pemilihan_penyedia ?: '-' }}</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-            
-            <div class="mt-2 text-justify">Demikian Surat Permohonan ini disampaikan, atas perhatian dan kerjasamanya diucapkan terima kasih.</div>
-            <div class="mt-2 row ttd-area">
-                <div class="col-5"></div>
-                <div class="col-7 text-center">
-                        Pejabat Pembuat Komitmen<br>
-                        Dinas Perumahan Rakyat dan Kawasan Permukiman, Pertanahan dan Lingkungan Hidup<br>
-                        Kabupaten Bengkayang
-                        <br><br><br><br>
-                        <strong><u>{{ $procurementPackage->nama_ppk ?? '-' }}</u></strong>
-                        <br>
-                        {{ $procurementPackage->pangkat_gol_ppk ?? '-' }}<br>
-                        NIP. {{ $procurementPackage->nip_ppk ?? '-' }}
-                    </div>
-            </div>
+            @include('procurement-requests._document')
 
         </div>
     </div>
 @stop
+
+@push('js')
+<script>
+function printPdf(url) {
+    let iframe = document.getElementById('print-iframe');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'print-iframe';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+    }
+    iframe.src = url;
+    iframe.onload = function() {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+    };
+}
+
+const completeBtn = document.getElementById('btn-complete-preparation');
+if (completeBtn) {
+    completeBtn.addEventListener('click', function() {
+        if (confirm('Apakah Anda yakin dokumen Persiapan Pengadaan sudah lengkap? Status ini akan dikunci dan dilanjutkan ke tahap Proses Pengadaan.')) {
+            document.getElementById('complete-preparation-form').submit();
+        }
+    });
+}
+</script>
+@endpush
