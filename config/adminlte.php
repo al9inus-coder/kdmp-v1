@@ -329,6 +329,11 @@ return [
         'icon' => 'fas fa-fw fa-home',
     ],
     [
+        'text' => 'Jadwal Pengadaan',
+        'url'  => 'schedules',
+        'icon' => 'fas fa-fw fa-calendar-alt',
+    ],
+    [
         'text' => 'Manajemen User',
         'url'  => 'users',
         'icon' => 'fas fa-users',

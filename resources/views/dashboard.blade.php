@@ -3,11 +3,25 @@
 @section('title', 'Beranda KDMP')
 
 @section('content_header')
-    <div class="mb-2">
-        <h2 class="font-weight-bold text-dark" style="letter-spacing: -1px;">
-            Overview <span class="text-primary">KDMP</span>
-        </h2>
-        <p class="text-muted mb-0">Pantau seluruh aktivitas pengadaan di satu dasbor terpusat.</p>
+    <div class="d-flex justify-content-between align-items-end mb-2">
+        <div>
+            <h2 class="font-weight-bold text-dark" style="letter-spacing: -1px;">
+                Dashboard <span class="text-primary">Monitoring</span>
+            </h2>
+            <p class="text-muted mb-0">Pantau aktivitas pengadaan dan realisasi anggaran secara real-time.</p>
+        </div>
+        <div>
+            <form method="GET" action="{{ route('dashboard') }}" class="form-inline">
+                <label class="mr-2 font-weight-bold">Tahun Anggaran:</label>
+                <select name="fiscal_year_id" class="form-control rounded-pill border-primary" style="font-weight: bold; padding-left: 20px; padding-right: 20px;" onchange="this.form.submit()">
+                    @foreach($fiscalYears as $year)
+                        <option value="{{ $year->id }}" {{ $fiscalYearId == $year->id ? 'selected' : '' }}>
+                            {{ $year->tahun }} {{ $year->is_active ? '(Aktif)' : '' }}
+                        </option>
+                    @endforeach
+                </select>
+            </form>
+        </div>
     </div>
 @stop
 
@@ -133,49 +147,56 @@
         <div class="bento-card bento-hero">
             <div class="d-flex justify-content-between mb-4">
                 <div class="bento-icon-wrapper bg-glass text-white">
-                    <i class="fas fa-bolt"></i>
+                    <i class="fas fa-chart-line"></i>
                 </div>
-                <span class="badge bg-glass text-white px-3 py-2" style="border-radius: 20px;">T.A. 2026</span>
+                <span class="badge bg-glass text-white px-3 py-2" style="border-radius: 20px;">
+                    <i class="fas fa-money-bill-wave mr-1"></i> Penyerapan Anggaran
+                </span>
             </div>
             
-            <h3 class="font-weight-bold mb-2" style="font-size: 1.8rem; letter-spacing: -0.5px;">Siap menyusun dokumen hari ini?</h3>
+            <h3 class="font-weight-bold mb-2" style="font-size: 1.8rem; letter-spacing: -0.5px;">Realisasi: Rp {{ number_format($realizedBudget, 0, ',', '.') }}</h3>
             <p class="text-light opacity-80 mb-4" style="font-size: 1rem; line-height: 1.6;">
-                Asisten AI siap membantu Anda mengotomatisasi penyusunan Spesifikasi Teknis, KAK, dan Referensi Harga dalam hitungan detik.
+                Total Pagu Dikelola: <strong>Rp {{ number_format($totalPagu, 0, ',', '.') }}</strong>
             </p>
             
             <div class="mt-auto pt-4 border-top border-secondary d-flex justify-content-between align-items-center">
-                <div>
-                    <span class="d-block text-sm text-light mb-1 opacity-70">Total Pagu Dikelola</span>
-                    <h4 class="font-weight-bold text-white mb-0">Rp 12.540.000.000</h4>
+                <div class="flex-grow-1 mr-4">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="d-block text-sm text-light font-weight-bold">Progress Penyerapan</span>
+                        <span class="d-block text-sm text-light font-weight-bold">{{ $absorptionPercentage }}%</span>
+                    </div>
+                    <div class="progress rounded-pill bg-glass" style="height: 10px;">
+                        <div class="progress-bar {{ $absorptionPercentage < 50 ? 'bg-danger' : ($absorptionPercentage < 80 ? 'bg-warning' : 'bg-success') }}" style="width: {{ $absorptionPercentage }}%"></div>
+                    </div>
                 </div>
-                <button class="btn btn-primary rounded-pill px-4 py-2 font-weight-bold shadow-lg">
-                    Buat Paket <i class="fas fa-arrow-right ml-1"></i>
-                </button>
+                <a href="{{ route('procurement-packages.index') }}" class="btn btn-primary rounded-pill px-4 py-2 font-weight-bold shadow-lg">
+                    Lihat Paket <i class="fas fa-arrow-right ml-1"></i>
+                </a>
             </div>
         </div>
 
         {{-- 2. TALL CARD (Tinggi Kanan - Log Aktivitas) --}}
-        <div class="bento-card bento-stat-tall">
+        <div class="bento-card bento-stat-tall" style="overflow-y: auto;">
             <h6 class="font-weight-bold text-dark mb-4"><i class="fas fa-history text-primary mr-2"></i> Aktivitas Terbaru</h6>
             
-            <div class="minimal-timeline">
-                <div class="timeline-item">
-                    <small class="text-muted font-weight-bold d-block mb-1">10 Menit yang lalu</small>
-                    <p class="mb-0 text-sm text-dark"><strong>AI Selesai</strong> menyusun draf KAK untuk <em>Pengadaan Truck Arm Roll</em>.</p>
+            @if($recentActivities->count() > 0)
+                <div class="minimal-timeline">
+                    @foreach($recentActivities as $activity)
+                        <div class="timeline-item">
+                            <small class="text-muted font-weight-bold d-block mb-1">{{ $activity->updated_at->diffForHumans() }}</small>
+                            <p class="mb-0 text-sm text-dark">
+                                Paket <strong><a href="{{ route('procurement-packages.show', $activity->package) }}" class="text-primary">{{ Str::limit($activity->package->nama_paket, 30) }}</a></strong> 
+                                diupdate ke status <span class="badge badge-info">{{ App\Models\ProcurementPackage::getWorkflowStatuses()[$activity->workflow_status] ?? $activity->workflow_status }}</span>.
+                            </p>
+                        </div>
+                    @endforeach
                 </div>
-                <div class="timeline-item">
-                    <small class="text-muted font-weight-bold d-block mb-1">1 Jam yang lalu</small>
-                    <p class="mb-0 text-sm text-dark">Dokumen <strong>Spesifikasi Teknis</strong> disetujui oleh PPK.</p>
+            @else
+                <div class="text-center text-muted my-4">
+                    <i class="fas fa-inbox fa-2x mb-2 opacity-50"></i>
+                    <p class="mb-0">Belum ada aktivitas.</p>
                 </div>
-                <div class="timeline-item">
-                    <small class="text-muted font-weight-bold d-block mb-1">Kemarin, 14:30</small>
-                    <p class="mb-0 text-sm text-dark">Paket <em>Rehabilitasi Taman</em> masuk ke status <strong>Tender</strong>.</p>
-                </div>
-            </div>
-            
-            <button class="btn btn-light btn-sm w-100 mt-auto rounded-pill text-primary font-weight-bold border">
-                Lihat Semua Log
-            </button>
+            @endif
         </div>
 
         {{-- 3. SMALL CARD (Kecil - Paket Aktif) --}}
@@ -183,11 +204,10 @@
             <div class="bento-icon-wrapper bg-glass text-white mb-3">
                 <i class="fas fa-box-open"></i>
             </div>
-            <h2 class="font-weight-bold mb-0">18</h2>
+            <h2 class="font-weight-bold mb-0">{{ $totalPackages - $completedCount }}</h2>
             <span class="text-sm opacity-80 mt-1">Paket Sedang Proses</span>
             
-            {{-- Hiasan Garis Abstrak di belakang --}}
-            <i class="fas fa-chart-line position-absolute" style="font-size: 100px; right: -20px; bottom: -20px; opacity: 0.1;"></i>
+            <i class="fas fa-spinner fa-spin position-absolute" style="font-size: 100px; right: -20px; bottom: -20px; opacity: 0.1;"></i>
         </div>
 
         {{-- 4. SMALL CARD (Kecil - Selesai) --}}
@@ -195,61 +215,64 @@
             <div class="bento-icon-wrapper mb-3" style="background: #e6f4ea; color: #28a745;">
                 <i class="fas fa-check-double"></i>
             </div>
-            <h2 class="font-weight-bold text-dark mb-0">96</h2>
-            <span class="text-sm text-muted mt-1 font-weight-bold">Paket Selesai (100%)</span>
+            <h2 class="font-weight-bold text-dark mb-0">{{ $completedCount }}</h2>
+            <span class="text-sm text-muted mt-1 font-weight-bold">Paket Selesai</span>
         </div>
 
-        {{-- 5. WIDE CARD (Lebar Bawah - Progress Cepat) --}}
-        <div class="bento-card bento-stat-wide">
-            <h6 class="font-weight-bold text-dark mb-3"><i class="fas fa-tasks text-warning mr-2"></i> Paket Prioritas (Drafting AI)</h6>
+        {{-- 5. WIDE CARD (Daftar Paket Terlambat / Warning) --}}
+        <div class="bento-card bento-stat-wide" style="grid-column: span 3; grid-row: span 2;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h6 class="font-weight-bold text-danger mb-0"><i class="fas fa-exclamation-triangle mr-2"></i> Peringatan: Paket Terlambat Timeline</h6>
+                <span class="badge badge-danger rounded-pill">{{ $latePackages->count() }} Paket</span>
+            </div>
             
-            <div class="d-flex align-items-center mb-3 p-3 rounded" style="background: #f8fafc; border: 1px solid #e2e8f0;">
-                <div class="mr-3">
-                    <div class="bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 40px; height: 40px;">
-                        <i class="fas fa-truck text-info"></i>
-                    </div>
-                </div>
-                <div class="flex-grow-1">
-                    <div class="d-flex justify-content-between mb-1">
-                        <span class="font-weight-bold text-dark text-sm">Pengadaan Truck Arm Roll</span>
-                        <span class="text-primary text-sm font-weight-bold">75%</span>
-                    </div>
-                    <div class="progress rounded-pill" style="height: 6px;">
-                        <div class="progress-bar bg-primary" style="width: 75%"></div>
-                    </div>
-                </div>
-                <button class="btn btn-sm btn-white border ml-3 rounded-pill shadow-sm"><i class="fas fa-play text-success"></i></button>
+            <div class="table-responsive">
+                <table class="table table-borderless table-hover mb-0">
+                    <thead class="text-muted border-bottom">
+                        <tr>
+                            <th>Nama Paket</th>
+                            <th>Target Selesai</th>
+                            <th>Status Saat Ini</th>
+                            <th>Keterlambatan</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($latePackages as $late)
+                            <tr>
+                                <td class="align-middle font-weight-bold">
+                                    {{ Str::limit($late->nama_paket, 40) }}
+                                    <div class="text-xs text-muted font-weight-normal mt-1">{{ $late->activity->nama ?? '-' }}</div>
+                                </td>
+                                <td class="align-middle">
+                                    {{ \Carbon\Carbon::parse($late->target_procurement_date)->translatedFormat('d M Y') }}
+                                </td>
+                                <td class="align-middle">
+                                    <span class="badge badge-warning text-dark">{{ App\Models\ProcurementPackage::getWorkflowStatuses()[$late->procurementPackage->workflow_status ?? \App\Models\ProcurementPackage::WORKFLOW_DRAFT] ?? 'Draft' }}</span>
+                                </td>
+                                <td class="align-middle text-danger font-weight-bold">
+                                    {{ \Carbon\Carbon::parse($late->target_procurement_date)->diffForHumans(now(), ['syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE]) }} terlewat
+                                </td>
+                                <td class="align-middle">
+                                    <a href="{{ route('procurement-packages.show', $late) }}" class="btn btn-sm btn-outline-primary rounded-pill">Tindaklanjuti</a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-success font-weight-bold">
+                                    <i class="fas fa-shield-alt fa-2x mb-2 d-block"></i>
+                                    Semua paket berjalan sesuai timeline (Tidak ada yang terlambat).
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
-
-            <div class="d-flex align-items-center p-3 rounded" style="background: #f8fafc; border: 1px solid #e2e8f0;">
-                <div class="mr-3">
-                    <div class="bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 40px; height: 40px;">
-                        <i class="fas fa-leaf text-success"></i>
-                    </div>
-                </div>
-                <div class="flex-grow-1">
-                    <div class="d-flex justify-content-between mb-1">
-                        <span class="font-weight-bold text-dark text-sm">Penutupan TPA Magmagan</span>
-                        <span class="text-warning text-sm font-weight-bold">30%</span>
-                    </div>
-                    <div class="progress rounded-pill" style="height: 6px;">
-                        <div class="progress-bar bg-warning" style="width: 30%"></div>
-                    </div>
-                </div>
-                <button class="btn btn-sm btn-white border ml-3 rounded-pill shadow-sm"><i class="fas fa-play text-success"></i></button>
-            </div>
-
-        </div>
-
-        {{-- 6. SMALL CARD (Akses Pintas) --}}
-        <div class="bento-card bento-stat-small justify-content-center align-items-center text-center" style="border: 2px dashed #cbd5e1; background: transparent; box-shadow: none;">
-            <div class="bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm mb-3" style="width: 60px; height: 60px;">
-                <i class="fas fa-folder-plus text-primary fa-lg"></i>
-            </div>
-            <h6 class="font-weight-bold text-dark">Arsip Dokumen</h6>
-            <a href="#" class="text-sm text-primary font-weight-bold stretched-link">Jelajahi Data &rarr;</a>
-        </div>
-
     </div>
+@stop
 
+@section('js')
+<script>
+    // Inisialisasi plugin tambahan jika diperlukan di masa depan
+</script>
 @stop

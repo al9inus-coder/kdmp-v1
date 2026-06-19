@@ -19,16 +19,15 @@ use Illuminate\Support\Facades\Route;
 
 // Public Route
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('dashboard');
 });
 
 // Route dengan Middleware Auth
 Route::middleware('auth')->group(function () {
 
-    // Dashboard
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    // Dashboard & Schedules
+    Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/schedules', [\App\Http\Controllers\ScheduleController::class, 'index'])->name('schedules.index');
 
     // Resource Routes
     Route::resource('users', UserController::class);
