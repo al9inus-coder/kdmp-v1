@@ -2,7 +2,10 @@
 <html>
 <head>
 <meta charset="utf-8">
-
+<title>Referensi Harga - {{ $procurementPackage->package->nama_paket }}</title>
+@php
+    $skpd = \App\Models\Skpd::first();
+@endphp
 <style>
 @page {
     size: A4 landscape;
@@ -219,11 +222,11 @@ table.tabel-referensi td.right {
             &nbsp;
         </td>
         <td width="40%" class="signature-container">
-            Bengkayang, {{ now()->translatedFormat('d F Y') }}
+            Bengkayang, {{ $procurementPackage->technicalSpecification?->tanggal ? \Carbon\Carbon::parse($procurementPackage->technicalSpecification->tanggal)->translatedFormat('d F Y') : now()->translatedFormat('d F Y') }}
             <br>
             Pejabat Pembuat Komitmen
             <br>
-            Dinas Perumahan Rakyat dan Kawasan Permukiman, Pertanahan dan Lingkungan Hidup
+            {{ $skpd->nama }}
             <br>
             Kabupaten Bengkayang
             <br><br><br><br>

@@ -108,7 +108,7 @@ class TechnicalSpecificationController extends Controller
         ));
     }
 
-    public function update(Request $request, ProcurementPackage $procurementPackage): RedirectResponse
+    public function update(Request $request, ProcurementPackage $procurementPackage)
     {
         $technicalSpecification = $procurementPackage->technicalSpecification;
 
@@ -129,11 +129,41 @@ class TechnicalSpecificationController extends Controller
 
         unset($validated['items']);
 
-        DB::transaction(function () use ($technicalSpecification, $validated, $items, $hasItems): void {
+        DB::transaction(function () use ($procurementPackage, $technicalSpecification, $validated, $items, $hasItems): void {
+            // Sync ke ProcurementPackage
+            $syncData = [];
+            if (array_key_exists('garansi_nilai', $validated)) $syncData['garansi_nilai'] = $validated['garansi_nilai'];
+            if (array_key_exists('garansi_satuan', $validated)) $syncData['garansi_satuan'] = $validated['garansi_satuan'];
+            if (array_key_exists('layanan_purna_jual', $validated)) $syncData['layanan_purna_jual'] = $validated['layanan_purna_jual'];
+            if (array_key_exists('jangka_waktu', $validated)) $syncData['jangka_waktu_nilai'] = $validated['jangka_waktu'];
+            if (array_key_exists('jangka_waktu_jenis', $validated)) $syncData['jangka_waktu_satuan'] = $validated['jangka_waktu_jenis'] === 'pengiriman_barang' ? 'hari' : 'bulan'; // or whatever mapping is appropriate, actually we will fix form fields later
+            if (array_key_exists('jenis_kontrak', $validated)) $syncData['jenis_kontrak'] = $validated['jenis_kontrak'];
+            if (array_key_exists('npwp_instansi', $validated)) $syncData['npwp_instansi'] = $validated['npwp_instansi'];
+            if (array_key_exists('nama_ppk', $validated)) $syncData['nama_ppk'] = $validated['nama_ppk'];
+            if (array_key_exists('pangkat_gol_ppk', $validated)) $syncData['pangkat_gol_ppk'] = $validated['pangkat_gol_ppk'];
+            if (array_key_exists('nip_ppk', $validated)) $syncData['nip_ppk'] = $validated['nip_ppk'];
+            if (array_key_exists('no_telp_ppk', $validated)) $syncData['no_telp_ppk'] = $validated['no_telp_ppk'];
+            if (array_key_exists('email_ppk', $validated)) $syncData['email_ppk'] = $validated['email_ppk'];
+
+            if (!empty($syncData)) {
+                $procurementPackage->update($syncData);
+            }
+
+            // Remove synced fields from validated so they don't get saved to technical_specifications
+            $fieldsToRemove = [
+                'jangka_waktu', 'jangka_waktu_jenis', 'garansi_nilai', 'garansi_satuan', 
+                'layanan_purna_jual', 'jenis_kontrak', 'npwp_instansi', 'nama_ppk', 
+                'pangkat_gol_ppk', 'nip_ppk', 'no_telp_ppk', 'email_ppk'
+            ];
+            foreach ($fieldsToRemove as $field) {
+                unset($validated[$field]);
+            }
+
             $technicalSpecification->update(array_merge(
                 $validated,
                 ['updated_by' => Auth::id()]
             ));
+
             if ($hasItems) {
                 $technicalSpecification->items()->delete();
                 $technicalSpecification->items()->createMany(
@@ -141,6 +171,10 @@ class TechnicalSpecificationController extends Controller
                 );
             }
         });
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Spesifikasi Teknis berhasil diperbarui.']);
+        }
 
         return redirect()
             ->route(
@@ -161,8 +195,10 @@ class TechnicalSpecificationController extends Controller
     {
         return $request->validate([
             'latar_belakang' => ['nullable', 'string'],
-            'maksud' => ['nullable', 'string'],
-            'target_sasaran' => ['nullable', 'string'],
+            'maksud' => ['nullable', 'array'],
+            'maksud.*' => ['nullable', 'string'],
+            'target_sasaran' => ['nullable', 'array'],
+            'target_sasaran.*' => ['nullable', 'string'],
             'uraian_pekerjaan' => ['nullable', 'string'],
             'jangka_waktu' => ['nullable', 'integer', 'min:0'],
             'jangka_waktu_jenis' => ['nullable', Rule::in(['pengiriman_barang', 'pekerjaan_jasa'])],
@@ -243,7 +279,7 @@ class TechnicalSpecificationController extends Controller
     public function updateByTechnicalSpecification(
         Request $request,
         TechnicalSpecification $technicalSpecification
-    ): RedirectResponse
+    )
     {
         $procurementPackage =
             $technicalSpecification->procurementPackage;
@@ -274,11 +310,11 @@ class TechnicalSpecificationController extends Controller
             ($procurementPackage->package->jenis_pengadaan ?? '')
             === 'Barang';
 
-        $jangkaWaktuNilai =
-            $procurementPackage->jangka_waktu_nilai;
-
-        $jangkaWaktuSatuan =
-            $procurementPackage->jangka_waktu_satuan ?? 'hari';
+        $jangkaWaktuNilai = $procurementPackage->jangka_waktu_nilai ?? null;
+        $jangkaWaktuSatuan = $procurementPackage->jangka_waktu_satuan ?? 'hari';
+        $garansiNilai = $procurementPackage->garansi_nilai;
+        $garansiSatuan = $procurementPackage->garansi_satuan;
+        $layananPurnaJual = $procurementPackage->layanan_purna_jual;
 
         return view(
             'technical-specifications.pdf',
@@ -287,7 +323,10 @@ class TechnicalSpecificationController extends Controller
                 'procurementPackage',
                 'isBarang',
                 'jangkaWaktuNilai',
-                'jangkaWaktuSatuan'
+                'jangkaWaktuSatuan',
+                'garansiNilai',
+                'garansiSatuan',
+                'layananPurnaJual'
             )
         );
     }

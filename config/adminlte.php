@@ -1,24 +1,6 @@
 <?php
 
-$packageProgramSubmenu = [];
-
-try {
-    if (class_exists(\App\Models\Program::class)) {
-        $programs = \App\Models\Program::query()
-            ->orderBy('kode')
-            ->get(['id', 'kode', 'nama']);
-
-            foreach ($programs as $program) {
-            $packageProgramSubmenu[] = [
-                'text' => trim($program->kode.' - '.$program->nama),
-                'url' => 'packages/program/'.$program->id,
-                'icon' => 'far fa-dot-circle',
-            ];
-        }
-    }
-} catch (\Throwable) {
-    $packageProgramSubmenu = [];
-}
+// Removed dynamic packageProgramSubmenu query
 
 return [
 
@@ -329,11 +311,6 @@ return [
         'icon' => 'fas fa-fw fa-home',
     ],
     [
-        'text' => 'Jadwal Pengadaan',
-        'url'  => 'schedules',
-        'icon' => 'fas fa-fw fa-calendar-alt',
-    ],
-    [
         'text' => 'Manajemen User',
         'url'  => 'users',
         'icon' => 'fas fa-users',
@@ -373,27 +350,9 @@ return [
     ],
     [
         'text' => 'Paket Pekerjaan',
+        'route' => 'packages.index',
         'icon' => 'fas fa-briefcase',
-        'submenu' => [
-            [
-                'text' => 'Semua Paket',
-                'route' => 'packages.index',
-                'icon' => 'far fa-circle',
-            ],
-            [
-                'text' => 'Program',
-                'icon' => 'far fa-circle',
-                'submenu' => $packageProgramSubmenu !== []
-                    ? $packageProgramSubmenu
-                    : [
-                        [
-                            'text' => 'Belum ada program',
-                            'url' => '#',
-                            'icon' => 'far fa-dot-circle',
-                        ],
-                    ],
-            ],
-        ],
+        'active' => ['packages', 'packages/*'],
     ],
 
     [
@@ -408,11 +367,16 @@ return [
     [
         'header' => 'MONITORING',
     ],
-
     [
-        'text' => 'Monitoring',
-        'url'  => '#',
+        'text' => 'Jadwal Pengadaan',
+        'url'  => 'schedules',
+        'icon' => 'fas fa-fw fa-calendar-alt',
+    ],
+    [
+        'text' => 'Monitoring dan Evaluasi',
+        'route' => 'monev.index',
         'icon' => 'fas fa-chart-line',
+        'active' => ['monev', 'monev/*'],
     ],
 
     [

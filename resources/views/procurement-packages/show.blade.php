@@ -68,18 +68,9 @@
                 <div class="table-responsive">
                     <table class="table table-striped table-hover mb-0">
                         <tbody>
+
                             <tr>
-                                <th style="width: 35%;" class="pl-4">Status Paket</th>
-                                <td>
-                                    @if($procurementPackage->status === 'complete')
-                                        <span class="badge badge-success px-3 py-2 elevation-1"><i class="fas fa-check-circle mr-1"></i> Complete</span>
-                                    @else
-                                        <span class="badge badge-warning px-3 py-2 elevation-1"><i class="fas fa-pencil-alt mr-1"></i> Draft</span>
-                                    @endif
-                                </td>
-                            </tr>
-                            <tr>
-                                <th class="pl-4">ID RUP</th>
+                                <th style="width: 35%;" class="pl-4">ID RUP</th>
                                 <td class="font-weight-bold">{{ $procurementPackage->package->id_rup ?? '-' }}</td>
                             </tr>
                             <tr>
@@ -155,7 +146,7 @@
 </div>
 
     {{-- FORM METADATA --}}
-    <form method="POST" action="{{ route('procurement-packages.meta.update', $procurementPackage) }}">
+    <form id="form-meta-update" method="POST" action="{{ route('procurement-packages.meta.update', $procurementPackage) }}">
         @csrf
         @method('PATCH')
 
@@ -306,6 +297,11 @@
                                     <label for="purna_jual_tidak" class="custom-control-label font-weight-normal">Tidak</label>
                                 </div>
                             </div>
+                        </div>
+
+                        <div class="form-group mb-0 mt-4">
+                            <label><i class="fas fa-calendar-alt text-muted mr-1"></i> Tanggal Pembuatan Spesifikasi Teknis</label>
+                            <input type="date" name="tanggal_spesifikasi" class="form-control" value="{{ old('tanggal_spesifikasi', $procurementPackage->technicalSpecification?->tanggal?->format('Y-m-d')) }}">
                         </div>
 
                     </div>
@@ -470,6 +466,9 @@
                                     class="btn btn-success btn-modern mb-2 mb-md-0 mr-md-3">
                                 <i class="fas fa-save mr-1"></i> Simpan Informasi
                             </button>
+                            <button type="button" class="btn btn-warning btn-modern mb-2 mb-md-0 mr-md-2" data-toggle="modal" data-target="#editPromptModal">
+                                <i class="fas fa-cog mr-1"></i> Edit Prompt
+                            </button>
                             {{-- Menambahkan efek gradien agar tombol AI terlihat lebih canggih & premium --}}
                             <button type="button" 
                                     id="btn-generate-ai" 
@@ -541,13 +540,38 @@
         </div>
     </div>
 
-{{-- FORM GENERATE DRAFT (DISSEMBUNYIKAN) --}}
-        <form id="generate-ai-form"
-            action="{{ route('procurement-packages.generate-draft', $procurementPackage) }}"
-            method="POST"
-            style="display:none;">
-            @csrf
-        </form>
+    {{-- MODAL EDIT PROMPT AI --}}
+    <div class="modal fade" id="editPromptModal" tabindex="-1" aria-labelledby="editPromptModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form action="{{ route('procurement-packages.update-prompt', $procurementPackage) }}" method="POST">
+                    @csrf
+                    <div class="modal-header bg-warning">
+                        <h5 class="modal-title text-dark font-weight-bold" id="editPromptModalLabel"><i class="fas fa-cog mr-2"></i> Konfigurasi Prompt AI</h5>
+                        <button type="button" class="close text-dark" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle mr-1"></i> Anda dapat menyesuaikan gaya bahasa dan parameter AI. Hindari mengubah variabel di dalam kurung kurawal seperti <code>{NAMA_PAKET}</code>.
+                        </div>
+                        <div class="form-group">
+                            <label>Template Prompt Spesifikasi Teknis</label>
+                            <textarea id="promptTextarea" name="prompt" class="form-control" rows="15" required>{{ $aiPrompt->prompt ?? '' }}</textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-between">
+                        <button type="button" class="btn btn-outline-secondary" onclick="restoreDefaultPrompt()"><i class="fas fa-undo mr-1"></i> Gunakan Default</button>
+                        <div>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                            <button type="submit" class="btn btn-warning"><i class="fas fa-save mr-1"></i> Simpan Prompt</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     @push('js')
     <script>
     
@@ -744,7 +768,17 @@ document.addEventListener('click', function(e) {
 
                 // 3. Eksekusi Form ke Backend Laravel
                 document.getElementById('btn-generate-ai').disabled = true;
-                document.getElementById('generate-ai-form').submit();
+                
+                const mainForm = document.getElementById('form-meta-update');
+                if (mainForm) {
+                    const actionInput = document.createElement('input');
+                    actionInput.type = 'hidden';
+                    actionInput.name = 'action';
+                    actionInput.value = 'generate_ai';
+                    mainForm.appendChild(actionInput);
+                    
+                    mainForm.submit();
+                }
 
             });
 
@@ -766,6 +800,31 @@ document.addEventListener('click', function(e) {
                 .format(value);
 
     });
+
+    // --- FITUR 1: DISABLE INPUT GARANSI JIKA "TIDAK ADA GARANSI" ---
+    function toggleGaransiInputs() {
+        let isAdaGaransi = $('#garansi_ada').is(':checked');
+        if(isAdaGaransi) {
+            $('input[name="garansi_nilai"]').prop('disabled', false).prop('required', true);
+            $('select[name="garansi_satuan"]').prop('disabled', false).prop('required', true);
+        } else {
+            $('input[name="garansi_nilai"]').prop('disabled', true).prop('required', false).val('');
+            $('select[name="garansi_satuan"]').prop('disabled', true).prop('required', false).val('hari');
+        }
+    }
+
+    $('input[name="ada_garansi"]').on('change', toggleGaransiInputs);
+    toggleGaransiInputs(); // Jalankan saat pertama kali halaman dimuat
+
+    // --- FITUR 2: RESTORE DEFAULT PROMPT ---
+    const defaultAIPrompt = @json(config('ai_prompts.technical_specification'));
+
+    function restoreDefaultPrompt() {
+        if(confirm('Anda yakin ingin mengembalikan prompt ke versi default (Rekomendasi Pro)?\\n\\nPrompt saat ini akan terhapus dan digantikan dengan yang standar.')){
+            document.getElementById('promptTextarea').value = defaultAIPrompt;
+        }
+    }
+
     </script>
     <style>
 /* AI PRO CHECKLIST STYLES */

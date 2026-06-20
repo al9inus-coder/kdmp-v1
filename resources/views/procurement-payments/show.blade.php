@@ -48,20 +48,12 @@
                                 <td class="font-weight-bold text-success">Rp {{ number_format($process->nilai_kontrak, 0, ',', '.') }}</td>
                             </tr>
                             <tr>
-                                <th>Nomor BAST</th>
-                                <td>{{ $payment->nomor_bast ?? '-' }}</td>
+                                <th>No. dan Tanggal BAST</th>
+                                <td>{{ $payment->nomor_bast ?? '-' }} tanggal {{ optional($payment->tanggal_bast)->translatedFormat('d F Y') }}</td>
                             </tr>
                             <tr>
-                                <th>Tanggal BAST</th>
-                                <td>{{ optional($payment->tanggal_bast)->translatedFormat('d F Y') }}</td>
-                            </tr>
-                            <tr>
-                                <th>Nomor Invoice</th>
-                                <td>{{ $payment->nomor_invoice ?? '-' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Tanggal Invoice</th>
-                                <td>{{ optional($payment->tanggal_invoice)->translatedFormat('d F Y') }}</td>
+                                <th>No. dan Tanggal Invoice</th>
+                                <td>{{ $payment->nomor_invoice ?? '-' }} tanggal {{ optional($payment->tanggal_invoice)->translatedFormat('d F Y') }}</td>
                             </tr>
                             <tr>
                                 <th>Data PPTK</th>
@@ -87,20 +79,12 @@
                     <table class="table table-striped table-hover mb-0">
                         <tbody>
                             <tr>
-                                <th style="width: 40%">Nomor BAP</th>
-                                <td><span class="badge badge-info">BAP-{{ $payment->nomor_bap ?? '-' }}</span></td>
+                                <th style="width: 40%">No. dan Tanggal BAP</th>
+                                <td>{{ $payment->nomor_bap ?? '-' }}/BAP/{{ $procurementPackage->package->program->kode ?? '2.11.04' }}/PERKIMPLH-C tanggal {{ optional($payment->tanggal_bap)->translatedFormat('d F Y') }}</td>
                             </tr>
                             <tr>
-                                <th>Tanggal BAP</th>
-                                <td>{{ optional($payment->tanggal_bap)->translatedFormat('d F Y') }}</td>
-                            </tr>
-                            <tr>
-                                <th>Nomor Kwitansi</th>
-                                <td><span class="badge badge-info">KWT-{{ $payment->nomor_kwitansi ?? '-' }}</span></td>
-                            </tr>
-                            <tr>
-                                <th>Tanggal Kwitansi</th>
-                                <td>{{ optional($payment->tanggal_kwitansi)->translatedFormat('d F Y') }}</td>
+                                <th>No. dan Tanggal Kwitansi</th>
+                                <td>{{ $payment->nomor_kwitansi ?? '-' }}/KWT/{{ $procurementPackage->package->program->kode ?? '2.11.04' }}/PERKIMPLH-C tanggal {{ optional($payment->tanggal_kwitansi)->translatedFormat('d F Y') }}</td>
                             </tr>
                             <tr>
                                 <th>Status Non-PKP</th>
@@ -140,7 +124,7 @@
         </div>
     </div>
 
-    <a href="{{ route('procurement-packages.show', $procurementPackage->package) }}" class="btn btn-default mb-4">
-        <i class="fas fa-arrow-left mr-1"></i> Kembali ke Rincian Paket
+    <a href="{{ route('procurement-packages.execution', $procurementPackage->package) }}?action=edit-payment" class="btn btn-default mb-4">
+        <i class="fas fa-arrow-left mr-1"></i> Kembali ke Tahap Pelaksanaan
     </a>
 @stop

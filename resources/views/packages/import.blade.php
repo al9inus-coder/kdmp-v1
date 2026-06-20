@@ -30,8 +30,11 @@
     @endif
 
     <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">Upload File Excel RUP</h3>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="card-title mb-0">Upload File Excel RUP</h3>
+            <a href="{{ asset('template/template_import_rup.xlsx') }}" class="btn btn-sm btn-outline-success" download>
+                <i class="fas fa-download"></i> Download Template
+            </a>
         </div>
         <div class="card-body">
             <form action="{{ route('packages.import.store') }}"

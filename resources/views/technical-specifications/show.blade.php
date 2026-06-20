@@ -70,7 +70,7 @@
         min-height: 297mm;
         margin: auto;
         
-        /* Padding standar dokumen resmi (Atas: 3cm, Kanan: 2cm, Bawah: 2cm, Kiri: 3cm) */
+        /* Padding dokumen */
         padding: 13mm 15mm 15mm 15mm;
         background: #fff;
         
@@ -136,6 +136,24 @@
 .ttd-area{
     margin-top:50px;
 }
+
+/* KOTAK INFO AI FLOATING */
+.ai-floating-info {
+    position: fixed;
+    right: 30px;
+    top: 150px;
+    width: 280px;
+    z-index: 1000;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(220,53,69,0.15);
+    background-color: #fff9fa;
+    border-left: 5px solid #dc3545;
+    padding: 15px;
+    border-top: 1px solid #ffe8eb;
+    border-right: 1px solid #ffe8eb;
+    border-bottom: 1px solid #ffe8eb;
+}
+
 
 .doc-mini-table{
     width:100%;
@@ -206,6 +224,8 @@
     @csrf
     @method('PUT')
     @php
+    $skpd = \App\Models\Skpd::first();
+
     $jangkaWaktuJenis = [
         'pengiriman_barang' => 'Pengiriman Barang',
         'pekerjaan_jasa' => 'Pekerjaan Jasa',
@@ -228,15 +248,11 @@
         ($procurementPackage->package->jenis_pengadaan ?? '')
         === 'Barang';
 
-    $jangkaWaktuNilai =
-        $procurementPackage->jangka_waktu_nilai ?? null;
-
-    $jangkaWaktuSatuan =
-        $procurementPackage->jangka_waktu_satuan ?? 'hari';
-
-    $garansiText = $technicalSpecification->garansi_nilai
-        ? $technicalSpecification->garansi_nilai.' '.ucfirst((string) $technicalSpecification->garansi_satuan)
-        : ($technicalSpecification->garansi ?? '-');
+    $jangkaWaktuNilai = $procurementPackage->jangka_waktu_nilai ?? null;
+    $jangkaWaktuSatuan = $procurementPackage->jangka_waktu_satuan ?? 'hari';
+    $garansiNilai = $procurementPackage->garansi_nilai;
+    $garansiSatuan = $procurementPackage->garansi_satuan;
+    $layananPurnaJual = $procurementPackage->layanan_purna_jual;
 @endphp
     @if(session('success'))
         <div class="alert alert-success">
@@ -246,6 +262,21 @@
     @endif
     {{-- DOKUMEN VIEWER (A4) --}}
     <div class="document-viewer">
+        {{-- INFORMASI PENGGUNAAN AI (FLOATING RIGHT) --}}
+        <div class="ai-floating-info d-none d-lg-block" id="aiFloatingInfo">
+            <button type="button" class="close" aria-label="Close" onclick="document.getElementById('aiFloatingInfo').remove();" style="position: absolute; right: 10px; top: 10px; font-size: 1.2rem; outline: none;">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            <div class="d-flex align-items-center mb-2">
+                <i class="fas fa-robot text-danger" style="font-size: 1.5rem;"></i>
+                <h6 class="mb-0 ml-2 font-weight-bold text-danger">Asisten AI</h6>
+            </div>
+            <p class="text-muted mb-0" style="font-size: 0.85rem; line-height: 1.4;">
+                Bagian <strong>Latar Belakang, Maksud, Tujuan, Target, Sasaran,</strong> dan <strong>Uraian Pekerjaan</strong> adalah draf otomatis AI.<br><br>
+                Silakan <strong>ketik/ubah langsung</strong> di dalam kotak teks untuk menyesuaikannya dengan kebutuhan pasti Anda.
+            </p>
+        </div>
+
 {{-- TOMBOL FLOATING (OTOMATIS TERKURUNG DI DALAM VIEWER) --}}
         <div class="viewer-sticky-actions">
             {{-- Bagian Kiri: Tombol Kembali --}}
@@ -266,7 +297,7 @@
                 Ref. Harga <i class="fas fa-arrow-right mr-1"></i>
             </a>
 
-            <button type="button" class="btn btn-secondary btn-floating" onclick="printPdf('{{ route('technical-specifications.print', $technicalSpecification) }}')">
+            <button type="button" class="btn btn-secondary btn-floating" onclick="printPdf('{{ route('technical-specifications.print', $technicalSpecification) }}', this)">
                 Cetak PDF <i class="fas fa-print mr-1"></i>
             </button>
         </div>
@@ -284,9 +315,7 @@
                         PEMERINTAH KABUPATEN BENGKAYANG
                     </div>
                     <div class="kop-dinas">
-                        DINAS PERUMAHAN RAKYAT DAN KAWASAN
-                        PERMUKIMAN, PERTANAHAN DAN
-                        LINGKUNGAN HIDUP
+                       {{ strtoupper($skpd->nama) }}
                     </div>
                     <div class="kop-alamat">
                         Jalan Guna Baru Trans Rangkang,
@@ -316,7 +345,7 @@
                 </div>
                 <div class="col-8">
                     <textarea
-                        rows="4"
+                        rows="8"
                         class="doc-editor"
                         name="latar_belakang">{{ $technicalSpecification->latar_belakang }}</textarea>
                 </div>
@@ -330,10 +359,30 @@
                     :
                 </div>
                 <div class="col-8">
-                    <textarea
-                        rows="4"
-                        class="doc-editor"
-                        name="maksud">{{ $technicalSpecification->maksud }}</textarea>
+                    <div class="mb-2">
+                        <div class="d-flex">
+                            <div class="mr-2 pt-1">a.</div>
+                            <div class="flex-grow-1">
+                                Maksud<br>
+                                <textarea
+                                    rows="3"
+                                    class="doc-editor w-100"
+                                    name="maksud[Maksud]">{{ $technicalSpecification->maksud['Maksud'] ?? '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="d-flex">
+                            <div class="mr-2 pt-1">b.</div>
+                            <div class="flex-grow-1">
+                                Tujuan<br>
+                                <textarea
+                                    rows="3"
+                                    class="doc-editor w-100"
+                                    name="maksud[Tujuan]">{{ $technicalSpecification->maksud['Tujuan'] ?? '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -345,10 +394,30 @@
                     :
                 </div>
                 <div class="col-8">
-                    <textarea
-                        rows="4"
-                        class="doc-editor"
-                        name="target_sasaran">{{ $technicalSpecification->target_sasaran }}</textarea>
+                    <div class="mb-2">
+                        <div class="d-flex">
+                            <div class="mr-2 pt-1">a.</div>
+                            <div class="flex-grow-1">
+                                Target<br>
+                                <textarea
+                                    rows="3"
+                                    class="doc-editor w-100"
+                                    name="target_sasaran[Target]">{{ $technicalSpecification->target_sasaran['Target'] ?? '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="d-flex">
+                            <div class="mr-2 pt-1">b.</div>
+                            <div class="flex-grow-1">
+                                Sasaran<br>
+                                <textarea
+                                    rows="3"
+                                    class="doc-editor w-100"
+                                    name="target_sasaran[Sasaran]">{{ $technicalSpecification->target_sasaran['Sasaran'] ?? '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -388,9 +457,7 @@
                         <div class="col-1">b.</div>
                         <div class="col-11">
                             Perangkat Daerah:<br>
-                            DINAS PERUMAHAN RAKYAT DAN KAWASAN
-                            PERMUKIMAN, PERTANAHAN DAN
-                            LINGKUNGAN HIDUP
+                            {{ $skpd->nama }}
                         </div>
                     </div>
                     <div class="row">
@@ -512,9 +579,8 @@
                     :
                 </div>
                 <div class="col-8">
-                    Kantor Dinas Perumahan Rakyat dan Kawasan
-                    Permukiman, Pertanahan dan Lingkungan Hidup
-                    Kabupaten Bengkayang,
+                    Kantor {{ $skpd->nama }}
+                    Kabupaten Bengkayang<br>
                     Jalan Guna Baru Trans Rangkang,
                     Bengkayang, Kalimantan Barat,
                     Kode Pos 79211.
@@ -610,14 +676,14 @@
                         @if($isBarang)
 
                             Jangka waktu penyerahan/pengiriman barang adalah
-                            <strong>{{ $jangkaWaktuNilai }}</strong>
+                            {{ $jangkaWaktuNilai }}
                             {{ $jangkaWaktuSatuan }}
                             kalender terhitung sejak tanggal penandatanganan kontrak.
 
                         @else
 
                             Jangka waktu pelaksanaan pekerjaan adalah
-                            <strong>{{ $jangkaWaktuNilai }}</strong>
+                            {{ $jangkaWaktuNilai }}
                             {{ $jangkaWaktuSatuan }}
                             kalender terhitung sejak tanggal penandatanganan kontrak.
 
@@ -651,9 +717,9 @@
                             </td>
                             <td width="20">:</td>
                             <td>
-                                @if($procurementPackage->garansi_nilai)
-                                    {{ $procurementPackage->garansi_nilai }}
-                                    {{ $procurementPackage->garansi_satuan }}
+                                @if($garansiNilai)
+                                    {{ $garansiNilai }}
+                                    {{ $garansiSatuan }}
                                 @else
                                     -
                                 @endif
@@ -667,7 +733,7 @@
                             </td>
                             <td width="20">:</td>
                             <td>
-                                {{ $procurementPackage->layanan_purna_jual ? 'Ada' : 'Tidak Ada' }}
+                                {{ $layananPurnaJual ? 'Ada' : 'Tidak Ada' }}
                             </td>
                         </tr>
                     </table>
@@ -717,16 +783,7 @@
                             <td>{{ $procurementPackage->package->fiscalYear?->tahun }}</td>
                         </tr>
                         <tr>
-                            <td class="label-col">&nbsp;&nbsp;&nbsp;Waktu awal</td>
-                            <td class="colon-col">:</td>
-                            <td>
-                                Jangka waktu penyerahan/pengiriman barang adalah
-                                {{ $jangkaWaktuNilai }} {{ $jangkaWaktuSatuan }}
-                                terhitung sejak tanggal penandatanganan kontrak.
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="label-col">&nbsp;&nbsp;&nbsp;Catatan</td>
+                            <td class="label-col">&nbsp;&nbsp;&nbsp;Tanggal Batas Akhir Pengiriman</td>
                             <td class="colon-col">:</td>
                             <td>
                                 Barang diterima paling lambat tanggal
@@ -735,7 +792,14 @@
                                             $procurementPackage->tanggal_barang_diterima
                                         )->translatedFormat('d F Y')
                                         : '-'
-                                    }}
+                                    }}                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">&nbsp;&nbsp;&nbsp;Catatan</td>
+                            <td class="colon-col">:</td>
+                            <td>
+                                Barang dapat dikirim sejak tanggal penandatangan surat pesanan sampai batas waktu yang ditetapkan
                             </td>
                         </tr>
                     </table>
@@ -762,17 +826,17 @@
             </div>
 
             <div class="mt-3 text-justify">
-                Demikian Spesifikasi Teknis ini dibuat sebagai acuan dalam pelaksanaan paket pekerjaan Pengadaan Barang.
+                Demikian Spesifikasi Teknis ini dibuat sebagai acuan dalam pelaksanaan paket pekerjaan Pengadaan Barang/Jasa.
             </div>
 
             <div class="row mt-4">
                 <div class="col-5"></div>
                     <div class="col-7 text-center">
                         Bengkayang,
-                        {{ now()->translatedFormat('d F Y') }}
+                        {{ $technicalSpecification->tanggal ? \Carbon\Carbon::parse($technicalSpecification->tanggal)->translatedFormat('d F Y') : now()->translatedFormat('d F Y') }}
                         <br><br>
                         Pejabat Pembuat Komitmen<br>
-                        Dinas Perumahan Rakyat dan Kawasan Permukiman, Pertanahan dan Lingkungan Hidup<br>
+                        {{ $skpd->nama }}<br>
                         Kabupaten Bengkayang
                         <br><br><br><br>
                         <strong><u>
@@ -791,19 +855,56 @@
 
 @push('js')
 <script>
-function printPdf(url) {
-    let iframe = document.getElementById('print-iframe');
-    if (!iframe) {
-        iframe = document.createElement('iframe');
-        iframe.id = 'print-iframe';
-        iframe.style.display = 'none';
-        document.body.appendChild(iframe);
-    }
-    iframe.src = url;
-    iframe.onload = function() {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-    };
+function printPdf(url, btn) {
+    const form = document.querySelector('form[action*="technical-specifications"]');
+    
+    // Provide visual feedback
+    const originalText = btn.innerHTML;
+    btn.innerHTML = 'Menyimpan... <i class="fas fa-spinner fa-spin mr-1"></i>';
+    btn.disabled = true;
+
+    // Use FormData to collect all fields including the inline edits
+    const formData = new FormData(form);
+
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Network response was not ok');
+        return response.json();
+    })
+    .then(data => {
+        // Form is saved, now load iframe for printing
+        let iframe = document.getElementById('print-iframe');
+        if (!iframe) {
+            iframe = document.createElement('iframe');
+            iframe.id = 'print-iframe';
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+        }
+        // Cache buster to ensure the latest data is loaded
+        const cacheBuster = url.includes('?') ? '&t=' + Date.now() : '?t=' + Date.now();
+        iframe.src = url + cacheBuster;
+        
+        iframe.onload = function() {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+            // Restore button
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        };
+    })
+    .catch(error => {
+        console.error('Gagal menyimpan otomatis:', error);
+        alert('Terjadi kesalahan saat menyimpan data otomatis. Silakan klik tombol Simpan secara manual.');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
 }
 </script>
 @endpush

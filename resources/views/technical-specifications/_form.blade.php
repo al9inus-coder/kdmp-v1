@@ -7,7 +7,6 @@
     ])->filter()->unique()->implode("\n\n");
 
     $targetSasaran = $technicalSpecification->target_sasaran ?? $technicalSpecification->sasaran;
-    $jangkaWaktu = $technicalSpecification->jangka_waktu ?? $technicalSpecification->jangka_waktu_hari;
     $items = old('items');
 
     if ($items === null) {
@@ -53,26 +52,58 @@
             @enderror
         </div>
 
-        <div class="form-group">
-            <label for="maksud">Maksud dan Tujuan</label>
-            <textarea id="maksud"
-                      name="maksud"
-                      rows="4"
-                      class="form-control @error('maksud') is-invalid @enderror">{{ old('maksud', $maksudTujuan) }}</textarea>
-            @error('maksud')
-                <div class="invalid-feedback">{{ $message }}</div>
-            @enderror
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="maksud_maksud">Maksud</label>
+                    <textarea id="maksud_maksud"
+                              name="maksud[Maksud]"
+                              rows="4"
+                              class="form-control @error('maksud.Maksud') is-invalid @enderror">{{ old('maksud.Maksud', $technicalSpecification->maksud['Maksud'] ?? '') }}</textarea>
+                    @error('maksud.Maksud')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="maksud_tujuan">Tujuan</label>
+                    <textarea id="maksud_tujuan"
+                              name="maksud[Tujuan]"
+                              rows="4"
+                              class="form-control @error('maksud.Tujuan') is-invalid @enderror">{{ old('maksud.Tujuan', $technicalSpecification->maksud['Tujuan'] ?? '') }}</textarea>
+                    @error('maksud.Tujuan')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
         </div>
 
-        <div class="form-group">
-            <label for="target_sasaran">Target dan Sasaran</label>
-            <textarea id="target_sasaran"
-                      name="target_sasaran"
-                      rows="4"
-                      class="form-control @error('target_sasaran') is-invalid @enderror">{{ old('target_sasaran', $targetSasaran) }}</textarea>
-            @error('target_sasaran')
-                <div class="invalid-feedback">{{ $message }}</div>
-            @enderror
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="target_sasaran_target">Target</label>
+                    <textarea id="target_sasaran_target"
+                              name="target_sasaran[Target]"
+                              rows="4"
+                              class="form-control @error('target_sasaran.Target') is-invalid @enderror">{{ old('target_sasaran.Target', $technicalSpecification->target_sasaran['Target'] ?? '') }}</textarea>
+                    @error('target_sasaran.Target')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="target_sasaran_sasaran">Sasaran</label>
+                    <textarea id="target_sasaran_sasaran"
+                              name="target_sasaran[Sasaran]"
+                              rows="4"
+                              class="form-control @error('target_sasaran.Sasaran') is-invalid @enderror">{{ old('target_sasaran.Sasaran', $technicalSpecification->target_sasaran['Sasaran'] ?? '') }}</textarea>
+                    @error('target_sasaran.Sasaran')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
         </div>
 
         <div class="form-group">
@@ -102,7 +133,7 @@
                            name="jangka_waktu"
                            min="0"
                            class="form-control @error('jangka_waktu') is-invalid @enderror"
-                           value="{{ old('jangka_waktu', $jangkaWaktu) }}">
+                           value="{{ old('jangka_waktu', $procurementPackage->jangka_waktu_nilai) }}">
                     @error('jangka_waktu')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -115,10 +146,10 @@
                             name="jangka_waktu_jenis"
                             class="form-control @error('jangka_waktu_jenis') is-invalid @enderror">
                         <option value="">Pilih Jenis</option>
-                        <option value="pengiriman_barang" @selected(old('jangka_waktu_jenis', $technicalSpecification->jangka_waktu_jenis) === 'pengiriman_barang')>
+                        <option value="pengiriman_barang" @selected(old('jangka_waktu_jenis', $procurementPackage->jangka_waktu_satuan === 'hari' ? 'pengiriman_barang' : '') === 'pengiriman_barang')>
                             Pengiriman Barang
                         </option>
-                        <option value="pekerjaan_jasa" @selected(old('jangka_waktu_jenis', $technicalSpecification->jangka_waktu_jenis) === 'pekerjaan_jasa')>
+                        <option value="pekerjaan_jasa" @selected(old('jangka_waktu_jenis', $procurementPackage->jangka_waktu_satuan !== 'hari' && $procurementPackage->jangka_waktu_satuan ? 'pekerjaan_jasa' : '') === 'pekerjaan_jasa')>
                             Pekerjaan Jasa
                         </option>
                     </select>
@@ -138,7 +169,7 @@
                            name="garansi_nilai"
                            min="0"
                            class="form-control @error('garansi_nilai') is-invalid @enderror"
-                           value="{{ old('garansi_nilai', $technicalSpecification->garansi_nilai) }}">
+                           value="{{ old('garansi_nilai', $procurementPackage->garansi_nilai) }}">
                     @error('garansi_nilai')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -151,9 +182,9 @@
                             name="garansi_satuan"
                             class="form-control @error('garansi_satuan') is-invalid @enderror">
                         <option value="">Pilih Satuan</option>
-                        <option value="hari" @selected(old('garansi_satuan', $technicalSpecification->garansi_satuan) === 'hari')>Hari</option>
-                        <option value="bulan" @selected(old('garansi_satuan', $technicalSpecification->garansi_satuan) === 'bulan')>Bulan</option>
-                        <option value="tahun" @selected(old('garansi_satuan', $technicalSpecification->garansi_satuan) === 'tahun')>Tahun</option>
+                        <option value="hari" @selected(old('garansi_satuan', $procurementPackage->garansi_satuan) === 'hari')>Hari</option>
+                        <option value="bulan" @selected(old('garansi_satuan', $procurementPackage->garansi_satuan) === 'bulan')>Bulan</option>
+                        <option value="tahun" @selected(old('garansi_satuan', $procurementPackage->garansi_satuan) === 'tahun')>Tahun</option>
                     </select>
                     @error('garansi_satuan')
                         <div class="invalid-feedback">{{ $message }}</div>
@@ -169,8 +200,8 @@
                     <select id="layanan_purna_jual"
                             name="layanan_purna_jual"
                             class="form-control @error('layanan_purna_jual') is-invalid @enderror">
-                        <option value="0" @selected((string) old('layanan_purna_jual', (int) $technicalSpecification->layanan_purna_jual) === '0')>Tidak</option>
-                        <option value="1" @selected((string) old('layanan_purna_jual', (int) $technicalSpecification->layanan_purna_jual) === '1')>Ya</option>
+                        <option value="0" @selected((string) old('layanan_purna_jual', (int) $procurementPackage->layanan_purna_jual) === '0')>Tidak</option>
+                        <option value="1" @selected((string) old('layanan_purna_jual', (int) $procurementPackage->layanan_purna_jual) === '1')>Ya</option>
                     </select>
                     @error('layanan_purna_jual')
                         <div class="invalid-feedback">{{ $message }}</div>
@@ -185,7 +216,7 @@
                             class="form-control @error('jenis_kontrak') is-invalid @enderror">
                         <option value="">Pilih Jenis Kontrak</option>
                         @foreach(['Harga Satuan', 'Lump Sum', 'Gabungan Lump Sum dan Harga Satuan', 'Payung', 'Turnkey', 'Kontrak Kinerja'] as $jenisKontrak)
-                            <option value="{{ $jenisKontrak }}" @selected(old('jenis_kontrak', $technicalSpecification->jenis_kontrak) === $jenisKontrak)>
+                            <option value="{{ $jenisKontrak }}" @selected(old('jenis_kontrak', $procurementPackage->jenis_kontrak) === $jenisKontrak)>
                                 {{ $jenisKontrak }}
                             </option>
                         @endforeach
@@ -212,7 +243,7 @@
                            id="nama_ppk"
                            name="nama_ppk"
                            class="form-control @error('nama_ppk') is-invalid @enderror"
-                           value="{{ old('nama_ppk', $technicalSpecification->nama_ppk) }}">
+                           value="{{ old('nama_ppk', $procurementPackage->nama_ppk) }}">
                     @error('nama_ppk')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -225,7 +256,7 @@
                            id="pangkat_gol_ppk"
                            name="pangkat_gol_ppk"
                            class="form-control @error('pangkat_gol_ppk') is-invalid @enderror"
-                           value="{{ old('pangkat_gol_ppk', $technicalSpecification->pangkat_gol_ppk) }}">
+                           value="{{ old('pangkat_gol_ppk', $procurementPackage->pangkat_gol_ppk) }}">
                     @error('pangkat_gol_ppk')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -241,7 +272,7 @@
                            id="nip_ppk"
                            name="nip_ppk"
                            class="form-control @error('nip_ppk') is-invalid @enderror"
-                           value="{{ old('nip_ppk', $technicalSpecification->nip_ppk) }}">
+                           value="{{ old('nip_ppk', $procurementPackage->nip_ppk) }}">
                     @error('nip_ppk')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -254,7 +285,7 @@
                            id="npwp_instansi"
                            name="npwp_instansi"
                            class="form-control @error('npwp_instansi') is-invalid @enderror"
-                           value="{{ old('npwp_instansi', $technicalSpecification->npwp_instansi) }}">
+                           value="{{ old('npwp_instansi', $procurementPackage->npwp_instansi) }}">
                     @error('npwp_instansi')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -270,7 +301,7 @@
                            id="no_telp_ppk"
                            name="no_telp_ppk"
                            class="form-control @error('no_telp_ppk') is-invalid @enderror"
-                           value="{{ old('no_telp_ppk', $technicalSpecification->no_telp_ppk) }}">
+                           value="{{ old('no_telp_ppk', $procurementPackage->no_telp_ppk) }}">
                     @error('no_telp_ppk')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -283,7 +314,7 @@
                            id="email_ppk"
                            name="email_ppk"
                            class="form-control @error('email_ppk') is-invalid @enderror"
-                           value="{{ old('email_ppk', $technicalSpecification->email_ppk) }}">
+                           value="{{ old('email_ppk', $procurementPackage->email_ppk) }}">
                     @error('email_ppk')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror

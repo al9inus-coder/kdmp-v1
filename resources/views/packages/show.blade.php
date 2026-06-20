@@ -112,6 +112,7 @@
     <div>
 
         @if($package->status === 'draft')
+            @can('submit', $package)
             <form action="{{ route('packages.submit', $package) }}"
                   method="POST"
                   style="display:inline;">
@@ -121,6 +122,27 @@
                     Ajukan
                 </button>
             </form>
+            @endcan
+        @endif
+
+        @if($package->status === 'submitted')
+            @can('approve', $package)
+            <form action="{{ route('packages.approve', $package) }}" method="POST" style="display:inline;">
+                @csrf
+                <button type="submit" class="btn btn-success">
+                    Setujui
+                </button>
+            </form>
+            @endcan
+
+            @can('returnToDraft', $package)
+            <form action="{{ route('packages.return', $package) }}" method="POST" style="display:inline;">
+                @csrf
+                <button type="submit" class="btn btn-danger">
+                    Kembalikan ke Draft
+                </button>
+            </form>
+            @endcan
         @endif
 
         @if($package->status === 'approved' && !$package->procurementPackage)
@@ -147,11 +169,23 @@
     <div>
 
         @if(in_array($package->status, ['needs_review', 'draft']))
+            @can('update', $package)
             <a href="{{ route('packages.edit', $package) }}"
                class="btn btn-warning">
                 Edit / Lengkapi
             </a>
+            @endcan
         @endif
+
+        @can('delete', $package)
+        <form action="{{ route('packages.destroy', $package) }}" method="POST" style="display:inline;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus paket ini?');">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="btn btn-danger">
+                Hapus
+            </button>
+        </form>
+        @endcan
 
         <a href="{{ route('packages.index') }}"
            class="btn btn-default">

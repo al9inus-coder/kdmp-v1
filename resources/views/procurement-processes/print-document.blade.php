@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cetak SSKK & SSUK</title>
+    @php
+        $skpd = \App\Models\Skpd::first();
+    @endphp
     <style>
         @page {
             size: A4;
@@ -107,7 +110,7 @@
 
     </style>
 </head>
-<body onload="window.print()">
+<body>
 
     {{-- PAGE 1: SSKK --}}
     <div class="document-paper">
@@ -115,7 +118,7 @@
             SYARAT-SYARAT KHUSUS KONTRAK (SSKK) PESANAN
         </div>
         
-        @include('procurement-processes.partials.sskk', ['procurementPackage' => $procurementPackage, 'process' => $process])
+        @include('procurement-processes.partials.sskk', ['procurementPackage' => $procurementPackage, 'process' => $process, 'skpd' => $skpd])
     </div>
 
     {{-- PAGE 2: SSUK --}}
@@ -127,7 +130,7 @@
                 </td>
                 <td style="text-align: center; padding-bottom: 10px;">
                     <div class="kop-pemerintah">PEMERINTAH KABUPATEN BENGKAYANG</div>
-                    <div class="kop-dinas">DINAS PERUMAHAN RAKYAT DAN KAWASAN<br>PERMUKIMAN, PERTANAHAN DAN LINGKUNGAN HIDUP</div>
+                    <div class="kop-dinas">{{ strtoupper($skpd->nama) }}</div>
                     <div class="kop-alamat">Jalan Guna Baru Trans Rangkang, Bengkayang, Kalimantan Barat, Kode Pos : 79211<br>Situs : bengkayangkab.go.id</div>
                 </td>
             </tr>
@@ -137,7 +140,7 @@
             SYARAT-SYARAT UMUM KONTRAK (SSUK) PESANAN
         </div>
         
-        @include('procurement-processes.partials.ssuk', ['procurementPackage' => $procurementPackage, 'process' => $process])
+        @include('procurement-processes.partials.ssuk', ['procurementPackage' => $procurementPackage, 'process' => $process, 'skpd' => $skpd])
     </div>
 
 </body>

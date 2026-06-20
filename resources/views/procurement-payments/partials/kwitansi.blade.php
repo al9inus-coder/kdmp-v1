@@ -64,7 +64,7 @@
                     <td style="vertical-align: top; padding-top: 20px;">
                         Penyedia<br>
                         <strong>{{ strtoupper($process->nama_penyedia) }}</strong><br>
-                        <br><br><br><br>
+                        <br><br><br><br><br>
                         <u style="font-weight: bold;">{{ strtoupper($process->nama_pic) }}</u><br>
                         {{ $process->jabatan_pic ?? 'Pemilik Toko' }}
                     </td>

@@ -5,7 +5,7 @@
         <td class="col-value">
             Alamat Para Pihak sebagai berikut
             <table class="inner-table mt-2">
-                <tr><td class="inner-label">Satuan Kerja PPK</td><td class="col-colon">:</td><td>Dinas Perumahan Rakyat dan Kawasan Permukiman, Pertanahan dan Lingkungan Hidup Kabupaten Bengkayang</td></tr>
+                <tr><td class="inner-label">Satuan Kerja PPK</td><td class="col-colon">:</td><td>{{ $skpd->nama }} Kabupaten Bengkayang</td></tr>
                 <tr><td class="inner-label">Nama</td><td class="col-colon">:</td><td>{{ $procurementPackage->nama_ppk }}</td></tr>
                 <tr><td class="inner-label">Alamat</td><td class="col-colon">:</td><td>Jl. Guna Baru Trans Rangkang, Kel. Sebalo Kec. Bengkayang</td></tr>
                 <tr><td class="inner-label">Telepon</td><td class="col-colon">:</td><td>{{ $procurementPackage->no_telp_ppk ?? '-' }}</td></tr>

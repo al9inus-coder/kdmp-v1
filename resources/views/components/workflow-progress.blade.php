@@ -64,8 +64,8 @@ $percentage = min(100, max(0, ($currentStatusIndex / (count($steps) - 1)) * 100)
     .workflow-step {
         position: relative;
         text-align: center;
-        position: relative;
         z-index: 2;
+        flex: 1;
     }
 
     .workflow-step-icon {
@@ -124,6 +124,7 @@ $percentage = min(100, max(0, ($currentStatusIndex / (count($steps) - 1)) * 100)
             margin-bottom: 20px;
             width: 100%;
             text-align: left;
+            flex: none;
         }
         .workflow-step-icon {
             margin: 0 15px 0 0;
@@ -156,7 +157,7 @@ $percentage = min(100, max(0, ($currentStatusIndex / (count($steps) - 1)) * 100)
     </div>
     <div class="card-body pt-2 pb-4">
         <div class="workflow-stepper">
-            <div class="progress position-absolute workflow-progress-line" style="top: 24px; left: 5%; right: 5%; height: 4px; z-index: 0; background-color: #e9ecef; border-radius: 0;">
+            <div class="progress position-absolute workflow-progress-line" style="top: 24px; left: 10%; right: 10%; height: 4px; z-index: 0; background-color: #e9ecef; border-radius: 0;">
                 <div class="progress-bar bg-success" role="progressbar" style="width: {{ $percentage }}%;" aria-valuenow="{{ $percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
             </div>
             

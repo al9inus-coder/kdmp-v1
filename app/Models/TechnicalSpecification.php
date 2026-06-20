@@ -14,26 +14,13 @@ class TechnicalSpecification extends Model
         'maksud',
         'target_sasaran',
         'uraian_pekerjaan',
-        'jangka_waktu',
-        'jangka_waktu_jenis',
-        'garansi_nilai',
-        'garansi_satuan',
-        'layanan_purna_jual',
-        'jenis_kontrak',
-        'npwp_instansi',
-        'nama_ppk',
-        'pangkat_gol_ppk',
-        'nip_ppk',
-        'no_telp_ppk',
-        'email_ppk',
+        'tanggal',
         'created_by',
         'updated_by',
     ];
 
     protected $casts = [
-        'jangka_waktu' => 'integer',
-        'garansi_nilai' => 'integer',
-        'layanan_purna_jual' => 'boolean',
+        'tanggal' => 'date',
     ];
 
     public function procurementPackage(): BelongsTo
@@ -54,5 +41,35 @@ class TechnicalSpecification extends Model
     public function items(): HasMany
     {
         return $this->hasMany(TechnicalSpecificationItem::class)->orderBy('urutan');
+    }
+
+    public function getMaksudAttribute($value)
+    {
+        if (empty($value)) return ['Maksud' => '', 'Tujuan' => ''];
+        $decoded = json_decode($value, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            return array_merge(['Maksud' => '', 'Tujuan' => ''], $decoded);
+        }
+        return ['Maksud' => $value, 'Tujuan' => ''];
+    }
+
+    public function setMaksudAttribute($value)
+    {
+        $this->attributes['maksud'] = is_array($value) ? json_encode($value) : $value;
+    }
+
+    public function getTargetSasaranAttribute($value)
+    {
+        if (empty($value)) return ['Target' => '', 'Sasaran' => ''];
+        $decoded = json_decode($value, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            return array_merge(['Target' => '', 'Sasaran' => ''], $decoded);
+        }
+        return ['Target' => $value, 'Sasaran' => ''];
+    }
+
+    public function setTargetSasaranAttribute($value)
+    {
+        $this->attributes['target_sasaran'] = is_array($value) ? json_encode($value) : $value;
     }
 }

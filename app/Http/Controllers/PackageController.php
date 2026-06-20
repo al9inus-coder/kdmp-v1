@@ -8,18 +8,24 @@ use App\Models\FiscalYear;
 use App\Models\Package;
 use App\Models\Program;
 use App\Models\SubActivity;
+use App\Models\Activity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Gate;
 
 class PackageController extends Controller
 {
     public function index(Request $request): View
     {
+        Gate::authorize('viewAny', Package::class);
+
         $search = $request->q;
         $status = $request->status;
         $programId = $request->program_id;
+        $activityId = $request->activity_id;
+        $subActivityId = $request->sub_activity_id;
         $fiscalYearId = $request->fiscal_year_id;
 
         $programs = Program::query()
@@ -27,6 +33,12 @@ class PackageController extends Controller
             ->get();
         $fiscalYears = FiscalYear::query()
             ->orderBy('tahun', 'desc')
+            ->get();
+        $activities = Activity::query()
+            ->orderBy('kode')
+            ->get();
+        $subActivities = SubActivity::query()
+            ->orderBy('kode')
             ->get();
 
         $packages = Package::query()
@@ -52,6 +64,12 @@ class PackageController extends Controller
             ->when($programId !== null && $programId !== '', function ($query) use ($programId) {
                 $query->where('program_id', $programId);
             })
+            ->when($activityId !== null && $activityId !== '', function ($query) use ($activityId) {
+                $query->where('activity_id', $activityId);
+            })
+            ->when($subActivityId !== null && $subActivityId !== '', function ($query) use ($subActivityId) {
+                $query->where('sub_activity_id', $subActivityId);
+            })
             ->orderByDesc('id')
             ->paginate(15)
             ->withQueryString();
@@ -59,16 +77,22 @@ class PackageController extends Controller
         return view('packages.index', compact(
             'packages',
             'programs',
+            'activities',
+            'subActivities',
             'fiscalYears',
             'search',
             'status',
             'programId',
+            'activityId',
+            'subActivityId',
             'fiscalYearId'
         ));
     }
 
     public function create(): View
     {
+        Gate::authorize('create', Package::class);
+
         $package = new Package([
             'status' => 'draft',
         ]);
@@ -93,6 +117,8 @@ class PackageController extends Controller
 
 public function store(PackageRequest $request): RedirectResponse
 {
+    Gate::authorize('create', Package::class);
+
     $validated = $request->validated();
 
     $subActivity = null;
@@ -134,6 +160,8 @@ public function store(PackageRequest $request): RedirectResponse
 
     public function show(Package $package): View
     {
+        Gate::authorize('view', $package);
+
         $package->load([
             'fiscalYear',
             'program',
@@ -149,6 +177,8 @@ public function store(PackageRequest $request): RedirectResponse
 
     public function byProgram(Request $request, Program $program): View
     {
+        Gate::authorize('viewAny', Package::class);
+
         $search = $request->q;
         $status = $request->status;
         $fiscalYearId = $request->fiscal_year_id;
@@ -191,6 +221,8 @@ public function store(PackageRequest $request): RedirectResponse
 
     public function edit(Package $package): View
     {
+        Gate::authorize('update', $package);
+
         $fiscalYears = FiscalYear::query()
             ->orderBy('tahun', 'desc')
             ->get();
@@ -217,6 +249,8 @@ public function update(
     Package $package
 ): RedirectResponse
 {
+    Gate::authorize('update', $package);
+
     $validated = $request->validated();
 
     $subActivity = null;
@@ -257,6 +291,8 @@ public function update(
 
     public function submit(Package $package): RedirectResponse
     {
+        Gate::authorize('submit', $package);
+
         if ($package->status !== 'draft') {
             return back()->with(
                 'error',
@@ -278,6 +314,8 @@ public function update(
 
     public function approve(Package $package): RedirectResponse
     {
+        Gate::authorize('approve', $package);
+
         if ($package->status !== 'submitted') {
             return back()->with(
                 'error',
@@ -299,6 +337,8 @@ public function update(
 
     public function returnToDraft(Package $package): RedirectResponse
     {
+        Gate::authorize('returnToDraft', $package);
+
         if ($package->status !== 'submitted') {
             return back()->with(
                 'error',
@@ -354,5 +394,16 @@ public function update(
             'success',
             'Data persiapan pengadaan berhasil disimpan.'
         );
+    }
+
+    public function destroy(Package $package): RedirectResponse
+    {
+        Gate::authorize('delete', $package);
+
+        $package->delete();
+
+        return redirect()
+            ->route('packages.index')
+            ->with('success', 'Paket Pekerjaan berhasil dihapus.');
     }
 }

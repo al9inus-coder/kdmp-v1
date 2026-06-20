@@ -281,19 +281,19 @@
                         <div class="row">
                             <div class="col-md-6 form-group">
                                 <label>Nomor BAST <span class="text-danger">*</span></label>
-                                <input type="text" name="nomor_bast" class="form-control" required>
+                                <input type="text" name="nomor_bast" class="form-control" value="{{ $payment->nomor_bast ?? '' }}" required>
                             </div>
                             <div class="col-md-6 form-group">
                                 <label>Tanggal BAST <span class="text-danger">*</span></label>
-                                <input type="date" name="tanggal_bast" id="paymentBastDate" class="form-control" required>
+                                <input type="date" name="tanggal_bast" id="paymentBastDate" class="form-control" value="{{ optional($payment->tanggal_bast)->format('Y-m-d') }}" required>
                             </div>
                             <div class="col-md-6 form-group">
                                 <label>Nomor Invoice <span class="text-danger">*</span></label>
-                                <input type="text" name="nomor_invoice" class="form-control" required>
+                                <input type="text" name="nomor_invoice" class="form-control" value="{{ $payment->nomor_invoice ?? '' }}" required>
                             </div>
                             <div class="col-md-6 form-group">
                                 <label>Tanggal Invoice <span class="text-danger">*</span></label>
-                                <input type="date" name="tanggal_invoice" class="form-control" required>
+                                <input type="date" name="tanggal_invoice" class="form-control" value="{{ optional($payment->tanggal_invoice)->format('Y-m-d') }}" required>
                             </div>
                         </div>
 
@@ -302,15 +302,15 @@
                             <div class="col-md-6 form-group">
                                 <label>Nomor BAP (Angka Saja) <span class="text-danger">*</span></label>
                                 <div class="input-group">
+                                    <input type="number" name="nomor_bap" class="form-control" value="{{ $payment->nomor_bap ?? '' }}" required>
                                     <div class="input-group-prepend">
-                                        <span class="input-group-text">BAP-</span>
-                                    </div>
-                                    <input type="number" name="nomor_bap" class="form-control" required>
+                                        <span class="input-group-text">/BAP/{{ $procurementPackage->package->program->kode ?? '2.11.04' }}/PERKIMPLH-C</span>
+                                    </div>                                
                                 </div>
                             </div>
                             <div class="col-md-6 form-group">
                                 <label>Tanggal BAP <span class="text-danger">*</span></label>
-                                <input type="date" name="tanggal_bap" class="form-control" required>
+                                <input type="date" name="tanggal_bap" class="form-control" value="{{ optional($payment->tanggal_bap)->format('Y-m-d') }}" required>
                             </div>
                         </div>
 
@@ -319,15 +319,15 @@
                             <div class="col-md-6 form-group">
                                 <label>Nomor Kwitansi (Angka Saja) <span class="text-danger">*</span></label>
                                 <div class="input-group">
+                                    <input type="number" name="nomor_kwitansi" class="form-control" value="{{ $payment->nomor_kwitansi ?? '' }}" required>
                                     <div class="input-group-prepend">
-                                        <span class="input-group-text">KWT-</span>
+                                        <span class="input-group-text">/KWT/{{ $procurementPackage->package->program->kode ?? '2.11.04' }}/PERKIMPLH-C</span>
                                     </div>
-                                    <input type="number" name="nomor_kwitansi" class="form-control" required>
                                 </div>
                             </div>
                             <div class="col-md-6 form-group">
                                 <label>Tanggal Kwitansi <span class="text-danger">*</span></label>
-                                <input type="date" name="tanggal_kwitansi" class="form-control" required>
+                                <input type="date" name="tanggal_kwitansi" class="form-control" value="{{ optional($payment->tanggal_kwitansi)->format('Y-m-d') }}" required>
                             </div>
                         </div>
 
@@ -335,15 +335,15 @@
                         <div class="row">
                             <div class="col-md-4 form-group">
                                 <label>Nama PPTK <span class="text-danger">*</span></label>
-                                <input type="text" name="nama_pptk" class="form-control" placeholder="Contoh: ALGINUS, S.Si" required>
+                                <input type="text" name="nama_pptk" class="form-control" value="{{ $payment->nama_pptk ?? '' }}" placeholder="Contoh: ALGINUS, S.Si" required>
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>NIP PPTK <span class="text-danger">*</span></label>
-                                <input type="text" name="nip_pptk" class="form-control" required>
+                                <input type="text" name="nip_pptk" class="form-control" value="{{ $payment->nip_pptk ?? '' }}" required>
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Pangkat / Golongan <span class="text-danger">*</span></label>
-                                <input type="text" name="pangkat_golongan_pptk" class="form-control" placeholder="Contoh: Penata Tingkat I / III/d" required>
+                                <input type="text" name="pangkat_golongan_pptk" class="form-control" value="{{ $payment->pangkat_golongan_pptk ?? '' }}" placeholder="Contoh: Penata Tingkat I / III/d" required>
                             </div>
                         </div>
 
@@ -351,18 +351,18 @@
                         <div class="row">
                             <div class="col-md-6 form-group">
                                 <label>Tanggal Ringkasan Kontrak <span class="text-danger">*</span></label>
-                                <input type="date" name="tanggal_ringkasan_kontrak" class="form-control" required>
+                                <input type="date" name="tanggal_ringkasan_kontrak" class="form-control" value="{{ optional($payment->tanggal_ringkasan_kontrak)->format('Y-m-d') }}" required>
                             </div>
                             <div class="col-md-6 form-group">
                                 <label>Surat Pernyataan Non-PKP</label>
                                 <div class="custom-control custom-switch mt-1">
-                                    <input type="checkbox" class="custom-control-input" id="is_non_pkp" name="is_non_pkp" value="1" onchange="toggleNonPkpDate()">
+                                    <input type="checkbox" class="custom-control-input" id="is_non_pkp" name="is_non_pkp" value="1" onchange="toggleNonPkpDate()" {{ old('is_non_pkp', $payment->is_non_pkp ?? false) ? 'checked' : '' }}>
                                     <label class="custom-control-label" for="is_non_pkp">Lampirkan Surat Non-PKP</label>
                                 </div>
                             </div>
-                            <div class="col-md-6 form-group" id="nonPkpDateGroup" style="display: none;">
+                            <div class="col-md-6 form-group" id="nonPkpDateGroup" style="{{ old('is_non_pkp', $payment->is_non_pkp ?? false) ? '' : 'display: none;' }}">
                                 <label>Tanggal Surat Non-PKP <span class="text-danger">*</span></label>
-                                <input type="date" name="tanggal_non_pkp" id="tanggal_non_pkp" class="form-control">
+                                <input type="date" name="tanggal_non_pkp" id="tanggal_non_pkp" class="form-control" value="{{ optional($payment->tanggal_non_pkp)->format('Y-m-d') }}">
                             </div>
                         </div>
                     </div>
@@ -478,6 +478,10 @@
             });
 
             calendar.render();
+            
+            @if(request('action') === 'edit-payment')
+                $('#paymentModal').modal('show');
+            @endif
         });
     </script>
 @endpush

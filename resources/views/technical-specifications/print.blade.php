@@ -245,15 +245,11 @@
         ($procurementPackage->package->jenis_pengadaan ?? '')
         === 'Barang';
 
-    $jangkaWaktuNilai =
-        $procurementPackage->jangka_waktu_nilai ?? null;
-
-    $jangkaWaktuSatuan =
-        $procurementPackage->jangka_waktu_satuan ?? 'hari';
-
-    $garansiText = $technicalSpecification->garansi_nilai
-        ? $technicalSpecification->garansi_nilai.' '.ucfirst((string) $technicalSpecification->garansi_satuan)
-        : ($technicalSpecification->garansi ?? '-');
+    $jangkaWaktuNilai = $procurementPackage->jangka_waktu_nilai ?? null;
+    $jangkaWaktuSatuan = $procurementPackage->jangka_waktu_satuan ?? 'hari';
+    $garansiNilai = $procurementPackage->garansi_nilai;
+    $garansiSatuan = $procurementPackage->garansi_satuan;
+    $layananPurnaJual = $procurementPackage->layanan_purna_jual;
 @endphp
 
     {{-- DOKUMEN VIEWER (A4) --}}
@@ -321,22 +317,29 @@
 
                     <td class="colon-col">:</td>
 
-                    <td style="
-                        white-space: pre-line;
-                        text-align: justify;
-                    ">{{ $technicalSpecification->maksud }}
+                    <td class="isi-col">
+                        <table class="admin-table">
+                            <tr>
+                                <td style="width:20px; vertical-align:top;">a.</td>
+                                <td style="text-align:justify;">
+                                    <strong>Maksud</strong><br>
+                                    <div style="white-space: pre-wrap;">{{ $technicalSpecification->maksud['Maksud'] ?? '' }}</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" style="height:8px;"></td>
+                            </tr>
+                            <tr>
+                                <td style="vertical-align:top;">b.</td>
+                                <td style="text-align:justify;">
+                                    <strong>Tujuan</strong><br>
+                                    <div style="white-space: pre-wrap;">{{ $technicalSpecification->maksud['Tujuan'] ?? '' }}</div>
+                                </td>
+                            </tr>
+                        </table>
                     </td>
                 </tr>
             </table>
-            @php
-            $targetSasaran = json_decode(
-                $technicalSpecification->target_sasaran ?? '{}',
-                true
-            );
-
-            $target = $targetSasaran['Target'] ?? '-';
-            $sasaran = $targetSasaran['Sasaran'] ?? '-';
-            @endphp
             
             <table class="admin-table section-row">
                     <tr>
@@ -346,22 +349,20 @@
                     <td class="isi-col">
                         <table class="admin-table">
                             <tr>
-                                <td style="width:20px;">a.</td>
-                                <td style="width:60px;">Target</td>
-                                <td style="width:15px;">:</td>
+                                <td style="width:20px; vertical-align:top;">a.</td>
                                 <td style="text-align:justify;">
-                                    {{ $target }}
+                                    <strong>Target</strong><br>
+                                    <div style="white-space: pre-wrap;">{{ $technicalSpecification->target_sasaran['Target'] ?? '' }}</div>
                                 </td>
                             </tr>
                             <tr>
-                                <td colspan="4" style="height:8px;"></td>
+                                <td colspan="2" style="height:8px;"></td>
                             </tr>
                             <tr>
-                                <td>b.</td>
-                                <td>Sasaran</td>
-                                <td>:</td>
+                                <td style="vertical-align:top;">b.</td>
                                 <td style="text-align:justify;">
-                                    {{ $sasaran }}
+                                    <strong>Sasaran</strong><br>
+                                    <div style="white-space: pre-wrap;">{{ $technicalSpecification->target_sasaran['Sasaran'] ?? '' }}</div>
                                 </td>
                             </tr>
                         </table>
@@ -684,9 +685,9 @@
                                 <td style="width:180px;">Garansi Barang</td>
                                 <td style="width:15px;">:</td>
                                 <td>
-                                    @if($procurementPackage->garansi_nilai)
-                                        {{ $procurementPackage->garansi_nilai }}
-                                        {{ $procurementPackage->garansi_satuan }}
+                                    @if($garansiNilai)
+                                        {{ $garansiNilai }}
+                                        {{ $garansiSatuan }}
                                     @else
                                         -
                                     @endif
@@ -698,7 +699,7 @@
                                 <td>Layanan Purna Jual</td>
                                 <td>:</td>
                                 <td>
-                                    {{ $procurementPackage->layanan_purna_jual ? 'Ada' : 'Tidak Ada' }}
+                                    {{ $layananPurnaJual ? 'Ada' : 'Tidak Ada' }}
                                 </td>
                             </tr>
 
@@ -842,7 +843,7 @@
                     <td style="width:45%; text-align:center; vertical-align:top;">
 
                         Bengkayang,
-                        {{ now()->translatedFormat('d F Y') }}
+                        {{ $technicalSpecification->tanggal ? \Carbon\Carbon::parse($technicalSpecification->tanggal)->translatedFormat('d F Y') : now()->translatedFormat('d F Y') }}
                         <br><br>
 
                         Pejabat Pembuat Komitmen<br>

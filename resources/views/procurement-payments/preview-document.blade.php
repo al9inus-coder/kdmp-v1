@@ -16,6 +16,41 @@
 @stop
 
 @section('content')
+@push('css')
+<style>
+    .document-paper {
+        max-width: 850px;
+        width: 100%;
+        min-height: 1100px; /* Approximate A4 height proportion */
+        padding: 40px;
+        margin: 0 auto;
+        background: white;
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+        font-family: Arial, Helvetica, sans-serif;
+        color: #000;
+        position: relative;
+    }
+    
+    /* Custom styling for inactive tabs */
+    .nav-tabs .nav-link:not(.active) {
+        color: #495057;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-bottom: 0;
+        margin-right: 5px;
+    }
+    .nav-tabs .nav-link:not(.active):hover {
+        background-color: #e2e6ea;
+    }
+    .nav-tabs .nav-link.active {
+        border: 1px solid #dee2e6;
+        border-bottom-color: transparent;
+        background-color: #fff;
+        color: #007bff;
+        margin-right: 5px;
+    }
+</style>
+@endpush
 <div class="row">
     <!-- Kolom Aksi (Kiri) -->
     <div class="col-md-3">
@@ -75,52 +110,55 @@
     <div class="col-md-9">
         <div class="card shadow">
             <div class="card-header bg-white p-3 border-bottom">
-                <ul class="nav nav-pills nav-fill" id="document-tabs" role="tablist">
+                <ul class="nav nav-tabs border-0" id="document-tabs" role="tablist">
                     <li class="nav-item">
-                        <a class="nav-link active font-weight-bold" id="tab-bap" data-toggle="pill" href="#content-bap" role="tab" style="border-radius: 50px; padding: 12px;"><i class="fas fa-file-signature mr-2"></i> BAP</a>
+                        <a class="nav-link active font-weight-bold" id="tab-bap" data-toggle="tab" href="#content-bap" role="tab" style="padding: 12px 25px;"><i class="fas fa-file-signature mr-2"></i> BAP</a>
                     </li>
-                    <li class="nav-item mx-2">
-                        <a class="nav-link font-weight-bold bg-light text-dark" id="tab-kwitansi" data-toggle="pill" href="#content-kwitansi" role="tab" style="border-radius: 50px; padding: 12px;"><i class="fas fa-file-invoice-dollar mr-2"></i> Kwitansi</a>
+                    <li class="nav-item">
+                        <a class="nav-link font-weight-bold" id="tab-kwitansi" data-toggle="tab" href="#content-kwitansi" role="tab" style="padding: 12px 25px;"><i class="fas fa-file-invoice-dollar mr-2"></i> Kwitansi</a>
                     </li>
                     @if($payment->is_non_pkp)
-                    <li class="nav-item mx-2">
-                        <a class="nav-link font-weight-bold bg-light text-dark" id="tab-non-pkp" data-toggle="pill" href="#content-non-pkp" role="tab" style="border-radius: 50px; padding: 12px;"><i class="fas fa-file-contract mr-2"></i> Surat Non-PKP</a>
+                    <li class="nav-item">
+                        <a class="nav-link font-weight-bold" id="tab-non-pkp" data-toggle="tab" href="#content-non-pkp" role="tab" style="padding: 12px 25px;"><i class="fas fa-file-contract mr-2"></i> Surat Non-PKP</a>
                     </li>
                     @endif
-                    <li class="nav-item mx-2">
-                        <a class="nav-link font-weight-bold bg-light text-dark" id="tab-ringkasan" data-toggle="pill" href="#content-ringkasan" role="tab" style="border-radius: 50px; padding: 12px;"><i class="fas fa-list-alt mr-2"></i> Ringkasan Kontrak</a>
+                    <li class="nav-item">
+                        <a class="nav-link font-weight-bold" id="tab-ringkasan" data-toggle="tab" href="#content-ringkasan" role="tab" style="padding: 12px 25px;"><i class="fas fa-list-alt mr-2"></i> Ringkasan Kontrak</a>
                     </li>
                 </ul>
             </div>
-            <div class="card-body bg-light p-4" style="min-height: 100vh;">
+            @php
+                $skpd = \App\Models\Skpd::first();
+            @endphp
+            <div class="card-body bg-light p-4" style="min-height: 100vh; overflow-x: auto;">
                 <div class="tab-content" id="document-tabsContent">
                     {{-- Kertas 1: BAP --}}
                     <div class="tab-pane fade show active" id="content-bap" role="tabpanel">
-                        <div class="document-paper shadow-sm bg-white mb-5" style="padding: 1cm; width: 100%; border: 1px solid #ccc; font-family: Arial, Helvetica, sans-serif; color: #000; position: relative;">
-                            @include('procurement-payments.partials.bap', ['procurementPackage' => $procurementPackage, 'process' => $process, 'payment' => $payment])
+                        <div class="document-paper mb-5">
+                            @include('procurement-payments.partials.bap', ['procurementPackage' => $procurementPackage, 'process' => $process, 'payment' => $payment, 'skpd' => $skpd])
                         </div>
                     </div>
 
                     {{-- Kertas 2: Kwitansi --}}
                     <div class="tab-pane fade" id="content-kwitansi" role="tabpanel">
-                        <div class="document-paper shadow-sm bg-white mb-5" style="padding: 1cm; width: 100%; border: 1px solid #ccc; font-family: Arial, Helvetica, sans-serif; color: #000; position: relative;">
-                            @include('procurement-payments.partials.kwitansi', ['procurementPackage' => $procurementPackage, 'process' => $process, 'payment' => $payment])
+                        <div class="document-paper mb-5">
+                            @include('procurement-payments.partials.kwitansi', ['procurementPackage' => $procurementPackage, 'process' => $process, 'payment' => $payment, 'skpd' => $skpd])
                         </div>
                     </div>
 
                     {{-- Kertas 3: Non PKP (Jika Ya) --}}
                     @if($payment->is_non_pkp)
                     <div class="tab-pane fade" id="content-non-pkp" role="tabpanel">
-                        <div class="document-paper shadow-sm bg-white mb-5" style="padding: 1cm; width: 100%; border: 1px solid #ccc; font-family: Arial, Helvetica, sans-serif; color: #000; position: relative;">
-                            @include('procurement-payments.partials.non-pkp', ['procurementPackage' => $procurementPackage, 'process' => $process, 'payment' => $payment])
+                        <div class="document-paper mb-5">
+                            @include('procurement-payments.partials.non-pkp', ['procurementPackage' => $procurementPackage, 'process' => $process, 'payment' => $payment, 'skpd' => $skpd])
                         </div>
                     </div>
                     @endif
 
                     {{-- Kertas 4: Ringkasan Kontrak --}}
                     <div class="tab-pane fade" id="content-ringkasan" role="tabpanel">
-                        <div class="document-paper shadow-sm bg-white mb-5" style="padding: 0.5cm 0.5cm 1cm 0.5cm; width: 100%; border: 1px solid #ccc; font-family: Arial, Helvetica, sans-serif; color: #000; position: relative;">
-                            @include('procurement-payments.partials.ringkasan-kontrak', ['procurementPackage' => $procurementPackage, 'process' => $process, 'payment' => $payment])
+                        <div class="document-paper mb-5">
+                            @include('procurement-payments.partials.ringkasan-kontrak', ['procurementPackage' => $procurementPackage, 'process' => $process, 'payment' => $payment, 'skpd' => $skpd])
                         </div>
                     </div>
                 </div>

@@ -16,12 +16,15 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Gate;
 use Throwable;
 
 class ImportBatchController extends Controller
 {
     public function index(): View
     {
+        Gate::authorize('viewAny', ImportBatch::class);
+
         $batches = ImportBatch::query()
             ->with(['fiscalYear', 'creator'])
             ->whereIn('status', [
@@ -46,6 +49,7 @@ class ImportBatchController extends Controller
 
     public function store(Request $request, XlsxReader $xlsxReader): RedirectResponse
     {
+        Gate::authorize('create', ImportBatch::class);
        
         $validated = $request->validate([
             'file' => ['required', 'file', 'mimes:xlsx', 'max:10240'],
@@ -563,6 +567,8 @@ class ImportBatchController extends Controller
 
     public function show(ImportBatch $batch)
     {
+        Gate::authorize('view', $batch);
+
         $batch->load([
             'fiscalYear',
             'creator',

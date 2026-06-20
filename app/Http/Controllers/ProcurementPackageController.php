@@ -74,11 +74,52 @@ class ProcurementPackageController extends Controller
             'procurementRequest',
         ]);
 
+        // Auto-fill logic dari Master SKPD (bersifat snapshot)
+        $skpd = \App\Models\Skpd::first();
+        if ($skpd) {
+            $changed = false;
+            
+            if (empty($procurementPackage->nama_ppk) && !empty($skpd->nama_ppk)) {
+                $procurementPackage->nama_ppk = $skpd->nama_ppk;
+                $changed = true;
+            }
+            if (empty($procurementPackage->nip_ppk) && !empty($skpd->nip_ppk)) {
+                $procurementPackage->nip_ppk = $skpd->nip_ppk;
+                $changed = true;
+            }
+            if (empty($procurementPackage->pangkat_gol_ppk) && !empty($skpd->pangkat_ppk)) {
+                $procurementPackage->pangkat_gol_ppk = $skpd->pangkat_ppk;
+                $changed = true;
+            }
+            if (empty($procurementPackage->no_telp_ppk) && !empty($skpd->telepon_ppk)) {
+                $procurementPackage->no_telp_ppk = $skpd->telepon_ppk;
+                $changed = true;
+            }
+            if (empty($procurementPackage->email_ppk) && !empty($skpd->email_ppk)) {
+                $procurementPackage->email_ppk = $skpd->email_ppk;
+                $changed = true;
+            }
+            if (empty($procurementPackage->user_ppk) && !empty($skpd->username_ppk)) {
+                $procurementPackage->user_ppk = $skpd->username_ppk;
+                $changed = true;
+            }
+            if (empty($procurementPackage->npwp_instansi) && !empty($skpd->npwp_dinas)) {
+                $procurementPackage->npwp_instansi = $skpd->npwp_dinas;
+                $changed = true;
+            }
+
+            if ($changed) {
+                $procurementPackage->save();
+            }
+        }
+
         $procurementPackage->loadCount('priceReferences');
+
+        $aiPrompt = \App\Models\AiPrompt::where('code', 'technical_specification')->where('is_active', true)->first();
 
         return view(
             'procurement-packages.show',
-            compact('procurementPackage')
+            compact('procurementPackage', 'aiPrompt')
         );
     }
 
@@ -93,23 +134,29 @@ class ProcurementPackageController extends Controller
             'user_ppk' => 'nullable|string|max:255',
             'npwp_instansi' => 'nullable|string|max:255',
             'jenis_kontrak' => 'nullable|string|max:255',
-            'jangka_waktu_nilai' => 'nullable|integer|min:0',
-            'jangka_waktu_satuan' => 'nullable|in:hari,bulan,tahun',
+            'jangka_waktu_nilai' => 'nullable|integer|min:1',
+            'jangka_waktu_satuan' => 'nullable|string|in:hari,minggu,bulan,tahun',
             'tanggal_barang_diterima' => 'nullable|date',
             'ada_garansi' => 'nullable|boolean',    
-            'garansi_nilai' => 'nullable|integer',
-            'garansi_satuan' => 'nullable|in:hari,bulan,tahun',
+            'garansi_nilai' => 'nullable|integer|min:1',
+            'garansi_satuan' => 'nullable|string|in:hari,minggu,bulan,tahun',
             'layanan_purna_jual' => 'nullable|boolean',
+            'tanggal_spesifikasi' => 'nullable|date',
             'items' => 'nullable|array',
-            'items.*.nama_barang_jasa' => 'required_with:items|string|max:255',
+            'items.*.nama_barang_jasa' => 'nullable|string|max:255',
             'items.*.spesifikasi' => 'nullable|string',
-            'items.*.volume' => 'nullable|numeric',
-            'items.*.satuan' => 'nullable|string|max:50',
-            'items.*.harga_satuan_dpa' => 'nullable|string|max:50',
+            'items.*.volume' => 'nullable|numeric|min:0',
+            'items.*.satuan' => 'nullable|string|max:255',
+            'items.*.harga_satuan_dpa' => 'nullable|string',
             'items.*.pdn' => 'nullable|boolean',
             'items.*.tkdn' => 'nullable|numeric|min:0|max:100',
             'items.*.kode_mak' => 'nullable|string|max:255',
         ]);
+
+        if (isset($data['ada_garansi']) && !$data['ada_garansi']) {
+            $data['garansi_nilai'] = null;
+            $data['garansi_satuan'] = null;
+        }
 
         $procurementPackage->update($data);
 
@@ -120,6 +167,11 @@ class ProcurementPackageController extends Controller
                 'procurement_package_id' => $procurementPackage->id,
             ]);
         }
+
+        // Sync contract info to TechnicalSpecification
+        $technicalSpecification->update([
+            'tanggal' => $data['tanggal_spesifikasi'] ?? null,
+        ]);
 
         $technicalSpecification->items()->delete();
 
@@ -137,11 +189,35 @@ class ProcurementPackageController extends Controller
             ]);
         }
 
+        if ($request->input('action') === 'generate_ai') {
+            return app()->call([$this, 'generateDraft'], ['procurementPackage' => $procurementPackage]);
+        }
+
         return back()->with('success', 'Informasi paket berhasil disimpan.');
+    }
+
+    public function updatePrompt(Request $request, ProcurementPackage $procurementPackage)
+    {
+        $request->validate([
+            'prompt' => 'required|string',
+        ]);
+
+        \App\Models\AiPrompt::updateOrCreate(
+            ['code' => 'technical_specification'],
+            [
+                'name' => 'Spesifikasi Teknis',
+                'prompt' => $request->prompt,
+                'is_active' => true,
+            ]
+        );
+
+        return back()->with('success', 'Prompt AI berhasil diperbarui.');
     }
 
     public function generateDraft(ProcurementPackage $procurementPackage, OpenAIService $openai)
     {
+        set_time_limit(120);
+
         $procurementPackage->load([
             'package.program',
             'package.activity',
@@ -168,30 +244,33 @@ class ProcurementPackageController extends Controller
             ];
         }
 
-        $prompt = $this->buildTechnicalSpecificationPrompt($package, $items);
-        
-//        dd($prompt);
-        $draft = $openai->generateTechnicalSpecificationJson($prompt);
+        try {
+            $prompt = $this->buildTechnicalSpecificationPrompt($package, $technicalSpecification, $items);
+            
+            $draft = $openai->generateTechnicalSpecificationJson($prompt);
 
-        $technicalSpecification->update([
-            'latar_belakang' => $draft['latar_belakang'] ?? null,
-            'maksud' => $draft['maksud'] ?? null,
-            'target_sasaran' => $draft['target_sasaran'] ?? null,
-            'uraian_pekerjaan' => $draft['uraian_pekerjaan'] ?? null,
-        ]);
+            $technicalSpecification->update([
+                'latar_belakang' => $draft['latar_belakang'] ?? null,
+                'maksud' => $draft['maksud'] ?? null,
+                'target_sasaran' => $draft['target_sasaran'] ?? null,
+                'uraian_pekerjaan' => $draft['uraian_pekerjaan'] ?? null,
+            ]);
 
-        return redirect()
-            ->route(
-                'procurement-packages.technical-specifications.show',
-                $procurementPackage->package
-            )
-            ->with(
-                'success',
-                'Dokumen Spesifikasi Teknis berhasil dibuat.'
-            );
+            return redirect()
+                ->route(
+                    'procurement-packages.technical-specifications.show',
+                    $procurementPackage->package
+                )
+                ->with(
+                    'success',
+                    'Dokumen Spesifikasi Teknis berhasil dibuat.'
+                );
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal menghasilkan dokumen. Server AI mungkin sedang sibuk. Detail: ' . $e->getMessage());
+        }
     }
 
-    private function buildTechnicalSpecificationPrompt(Package $package, array $items): string
+    private function buildTechnicalSpecificationPrompt(Package $package, \App\Models\TechnicalSpecification $technicalSpecification, array $items): string
     {
         $skpd = Skpd::first();
         $promptTemplate = AiPrompt::where(
@@ -201,6 +280,10 @@ class ProcurementPackageController extends Controller
             'is_active',
             true
         )->first();
+        
+        if (!$promptTemplate) {
+            throw new \Exception('Template Prompt untuk Spesifikasi Teknis belum diatur atau tidak aktif.');
+        }
         $template = $promptTemplate->prompt;
         $prompt = str_replace(
             [
@@ -213,7 +296,7 @@ class ProcurementPackageController extends Controller
                 '{ITEMS}',
             ],
             [
-                $skpd->nama_skpd,
+                $skpd->nama,
                 $package->nama_paket,
                 $package->program?->nama,
                 $package->activity?->nama,
@@ -223,6 +306,31 @@ class ProcurementPackageController extends Controller
             ],
             $template
         );  
+
+        // Informasi Garansi
+        $garansiText = "Tidak ada garansi yang diperlukan untuk paket ini.";
+        if (!empty($technicalSpecification->garansi_nilai)) {
+            $garansiText = "Penyedia WAJIB memberikan garansi selama " . $technicalSpecification->garansi_nilai . " " . ucfirst($technicalSpecification->garansi_satuan) . ".";
+        }
+
+        $prompt .= "\n\nINFORMASI GARANSI:\n";
+        $prompt .= $garansiText . "\n";
+        $prompt .= "Pada bagian 'uraian_pekerjaan', JIKA ADA GARANSI, wajib sebutkan kewajiban garansi tersebut secara eksplisit. JIKA TIDAK ADA GARANSI, JANGAN PERNAH MENYEBUTKAN KATA GARANSI DALAM URAIAN PEKERJAAN ATAU BAGIAN MANAPUN.\n";
+
+        $prompt .= "\n\nABAIKAN FORMAT JSON PADA INSTRUKSI DI ATAS. ANDA WAJIB MENGEMBALIKAN PURE JSON DENGAN FORMAT BERIKUT:\n";
+        $prompt .= "{\n";
+        $prompt .= '  "latar_belakang": "...",' . "\n";
+        $prompt .= '  "maksud": {' . "\n";
+        $prompt .= '    "Maksud": "...",' . "\n";
+        $prompt .= '    "Tujuan": "..."' . "\n";
+        $prompt .= '  },' . "\n";
+        $prompt .= '  "target_sasaran": {' . "\n";
+        $prompt .= '    "Target": "...",' . "\n";
+        $prompt .= '    "Sasaran": "..."' . "\n";
+        $prompt .= '  },' . "\n";
+        $prompt .= '  "uraian_pekerjaan": "..."' . "\n";
+        $prompt .= "}";
+
         return $prompt;
     }
 }

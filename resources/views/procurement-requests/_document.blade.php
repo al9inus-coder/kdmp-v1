@@ -52,7 +52,7 @@
         {{ $procurementRequest->nama_pejabat_pengadaan }}
     </strong>
     <br>
-    Pejabat Pengadaan {{ $skpd->nama }}
+    Pejabat Pengadaan {{ $skpd->singkatan ?? $skpd->nama }}
     <br>
     di -
     <div class="ml-4">
@@ -63,8 +63,7 @@
 <div style="text-align:justify">
     Dengan hormat,
     <br>
-    Dalam rangka memenuhi kebutuhan barang dan jasa pada di lingkungan Dinas Perumahan Rakyat dan Kawasan Permukiman, 
-    Pertanahan dan Lingkungan Hidup Kabupaten Bengkayang, maka dengan ini diminta kepada Saudara untuk dapat melaksanakan 
+    Dalam rangka memenuhi kebutuhan barang dan jasa pada di lingkungan {{ $skpd->nama }}, maka dengan ini diminta kepada Saudara untuk dapat melaksanakan 
     proses pengadaan barang/jasa melalui metode {{ $procurementPackage->package->metode_pengadaan }} dengan data paket sebagai berikut :
 </div>
 
@@ -179,11 +178,11 @@
 </div>
 
 <div class="mt-2 text-justify">Demikian Surat Permohonan ini disampaikan, atas perhatian dan kerjasamanya diucapkan terima kasih.</div>
-<div class="mt-2 row ttd-area">
+<div class="row ttd-area">
     <div class="col-5"></div>
     <div class="col-7 text-center">
             Pejabat Pembuat Komitmen<br>
-            Dinas Perumahan Rakyat dan Kawasan Permukiman, Pertanahan dan Lingkungan Hidup<br>
+            {{ $skpd->nama }}<br>
             Kabupaten Bengkayang
             <br><br><br><br>
             <strong><u>{{ $procurementPackage->nama_ppk ?? '-' }}</u></strong>

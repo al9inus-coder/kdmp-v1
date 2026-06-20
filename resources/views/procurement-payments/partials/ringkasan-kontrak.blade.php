@@ -3,7 +3,17 @@
         <h4 style="margin-bottom: 5px; font-weight: bold;">RINGKASAN KONTRAK</h4>
     </div>
 
-    <table style="width: 100%; line-height: 1.6; border-collapse: collapse;" border="1">
+    <style>
+        .rk-table {
+            width: 100%; 
+            line-height: 1.6; 
+            border-collapse: collapse;
+        }
+        .rk-table, .rk-table th, .rk-table td {
+            border: 1px solid black;
+        }
+    </style>
+    <table class="rk-table">
         <tr>
             <td style="width: 30px; text-align: center; vertical-align: top; padding: 5px;">1.</td>
             <td style="width: 200px; vertical-align: top; padding: 5px;">Nomor dan Tanggal DPA</td>

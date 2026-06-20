@@ -167,6 +167,9 @@
     <!-- Kolom Preview (Kanan) -->
     <div class="col-md-9">
         <div class="card shadow">
+            @php
+                $skpd = \App\Models\Skpd::first();
+            @endphp
             <div class="card-header bg-dark text-white">
                 <h3 class="card-title"><i class="fas fa-eye mr-2"></i> Tampilan Pratinjau Halaman Cetak</h3>
             </div>
@@ -177,29 +180,24 @@
                     <div style="font-weight: bold; text-align: center; font-size: 14pt; margin-bottom: 20px;">
                         SYARAT-SYARAT KHUSUS KONTRAK (SSKK) PESANAN
                     </div>
-                    @include('procurement-processes.partials.sskk', ['procurementPackage' => $procurementPackage, 'process' => $process])
+                    @include('procurement-processes.partials.sskk', ['procurementPackage' => $procurementPackage, 'process' => $process, 'skpd' => $skpd])
                 </div>
 
                 {{-- Kertas 2: SSUK --}}
-                <div class="document-paper shadow-sm bg-white mb-5" style="padding: 2cm 2cm 2cm 2.5cm; width: 100%; border: 1px solid #ccc; font-family: 'Times New Roman', Times, serif; color: #000; position: relative;">
-                    <table style="width: 100%; border-bottom: 2px solid #000; margin-bottom: 15px;">
-                        <tr>
-                            <td style="width: 100px; text-align: center; padding-bottom: 10px;">
-                                <img src="{{ asset('images/logo-bengkayang.png') }}" alt="Logo" style="width: 70px;">
-                            </td>
-                            <td style="text-align: center; padding-bottom: 10px;">
-                                <div style="font-size: 14pt; font-weight: bold;">PEMERINTAH KABUPATEN BENGKAYANG</div>
-                                <div style="font-size: 16pt; font-weight: bold;">DINAS PERUMAHAN RAKYAT DAN KAWASAN<br>PERMUKIMAN, PERTANAHAN DAN LINGKUNGAN HIDUP</div>
-                                <div style="font-size: 10pt;">Jalan Guna Baru Trans Rangkang, Bengkayang, Kalimantan Barat, Kode Pos : 79211<br>Situs : bengkayangkab.go.id</div>
-                            </td>
-                        </tr>
-                    </table>
-
-                    <div style="font-weight: bold; text-align: center; font-size: 14pt; margin-bottom: 20px; margin-top: 20px;">
-                        SYARAT-SYARAT UMUM KONTRAK (SSUK) PESANAN
+                <div class="document-paper shadow-sm bg-white" style="padding: 2cm 2cm 2cm 2.5cm; width: 100%; border: 1px solid #ccc; font-family: 'Times New Roman', Times, serif; color: #000; position: relative;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <img src="{{ asset('images/logo-bengkayang.png') }}" style="width: 80px; margin-bottom: 10px;">
+                        <div style="font-size: 14pt;">PEMERINTAH KABUPATEN BENGKAYANG</div>
+                        <div style="font-size: 16pt; font-weight: bold;">{{ strtoupper($skpd->nama) }}</div>
+                        <div style="font-size: 12pt;">Jalan Guna Baru Trans Rangkang, Bengkayang, Kalimantan Barat</div>
+                        <div style="font-size: 12pt;">Situs : bengkayangkab.go.id</div>
+                        <hr style="border-top: 3px solid #000; border-bottom: 1px solid #000; margin-top: 5px; margin-bottom: 20px; padding-bottom: 2px;">
                     </div>
                     
-                    @include('procurement-processes.partials.ssuk', ['procurementPackage' => $procurementPackage, 'process' => $process])
+                    <div style="font-weight: bold; text-align: center; font-size: 14pt; margin-bottom: 20px;">
+                        SYARAT-SYARAT UMUM KONTRAK (SSUK) PESANAN
+                    </div>
+                    @include('procurement-processes.partials.ssuk', ['procurementPackage' => $procurementPackage, 'process' => $process, 'skpd' => $skpd])
                 </div>
 
             </div>

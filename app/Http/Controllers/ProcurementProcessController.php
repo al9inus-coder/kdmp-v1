@@ -135,6 +135,18 @@ class ProcurementProcessController extends Controller
         $process = $procurementPackage->procurementProcess;
         abort_if(!$process, 404);
 
-        return view('procurement-processes.execution', compact('procurementPackage', 'process'));
+        $payment = $procurementPackage->payment ?? new \App\Models\ProcurementPayment();
+        
+        if (!$procurementPackage->payment) {
+            // Auto-fill PPTK dari Master SKPD
+            $skpd = \App\Models\Skpd::first();
+            if ($skpd) {
+                $payment->nama_pptk = $skpd->nama_pptk;
+                $payment->nip_pptk = $skpd->nip_pptk;
+                $payment->pangkat_golongan_pptk = $skpd->pangkat_pptk;
+            }
+        }
+
+        return view('procurement-processes.execution', compact('procurementPackage', 'process', 'payment'));
     }
 }

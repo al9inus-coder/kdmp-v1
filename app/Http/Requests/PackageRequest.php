@@ -18,7 +18,7 @@ class PackageRequest extends FormRequest
             'fiscal_year_id' => ['required', 'exists:fiscal_years,id'],
             'sub_activity_id' => ['nullable', 'exists:sub_activities,id'],
             'account_id' => ['nullable', 'exists:accounts,id'],
-            'id_rup' => ['nullable', 'string', 'max:100'],
+            'id_rup' => ['required', 'string', 'max:100'],
             'nama_paket' => ['required', 'string', 'max:255'],
             'pagu' => ['required', 'numeric', 'min:0'],
             'jenis_pengadaan' => ['nullable', 'string', 'max:100'],

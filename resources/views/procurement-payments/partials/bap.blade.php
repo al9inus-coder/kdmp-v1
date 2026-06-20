@@ -6,7 +6,7 @@
             </td>
             <td style="text-align: center; padding-bottom: 10px;">
                 <div style="font-size: 14pt; font-weight: normal;">PEMERINTAH KABUPATEN BENGKAYANG</div>
-                <div style="font-size: 14pt; font-weight: bold;">DINAS PERUMAHAN RAKYAT DAN KAWASAN PERMUKIMAN, <br>PERTANAHAN DAN LINGKUNGAN HIDUP</div>
+                <div style="font-size: 15pt; font-weight: bold;">{{ strtoupper($skpd->nama) }}</div>
                 <div style="font-size: 10pt;">Jalan Guna Baru Rangkang Bengkayang, Telp. (0562) 441938<br>BENGKAYANG Kode Pos : 79282</div>
             </td>
         </tr>
@@ -69,7 +69,7 @@
             <td></td>
             <td style="vertical-align: top;">Jabatan</td>
             <td style="vertical-align: top;">:</td>
-            <td style="vertical-align: top;">Pejabat Pelaksana Teknis Kegiatan (PPTK) {{ $procurementPackage->package->activity->nama ?? '-' }} pada Dinas Perumahan Rakyat dan Kawasan Permukiman, Pertanahan dan Lingkungan Hidup Kabupaten Bengkayang Tahun Anggaran {{ $procurementPackage->package->fiscalYear->tahun ?? '2026' }}</td>
+            <td style="vertical-align: top;">Pejabat Pelaksana Teknis Kegiatan (PPTK) {{ $procurementPackage->package->activity->nama ?? '-' }} pada {{ $skpd->nama }} Kabupaten Bengkayang Tahun Anggaran {{ $procurementPackage->package->fiscalYear->tahun ?? '2026' }}</td>
         </tr>
         <tr>
             <td></td>
@@ -173,7 +173,13 @@
         B. Sesuai dengan Surat Tagihan Pesanan tersebut diatas, maka PIHAK KEDUA berhak menerima pembayaran pekerjaan selesai dari PIHAK PERTAMA dengan perincian sebagai berikut :
     </p>
 
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; line-height: 1.2;" border="1">
+    <style>
+        .bap-table th, .bap-table td {
+            border: 1px solid black !important;
+            padding: 4px;
+        }
+    </style>
+    <table class="bap-table" style="width: 100%; border-collapse: collapse; margin-bottom: 10px; line-height: 1.2;">
         <tr>
             <th rowspan="2" style="width: 30px; text-align: center; font-weight: normal;">No</th>
             <th rowspan="2" style="text-align: center; font-weight: normal;">Uraian</th>
@@ -266,7 +272,7 @@
             <td style="width: 100%;">
                 MENGETAHUI/ MENYETUJUI :<br>
                 PENGGUNA ANGGARAN<br>
-                DINAS PERKIMPLH KAB. BENGKAYANG<br>
+                {{ $skpd->singkatan ?? $skpd->nama }}<br>
                 <br><br><br><br>
                 <u style="font-weight: bold;">{{ $procurementPackage->nama_ppk }}</u><br>
                 NIP. {{ $procurementPackage->nip_ppk }}

@@ -1,10 +1,10 @@
 @extends('adminlte::page')
 
-@section('title', 'Tambah SKPD')
+@section('title', 'Edit SKPD')
 
 @section('content_header')
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <h1>Tambah SKPD Baru</h1>
+        <h1>Edit SKPD: {{ $skpd->kode }}</h1>
         <a href="{{ route('skpds.index') }}" class="btn btn-secondary"><i class="fas fa-arrow-left mr-1"></i> Kembali</a>
     </div>
 @stop
@@ -21,8 +21,9 @@
     </div>
 @endif
 
-<form action="{{ route('skpds.store') }}" method="POST">
+<form action="{{ route('skpds.update', $skpd) }}" method="POST">
     @csrf
+    @method('PUT')
 
     <div class="row">
         <!-- Informasi SKPD -->
@@ -34,23 +35,23 @@
                 <div class="card-body">
                     <div class="form-group">
                         <label>Kode SKPD <span class="text-danger">*</span></label>
-                        <input type="text" name="kode" class="form-control" value="{{ old('kode') }}" required>
+                        <input type="text" name="kode" class="form-control" value="{{ old('kode', $skpd->kode) }}" required>
                     </div>
                     <div class="form-group">
                         <label>Nama SKPD <span class="text-danger">*</span></label>
-                        <input type="text" name="nama" class="form-control" value="{{ old('nama') }}" required>
+                        <input type="text" name="nama" class="form-control" value="{{ old('nama', $skpd->nama) }}" required>
                     </div>
                     <div class="form-group">
                         <label>Singkatan Nama</label>
-                        <input type="text" name="singkatan" class="form-control" value="{{ old('singkatan') }}">
+                        <input type="text" name="singkatan" class="form-control" value="{{ old('singkatan', $skpd->singkatan) }}">
                     </div>
                     <div class="form-group">
                         <label>NPWP Dinas</label>
-                        <input type="text" name="npwp_dinas" class="form-control" value="{{ old('npwp_dinas') }}">
+                        <input type="text" name="npwp_dinas" class="form-control" value="{{ old('npwp_dinas', $skpd->npwp_dinas) }}">
                     </div>
                     <div class="form-group">
                         <label>Alamat</label>
-                        <textarea name="alamat" class="form-control" rows="3">{{ old('alamat') }}</textarea>
+                        <textarea name="alamat" class="form-control" rows="3">{{ old('alamat', $skpd->alamat) }}</textarea>
                     </div>
                 </div>
             </div>
@@ -63,11 +64,11 @@
                 <div class="card-body">
                     <div class="form-group">
                         <label>Nama Kepala Perangkat Daerah</label>
-                        <input type="text" name="kepala_skpd" class="form-control" value="{{ old('kepala_skpd') }}">
+                        <input type="text" name="kepala_skpd" class="form-control" value="{{ old('kepala_skpd', $skpd->kepala_skpd) }}">
                     </div>
                     <div class="form-group">
                         <label>NIP Kepala Perangkat Daerah</label>
-                        <input type="text" name="nip_kepala" class="form-control" value="{{ old('nip_kepala') }}">
+                        <input type="text" name="nip_kepala" class="form-control" value="{{ old('nip_kepala', $skpd->nip_kepala) }}">
                     </div>
                 </div>
             </div>
@@ -82,19 +83,19 @@
                 <div class="card-body">
                     <div class="form-group">
                         <label>Nama PPK</label>
-                        <input type="text" name="nama_ppk" class="form-control" value="{{ old('nama_ppk') }}">
+                        <input type="text" name="nama_ppk" class="form-control" value="{{ old('nama_ppk', $skpd->nama_ppk) }}">
                     </div>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>NIP PPK</label>
-                                <input type="text" name="nip_ppk" class="form-control" value="{{ old('nip_ppk') }}">
+                                <input type="text" name="nip_ppk" class="form-control" value="{{ old('nip_ppk', $skpd->nip_ppk) }}">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Pangkat / Golongan</label>
-                                <input type="text" name="pangkat_ppk" class="form-control" value="{{ old('pangkat_ppk') }}">
+                                <input type="text" name="pangkat_ppk" class="form-control" value="{{ old('pangkat_ppk', $skpd->pangkat_ppk) }}">
                             </div>
                         </div>
                     </div>
@@ -102,19 +103,19 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>No. Telpon</label>
-                                <input type="text" name="telepon_ppk" class="form-control" value="{{ old('telepon_ppk') }}">
+                                <input type="text" name="telepon_ppk" class="form-control" value="{{ old('telepon_ppk', $skpd->telepon_ppk) }}">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Email</label>
-                                <input type="email" name="email_ppk" class="form-control" value="{{ old('email_ppk') }}">
+                                <input type="email" name="email_ppk" class="form-control" value="{{ old('email_ppk', $skpd->email_ppk) }}">
                             </div>
                         </div>
                     </div>
                     <div class="form-group">
                         <label>Username PPK (SPSE/LPSE)</label>
-                        <input type="text" name="username_ppk" class="form-control" value="{{ old('username_ppk') }}">
+                        <input type="text" name="username_ppk" class="form-control" value="{{ old('username_ppk', $skpd->username_ppk) }}">
                     </div>
                 </div>
             </div>
@@ -127,19 +128,19 @@
                 <div class="card-body">
                     <div class="form-group">
                         <label>Nama PPTK</label>
-                        <input type="text" name="nama_pptk" class="form-control" value="{{ old('nama_pptk') }}">
+                        <input type="text" name="nama_pptk" class="form-control" value="{{ old('nama_pptk', $skpd->nama_pptk) }}">
                     </div>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>NIP PPTK</label>
-                                <input type="text" name="nip_pptk" class="form-control" value="{{ old('nip_pptk') }}">
+                                <input type="text" name="nip_pptk" class="form-control" value="{{ old('nip_pptk', $skpd->nip_pptk) }}">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Pangkat / Golongan</label>
-                                <input type="text" name="pangkat_pptk" class="form-control" value="{{ old('pangkat_pptk') }}">
+                                <input type="text" name="pangkat_pptk" class="form-control" value="{{ old('pangkat_pptk', $skpd->pangkat_pptk) }}">
                             </div>
                         </div>
                     </div>
@@ -147,7 +148,7 @@
             </div>
 
             <div class="text-right mb-4">
-                <button type="submit" class="btn btn-success btn-lg px-5"><i class="fas fa-save mr-2"></i> Simpan Data SKPD</button>
+                <button type="submit" class="btn btn-primary btn-lg px-5"><i class="fas fa-save mr-2"></i> Update Data SKPD</button>
             </div>
         </div>
     </div>

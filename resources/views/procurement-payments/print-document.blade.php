@@ -67,22 +67,23 @@
 
     @php
         $type = $type ?? 'all';
+        $skpd = \App\Models\Skpd::first();
     @endphp
 
     @if($type === 'all' || $type === 'bap')
-        @include('procurement-payments.partials.bap', ['procurementPackage' => $procurementPackage, 'process' => $process, 'payment' => $payment])
+        @include('procurement-payments.partials.bap', ['procurementPackage' => $procurementPackage, 'process' => $process, 'payment' => $payment, 'skpd' => $skpd])
     @endif
 
     @if($type === 'all' || $type === 'kwitansi')
-        @include('procurement-payments.partials.kwitansi', ['procurementPackage' => $procurementPackage, 'process' => $process, 'payment' => $payment])
+        @include('procurement-payments.partials.kwitansi', ['procurementPackage' => $procurementPackage, 'process' => $process, 'payment' => $payment, 'skpd' => $skpd])
     @endif
 
     @if(($type === 'all' && $payment->is_non_pkp) || $type === 'non-pkp')
-        @include('procurement-payments.partials.non-pkp', ['procurementPackage' => $procurementPackage, 'process' => $process, 'payment' => $payment])
+        @include('procurement-payments.partials.non-pkp', ['procurementPackage' => $procurementPackage, 'process' => $process, 'payment' => $payment, 'skpd' => $skpd])
     @endif
 
     @if($type === 'all' || $type === 'ringkasan-kontrak')
-        @include('procurement-payments.partials.ringkasan-kontrak', ['procurementPackage' => $procurementPackage, 'process' => $process, 'payment' => $payment])
+        @include('procurement-payments.partials.ringkasan-kontrak', ['procurementPackage' => $procurementPackage, 'process' => $process, 'payment' => $payment, 'skpd' => $skpd])
     @endif
 
 </body>

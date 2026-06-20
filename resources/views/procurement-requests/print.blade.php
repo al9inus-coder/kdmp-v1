@@ -6,7 +6,7 @@
 <style>
 @page {
     size: A4 portrait;
-    margin: 15mm 10mm;
+    margin: 10mm 10mm;
 }
 
 body {
@@ -108,7 +108,7 @@ body {
 .spesifikasi-table th, .spesifikasi-table td { border: 1px solid #000; padding: 6px; vertical-align: top; }
 .spesifikasi-table th { text-align: center; font-weight: bold; }
 
-.ttd-area{ margin-top:50px; }
+.ttd-area{ margin-top:20px; }
 
 </style>
 </head>

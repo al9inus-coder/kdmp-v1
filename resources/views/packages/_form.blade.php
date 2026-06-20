@@ -68,7 +68,7 @@
             <div class="col-md-6">
                 <div class="form-group">
                     <label for="id_rup">
-                        <i class="fas fa-fingerprint text-muted mr-1"></i> ID RUP
+                        <i class="fas fa-fingerprint text-muted mr-1"></i> ID RUP <span class="text-danger">*</span>
                     </label>
                     <div class="input-group">
                         <input type="text"
@@ -76,7 +76,8 @@
                                name="id_rup"
                                class="form-control @error('id_rup') is-invalid @enderror"
                                value="{{ old('id_rup', $package->id_rup) }}"
-                               placeholder="Masukkan ID RUP (opsional)">
+                               placeholder="Masukkan ID RUP"
+                               required>
                     </div>
                     @error('id_rup')
                         <div class="invalid-feedback d-block">{{ $message }}</div>
@@ -198,6 +199,7 @@
                         <option value="Jasa Konsultansi" @selected(old('jenis_pengadaan', $package->jenis_pengadaan) == 'Jasa Konsultansi')>Jasa Konsultansi</option>
                         <option value="Jasa Lainnya" @selected(old('jenis_pengadaan', $package->jenis_pengadaan) == 'Jasa Lainnya')>Jasa Lainnya</option>
                         <option value="Pekerjaan Konstruksi" @selected(old('jenis_pengadaan', $package->jenis_pengadaan) == 'Pekerjaan Konstruksi')>Pekerjaan Konstruksi</option>
+                        <option value="Swakelola" @selected(old('jenis_pengadaan', $package->jenis_pengadaan) == 'Swakelola')>Swakelola</option>
                     </select>
                     @error('jenis_pengadaan')
                         <div class="invalid-feedback">{{ $message }}</div>
@@ -216,6 +218,7 @@
                         <option value="">-- Pilih Metode --</option>
                         <option value="E-Purchasing" @selected(old('metode_pengadaan', $package->metode_pengadaan) == 'E-Purchasing')>E-Purchasing</option>
                         <option value="Pengadaan Langsung" @selected(old('metode_pengadaan', $package->metode_pengadaan) == 'Pengadaan Langsung')>Pengadaan Langsung</option>
+                        <option value="Dikecualikan" @selected(old('metode_pengadaan', $package->metode_pengadaan) == 'Dikecualikan')>Dikecualikan</option>
                     </select>
                     @error('metode_pengadaan')
                         <div class="invalid-feedback">{{ $message }}</div>
@@ -346,6 +349,60 @@ document.addEventListener('DOMContentLoaded', function () {
             theme: 'bootstrap4',
             width: '100%'
         });
+    }
+
+    // Logika Dinamis Jenis Pengadaan -> Metode Pengadaan
+    const jenisPengadaan = document.getElementById('jenis_pengadaan');
+    const metodePengadaan = document.getElementById('metode_pengadaan');
+    let currentMetode = "{{ old('metode_pengadaan', $package->metode_pengadaan ?? '') }}";
+
+    const originalMetodeOptions = `
+        <option value="">-- Pilih Metode --</option>
+        <option value="E-Purchasing">E-Purchasing</option>
+        <option value="Pengadaan Langsung">Pengadaan Langsung</option>
+        <option value="Dikecualikan">Dikecualikan</option>
+    `;
+
+    const swakelolaOptions = `
+        <option value="">-- Pilih Metode --</option>
+        <option value="Swakelola Tipe 1">Swakelola Tipe 1</option>
+        <option value="Swakelola Tipe 2">Swakelola Tipe 2</option>
+        <option value="Swakelola Tipe 3">Swakelola Tipe 3</option>
+        <option value="Swakelola Tipe 4">Swakelola Tipe 4</option>
+    `;
+
+    function updateMetodeOptions() {
+        if (!jenisPengadaan || !metodePengadaan) return;
+
+        if (jenisPengadaan.value === 'Swakelola') {
+            metodePengadaan.innerHTML = swakelolaOptions;
+        } else {
+            metodePengadaan.innerHTML = originalMetodeOptions;
+        }
+
+        // Restore the previously selected value
+        if (currentMetode) {
+            let optionToSelect = Array.from(metodePengadaan.options).find(opt => opt.value === currentMetode);
+            if (optionToSelect) {
+                optionToSelect.selected = true;
+            }
+        }
+
+        // Refresh Select2 UI if used
+        if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
+            $(metodePengadaan).trigger('change.select2');
+        }
+    }
+
+    if (jenisPengadaan && metodePengadaan) {
+        // Handle change event using jQuery since it's a select2 component
+        $(jenisPengadaan).on('change', function() {
+            currentMetode = ''; // reset method when type changes
+            updateMetodeOptions();
+        });
+
+        // Initialize on load
+        updateMetodeOptions();
     }
 });
 </script>

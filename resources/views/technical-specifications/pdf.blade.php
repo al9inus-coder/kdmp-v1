@@ -6,7 +6,7 @@
 <style>
 @page {
     size: A4 portrait;
-    margin: 15mm 10mm;
+    margin: 10mm 10mm;
 }
 
 body {
@@ -81,18 +81,19 @@ body {
 
 .kop-pemerintah{
     text-align:center;
-    font-size:12pt;
+    font-size:14pt;
     text-transform:uppercase;
-    margin-bottom:2px;
+    line-height:1;
+    margin-bottom:1px;
 }
 
 .kop-dinas{
     text-align:center;
-    font-size:14pt;
+    font-size:15pt;
     font-weight:bold;
     text-transform:uppercase;
     line-height:1;
-    margin-bottom:2px;
+    margin-bottom:1px;
 }
 
 .kop-alamat{
@@ -224,7 +225,23 @@ body {
             :
         </td>
         <td valign="top" class="isi-narasi">
-            {!! nl2br(e($technicalSpecification->maksud)) !!}
+            <table width="100%" cellpadding="2">
+                <tr>
+                    <td width="20" valign="top">a.</td>
+                    <td style="text-align:justify;">
+                        Maksud<br>
+                        <div style="white-space: pre-wrap;">{{ $technicalSpecification->maksud['Maksud'] ?? '' }}</div>
+                    </td>
+                </tr>
+                <tr><td colspan="2" height="5"></td></tr>
+                <tr>
+                    <td width="20" valign="top">b.</td>
+                    <td style="text-align:justify;">
+                        Tujuan<br>
+                        <div style="white-space: pre-wrap;">{{ $technicalSpecification->maksud['Tujuan'] ?? '' }}</div>
+                    </td>
+                </tr>
+            </table>
         </td>
     </tr>
 
@@ -238,38 +255,23 @@ body {
             :
         </td>
         <td valign="top" class="isi-narasi">
-
-            @php
-                $targetData = json_decode(
-                    $technicalSpecification->target_sasaran,
-                    true
-                );
-            @endphp
-
-            @if(is_array($targetData))
-                <table width="100%" cellpadding="2">
-                    <tr>
-                        <td width="15" valign="top">a.</td>
-                        <td width="50" valign="top">Target</td>
-                        <td width="15" valign="top">:</td>
-                        <td style="text-align:justify;">
-                            {{ $targetData['Target'] ?? '-' }}
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td width="15" valign="top">b.</td>
-                        <td valign="top">Sasaran</td>
-                        <td valign="top">:</td>
-                        <td style="text-align:justify;">
-                            {{ $targetData['Sasaran'] ?? '-' }}
-                        </td>
-                    </tr>
-                </table>
-            @else
-                {{ $technicalSpecification->target_sasaran }}
-            @endif
-
+            <table width="100%" cellpadding="2">
+                <tr>
+                    <td width="20" valign="top">a.</td>
+                    <td style="text-align:justify;">
+                        Target<br>
+                        <div style="white-space: pre-wrap;">{{ $technicalSpecification->target_sasaran['Target'] ?? '' }}</div>
+                    </td>
+                </tr>
+                <tr><td colspan="2" height="5"></td></tr>
+                <tr>
+                    <td width="20" valign="top">b.</td>
+                    <td style="text-align:justify;">
+                        Sasaran<br>
+                        <div style="white-space: pre-wrap;">{{ $technicalSpecification->target_sasaran['Sasaran'] ?? '' }}</div>
+                    </td>
+                </tr>
+            </table>
         </td>
     </tr>
 
@@ -625,16 +627,16 @@ body {
             <tr>
                 <td width="15" valign="top">a.</td>
 
-                <td width="100" valign="top">
+                <td width="170" valign="top">
                     Garansi Barang
                 </td>
 
                 <td width="15" valign="top">:</td>
 
                 <td valign="top">
-                    @if($procurementPackage->garansi_nilai)
-                        {{ $procurementPackage->garansi_nilai }}
-                        {{ $procurementPackage->garansi_satuan }}
+                    @if($garansiNilai)
+                        {{ $garansiNilai }}
+                        {{ $garansiSatuan }}
                     @else
                         -
                     @endif
@@ -651,7 +653,7 @@ body {
                 <td valign="top">:</td>
 
                 <td valign="top">
-                    {{ $procurementPackage->layanan_purna_jual ? 'Ada' : 'Tidak Ada' }}
+                    {{ $layananPurnaJual ? 'Ada' : 'Tidak Ada' }}
                 </td>
             </tr>
 
@@ -741,13 +743,16 @@ body {
 
 <tr>
     <td></td>
-    <td valign="top">Waktu Awal</td>
+    <td valign="top">Tanggal Batas Akhir Pengiriman</td>
     <td align="center" valign="top">:</td>
     <td valign="top">
-        Jangka waktu penyerahan/pengiriman barang adalah
-        {{ $jangkaWaktuNilai }}
-        {{ strtolower($jangkaWaktuSatuan) }}
-        kalender terhitung sejak tanggal penandatanganan kontrak.
+                               Barang diterima paling lambat tanggal
+                                    {{ $procurementPackage->tanggal_barang_diterima
+                                        ? \Carbon\Carbon::parse(
+                                            $procurementPackage->tanggal_barang_diterima
+                                        )->translatedFormat('d F Y')
+                                        : '-'
+                                    }}                                
     </td>
 </tr>
 
@@ -756,13 +761,7 @@ body {
     <td valign="top">Catatan</td>
     <td align="center" valign="top">:</td>
     <td valign="top">
-        Barang diterima paling lambat tanggal
-        {{ $procurementPackage->tanggal_barang_diterima
-            ? \Carbon\Carbon::parse(
-                $procurementPackage->tanggal_barang_diterima
-            )->translatedFormat('d F Y')
-            : '-'
-        }}
+        Barang dapat dikirim sejak tanggal penandatangan surat pesanan sampai batas waktu yang ditetapkan
     </td>
 </tr>
 
@@ -815,8 +814,7 @@ body {
 <tr>
     <td colspan="4" style="text-align:justify;">
         Demikian Spesifikasi Teknis ini dibuat sebagai acuan dalam
-        pelaksanaan paket pekerjaan
-        {{ $procurementPackage->package->nama_paket }}.
+        pelaksanaan paket pekerjaan Pengadaan
     </td>
 </tr>
 
@@ -833,12 +831,10 @@ body {
                     &nbsp;
                 </td>
 
-                <td width="60%" align="center" valign="top">
-
-                    Bengkayang,
-                    {{ now()->translatedFormat('d F Y') }}
-
-                    <br>
+                <td style="width:45%; text-align:center; vertical-align:top;">
+                Bengkayang,
+                {{ $technicalSpecification->tanggal ? \Carbon\Carbon::parse($technicalSpecification->tanggal)->translatedFormat('d F Y') : now()->translatedFormat('d F Y') }}
+                <br><br>
 
                     Pejabat Pembuat Komitmen
                     <br>

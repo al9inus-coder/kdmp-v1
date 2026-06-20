@@ -15,11 +15,13 @@ use App\Http\Controllers\SkpdController;
 use App\Http\Controllers\SubActivityController;
 use App\Http\Controllers\TechnicalSpecificationController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ControlCardController;
+use App\Http\Controllers\MonevController;
 use Illuminate\Support\Facades\Route;
 
 // Public Route
 Route::get('/', function () {
-    return redirect()->route('dashboard');
+    return view('welcome');
 });
 
 // Route dengan Middleware Auth
@@ -99,8 +101,15 @@ Route::middleware('auth')->group(function () {
     
     Route::get('packages/{package}/procurement', [PackageController::class, 'procurement'])->name('packages.procurement');
     Route::put('packages/{package}/procurement', [PackageController::class, 'updateProcurement'])->name('packages.procurement.update');
+
+    Route::get('control-cards/{activity}/print', [ControlCardController::class, 'print'])->name('control-cards.print');
+
+    // Monev
+    Route::get('monev', [MonevController::class, 'index'])->name('monev.index');
+    Route::get('monev/{subActivity}', [MonevController::class, 'show'])->name('monev.show');
+    Route::get('monev/{subActivity}/print', [MonevController::class, 'print'])->name('monev.print');
     
-    Route::resource('packages', PackageController::class)->except('destroy');
+    Route::resource('packages', PackageController::class);
     
     Route::post('packages/{package}/submit', [PackageController::class, 'submit'])->name('packages.submit');
     Route::post('packages/{package}/approve', [PackageController::class, 'approve'])->name('packages.approve');
@@ -143,6 +152,9 @@ Route::middleware('auth')->group(function () {
     // AI Generate Draft Route
     Route::post('/procurement-packages/{procurementPackage}/generate-draft', [ProcurementPackageController::class, 'generateDraft'])
         ->name('procurement-packages.generate-draft');
+        
+    Route::post('/procurement-packages/{procurementPackage}/update-prompt', [ProcurementPackageController::class, 'updatePrompt'])
+        ->name('procurement-packages.update-prompt');
 
     Route::get(
         'procurement-packages/{package}/procurement-request/print',

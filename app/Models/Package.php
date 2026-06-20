@@ -37,6 +37,11 @@ class Package extends Model
     'pptk_name',
     'ppk_name',
     'procurement_notes',
+
+    'submitted_at',
+    'submitted_by',
+    'approved_at',
+    'approved_by',
     ];
 
     protected $casts = [
@@ -48,6 +53,9 @@ class Package extends Model
     'kontrak_mulai_bulan' => 'integer',
     'kontrak_selesai_bulan' => 'integer',
     'target_procurement_date' => 'date',
+
+    'submitted_at' => 'datetime',
+    'approved_at' => 'datetime',
     ];
 
     public function importBatch(): BelongsTo
@@ -113,8 +121,15 @@ class Package extends Model
             !empty($this->kontrak_selesai_bulan);
     }
 
-    public function getRouteKeyName(): string
+    public function getRouteKey()
     {
-        return 'id_rup';
+        return $this->id_rup ?? $this->id;
+    }
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->where('id_rup', $value)
+                    ->orWhere('id', $value)
+                    ->firstOrFail();
     }
 }
