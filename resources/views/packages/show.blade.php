@@ -145,21 +145,36 @@
             @endcan
         @endif
 
-        @if($package->status === 'approved' && !$package->procurementPackage)
+        @if($package->isComplete() && !$package->procurementPackage)
             <form action="{{ route('packages.procurement-packages.store', $package) }}"
                   method="POST"
                   style="display:inline;">
                 @csrf
-                <button type="submit" class="btn btn-success">
-                    Buat Paket Pengadaan
-                </button>
+                @if($package->jenis_pengadaan === 'Swakelola')
+                    @php
+                        $accountName = strtolower($package->account?->nama ?? '');
+                        $btnLabel = 'Buat Ruang Swakelola';
+                        if (str_contains($accountName, 'perjalanan dinas')) {
+                            $btnLabel = 'Buat Ruang Eksekusi Perjalanan Dinas';
+                        } elseif (str_contains($accountName, 'lembur')) {
+                            $btnLabel = 'Buat Ruang Eksekusi Lembur';
+                        }
+                    @endphp
+                    <button type="submit" class="btn btn-primary">
+                        {{ $btnLabel }}
+                    </button>
+                @else
+                    <button type="submit" class="btn btn-success">
+                        Buat Paket Pengadaan
+                    </button>
+                @endif
             </form>
         @endif
 
         @if($package->procurementPackage)
             <a href="{{ route('procurement-packages.show', $package) }}"
-               class="btn btn-success">
-                Masuk Paket Pengadaan
+               class="btn {{ $package->jenis_pengadaan === 'Swakelola' ? 'btn-primary' : 'btn-success' }}">
+                {{ $package->jenis_pengadaan === 'Swakelola' ? 'Masuk Ruang Swakelola' : 'Masuk Paket Pengadaan' }}
             </a>
         @endif
 

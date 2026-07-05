@@ -210,12 +210,21 @@
 }
 
 
+@if(request()->has('embed'))
+    /* HIDE ADMINLTE LAYOUT WHEN EMBEDDED IN IFRAME */
+    .main-sidebar, .main-header, .main-footer { display: none !important; }
+    .content-wrapper { margin-left: 0 !important; margin-top: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; }
+    body { background-color: #f8fafc !important; } /* Sesuaikan dengan background workspace */
+    .viewer-sticky-actions .action-left { display: none !important; } /* Sembunyikan tombol kembali jika di embed */
+@endif
 </style>
 @endpush
 @section('content')
-@include('components.procurement-progress', [
-    'procurementPackage' => $procurementPackage
-])
+@if(!request()->has('embed'))
+    @include('components.procurement-progress', [
+        'procurementPackage' => $procurementPackage
+    ])
+@endif
 <form method="POST"
       action="{{ route(
         'technical-specifications.update',

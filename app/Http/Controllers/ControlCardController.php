@@ -14,7 +14,8 @@ class ControlCardController extends Controller
             'program',
             'subActivities.packages.account',
             'subActivities.packages.fiscalYear',
-            'subActivities.packages.procurementPackage.procurementProcess'
+            'subActivities.packages.procurementPackage.procurementProcess',
+            'subActivities.packages.procurementPackage.externalRecords'
         ]);
 
         return view('control_cards.print', compact('activity'));

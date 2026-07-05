@@ -17,24 +17,78 @@ use Illuminate\Support\Facades\DB;
 
 class ProcurementPackageController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $procurementPackages = ProcurementPackage::query()
+        $query = ProcurementPackage::query()
             ->with([
                 'package.program',
                 'package.fiscalYear',
                 'creator',
-            ])
-            ->orderByDesc('id')
-            ->paginate(15);
+            ]);
 
-        return view('procurement-packages.index', compact('procurementPackages'));
+        if ($request->filled('program_id')) {
+            $query->whereHas('package', function ($q) use ($request) {
+                $q->where('program_id', $request->program_id);
+            });
+        }
+
+        if ($request->filled('workflow_status')) {
+            $query->where('workflow_status', $request->workflow_status);
+        }
+
+        if ($request->filled('status')) {
+            $status = $request->status;
+            if ($status === 'draft') {
+                $query->where('workflow_status', \App\Models\ProcurementPackage::WORKFLOW_DRAFT);
+            } elseif ($status === 'persiapan') {
+                $query->where('workflow_status', \App\Models\ProcurementPackage::WORKFLOW_PROVIDER_SELECTION);
+            } elseif ($status === 'diproses') {
+                $query->whereIn('workflow_status', [
+                    \App\Models\ProcurementPackage::WORKFLOW_EXECUTION,
+                    \App\Models\ProcurementPackage::WORKFLOW_PAYMENT_PROCESS
+                ]);
+            } elseif ($status === 'selesai') {
+                $query->where('workflow_status', \App\Models\ProcurementPackage::WORKFLOW_COMPLETED);
+            }
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('package', function ($q) use ($search) {
+                $q->where('nama_paket', 'like', "%{$search}%")
+                  ->orWhere('id_rup', 'like', "%{$search}%");
+            });
+        }
+
+        $type = $request->input('type', 'penyedia'); // Default ke penyedia
+        
+        if ($type === 'dikecualikan') {
+            $query->whereNotNull('dikecualikan_type');
+        } elseif ($type === 'swakelola') {
+            $query->whereNull('dikecualikan_type')
+                  ->whereHas('package', function ($q) {
+                      $q->where('jenis_pengadaan', 'like', '%swakelola%');
+                  });
+        } else {
+            // Default: penyedia
+            $query->whereNull('dikecualikan_type')
+                  ->whereHas('package', function ($q) {
+                      $q->where('jenis_pengadaan', 'not like', '%swakelola%');
+                  });
+        }
+
+        $procurementPackages = $query->orderByDesc('id')->paginate(15)->withQueryString();
+
+        $programs = \App\Models\Program::orderBy('nama')->get();
+        $statuses = \App\Models\ProcurementPackage::getWorkflowStatuses();
+
+        return view('procurement-packages.index', compact('procurementPackages', 'programs', 'statuses', 'type'));
     }
 
     public function store(Package $package): RedirectResponse
     {
-        if ($package->status !== 'approved') {
-            return back()->with('error', 'Hanya package berstatus approved yang dapat dibuatkan Paket Pengadaan.');
+        if (!$package->isComplete()) {
+            return back()->with('error', 'Hanya package yang sudah lengkap datanya yang dapat dieksekusi.');
         }
 
         $existing = $package->procurementPackage;
@@ -117,8 +171,40 @@ class ProcurementPackageController extends Controller
 
         $aiPrompt = \App\Models\AiPrompt::where('code', 'technical_specification')->where('is_active', true)->first();
 
+        if ($package->metode_pengadaan === 'Dikecualikan') {
+            return view(
+                'procurement-packages.show-dikecualikan',
+                compact('procurementPackage', 'aiPrompt')
+            );
+        }
+
         return view(
             'procurement-packages.show',
+            compact('procurementPackage', 'aiPrompt')
+        );
+    }
+
+    public function workspace(Package $package): View
+    {
+        $procurementPackage = $package->procurementPackage;
+
+        abort_if(!$procurementPackage, 404);
+
+        $procurementPackage->load([
+            'package.fiscalYear',
+            'package.program',
+            'package.activity',
+            'package.subActivity',
+            'package.account',
+            'creator',
+            'technicalSpecification.items',
+            'procurementRequest',
+        ]);
+
+        $aiPrompt = \App\Models\AiPrompt::where('code', 'technical_specification')->where('is_active', true)->first();
+
+        return view(
+            'procurement-packages.workspace',
             compact('procurementPackage', 'aiPrompt')
         );
     }
@@ -194,6 +280,27 @@ class ProcurementPackageController extends Controller
         }
 
         return back()->with('success', 'Informasi paket berhasil disimpan.');
+    }
+
+    public function updateDikecualikan(Request $request, ProcurementPackage $procurementPackage)
+    {
+        $data = $request->validate([
+            'dikecualikan_type' => 'nullable|in:di_luar_sistem,di_dalam_sistem',
+        ]);
+
+        $procurementPackage->update($data);
+
+        return back()->with('success', 'Data Dikecualikan berhasil disimpan.');
+    }
+
+    public function complete(Request $request, ProcurementPackage $procurementPackage)
+    {
+        $procurementPackage->update([
+            'status' => 'complete',
+            'workflow_status' => \App\Models\ProcurementPackage::WORKFLOW_COMPLETED
+        ]);
+        
+        return back()->with('success', 'Paket berhasil diselesaikan dan data telah dikunci.');
     }
 
     public function updatePrompt(Request $request, ProcurementPackage $procurementPackage)

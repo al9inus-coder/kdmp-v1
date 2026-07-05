@@ -24,7 +24,7 @@ class ProcurementProcessController extends Controller
         }
 
         $procurementPackage->update([
-            'workflow_status' => ProcurementPackage::WORKFLOW_PREPARATION_COMPLETED
+            'workflow_status' => ProcurementPackage::WORKFLOW_PROVIDER_SELECTION
         ]);
 
         return redirect()->route('procurement-packages.show', $procurementPackage->package)
@@ -80,14 +80,6 @@ class ProcurementProcessController extends Controller
         ]);
 
         $process->update($validated);
-
-        // Update status package to purchase order since we have the data
-        if ($procurementPackage->workflow_status === ProcurementPackage::WORKFLOW_PREPARATION_COMPLETED || 
-            $procurementPackage->workflow_status === ProcurementPackage::WORKFLOW_PROVIDER_SELECTION) {
-            $procurementPackage->update([
-                'workflow_status' => ProcurementPackage::WORKFLOW_PURCHASE_ORDER
-            ]);
-        }
 
         return redirect()->back()->with('success', 'Data Surat Pesanan berhasil disimpan.');
     }

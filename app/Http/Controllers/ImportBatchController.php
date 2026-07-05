@@ -51,13 +51,27 @@ class ImportBatchController extends Controller
     {
         Gate::authorize('create', ImportBatch::class);
        
+        $isStaf = $request->input('source') === 'staf';
+
         $validated = $request->validate([
-            'file' => ['required', 'file', 'mimes:xlsx', 'max:10240'],
-            'fiscal_year_id' => ['required', 'exists:fiscal_years,id'],
+            'file'           => ['required', 'file', 'mimes:xlsx', 'max:10240'],
+            'fiscal_year_id' => [$isStaf ? 'nullable' : 'required', 'exists:fiscal_years,id'],
         ], [
             'file.mimes' => 'File harus berformat .xlsx',
-            'file.max' => 'Ukuran file maksimal 10MB.',
+            'file.max'   => 'Ukuran file maksimal 10MB.',
         ]);
+
+        // Jika dari staf dan fiscal_year_id kosong, ambil tahun aktif otomatis
+        if ($isStaf && empty($validated['fiscal_year_id'])) {
+            $activeFiscalYear = \App\Models\FiscalYear::where('is_active', true)->first()
+                ?? \App\Models\FiscalYear::orderBy('tahun', 'desc')->first();
+
+            if (!$activeFiscalYear) {
+                return $this->redirectBack($isStaf)->with('error', 'Tidak ada Tahun Anggaran aktif. Hubungi Admin.');
+            }
+
+            $validated['fiscal_year_id'] = $activeFiscalYear->id;
+        }
 
         $uploadedFile = $validated['file'];
         
@@ -93,7 +107,7 @@ class ImportBatchController extends Controller
                 'notes' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'Gagal membaca file Excel. '.$e->getMessage());
+            return $this->redirectBack($isStaf)->with('error', 'Gagal membaca file Excel. '.$e->getMessage());
         }
 
         if ($rows === []) {
@@ -102,7 +116,7 @@ class ImportBatchController extends Controller
                 'notes' => 'File Excel kosong.',
             ]);
 
-            return back()->with('error', 'File Excel kosong.');
+            return $this->redirectBack($isStaf)->with('error', 'File Excel kosong.');
         }
 
         $headerMap = $this->buildHeaderMap($rows[0]);
@@ -113,7 +127,7 @@ class ImportBatchController extends Controller
                 'notes' => 'Header Excel tidak sesuai template import RUP.',
             ]);
 
-            return back()->with('error', 'Header Excel tidak sesuai template import RUP.');
+            return $this->redirectBack($isStaf)->with('error', 'Header Excel tidak sesuai template import RUP.');
         }
 
         $subActivityMap = $this->buildSubActivityMap();
@@ -199,70 +213,50 @@ class ImportBatchController extends Controller
 
                     $failedRows++;
                     continue;
-                    }
-                    try {
+                }
 
-    Package::create([
-        'import_batch_id' => $batch->id,
-        'fiscal_year_id' => $batch->fiscal_year_id,
+                try {
+                    Package::create([
+                        'import_batch_id' => $batch->id,
+                        'fiscal_year_id'  => $batch->fiscal_year_id,
 
-        'program_id' => $subActivityData['program_id'],
-        'activity_id' => $subActivityData['activity_id'],
-        'sub_activity_id' => $subActivityData['sub_activity_id'],
-        'account_id' => $accountId,
+                        'program_id'      => $subActivityData['program_id'],
+                        'activity_id'     => $subActivityData['activity_id'],
+                        'sub_activity_id' => $subActivityData['sub_activity_id'],
+                        'account_id'      => $accountId,
 
-        'id_rup' => $idRup,
-        'nama_paket' => $namaPaket,
+                        'id_rup'          => $idRup,
+                        'nama_paket'      => $namaPaket,
 
-        'pagu' => $this->parsePagu(
-            $this->value($row, $headerMap, 'pagu')
-        ),
+                        'pagu'            => $this->parsePagu(
+                            $this->value($row, $headerMap, 'pagu')
+                        ),
 
-        'jenis_pengadaan' => $this->value(
-            $row,
-            $headerMap,
-            'jenis_pengadaan'
-        ),
+                        'jenis_pengadaan'  => $this->value($row, $headerMap, 'jenis_pengadaan'),
+                        'metode_pengadaan' => $this->value($row, $headerMap, 'metode_pengadaan'),
 
-        'metode_pengadaan' => $this->value(
-            $row,
-            $headerMap,
-            'metode_pengadaan'
-        ),
+                        'pemilihan_mulai_bulan'   => $this->parseMonth($this->value($row, $headerMap, 'pemilihan_mulai')),
+                        'pemilihan_selesai_bulan' => $this->parseMonth($this->value($row, $headerMap, 'pemilihan_selesai')),
+                        'kontrak_mulai_bulan'     => $this->parseMonth($this->value($row, $headerMap, 'kontrak_mulai')),
+                        'kontrak_selesai_bulan'   => $this->parseMonth($this->value($row, $headerMap, 'kontrak_selesai')),
 
-        'pemilihan_mulai_bulan' => $this->parseMonth(
-            $this->value($row, $headerMap, 'pemilihan_mulai')
-        ),
+                        'status' => $status,
+                    ]);
 
-        'pemilihan_selesai_bulan' => $this->parseMonth(
-            $this->value($row, $headerMap, 'pemilihan_selesai')
-        ),
+                    $successRows++;
 
-        'kontrak_mulai_bulan' => $this->parseMonth(
-            $this->value($row, $headerMap, 'kontrak_mulai')
-        ),
+                } catch (Throwable $e) {
 
-        'kontrak_selesai_bulan' => $this->parseMonth(
-            $this->value($row, $headerMap, 'kontrak_selesai')
-        ),
+                    ImportBatchError::create([
+                        'import_batch_id' => $batch->id,
+                        'row_number'      => $rowNumber,
+                        'id_rup'          => $idRup,
+                        'error_type'      => 'system_error',
+                        'error_message'   => $e->getMessage(),
+                    ]);
 
-        'status' => $status,
-    ]);
-
-    $successRows++;
-
-} catch (Throwable $e) {
-
-    ImportBatchError::create([
-        'import_batch_id' => $batch->id,
-        'row_number'      => $rowNumber,
-        'id_rup'          => $idRup,
-        'error_type'      => 'system_error',
-        'error_message'   => $e->getMessage(),
-    ]);
-
-    $failedRows++;
-}
+                    $failedRows++;
+                }
             }
 
             $batch->update([
@@ -282,12 +276,18 @@ class ImportBatchController extends Controller
                 'notes' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'Import gagal diproses. '.$e->getMessage());
+            return $this->redirectBack($isStaf)->with('error', 'Import gagal diproses. '.$e->getMessage());
         }
 
-        return redirect()
-            ->route('packages.import.index')
+        return $this->redirectBack($isStaf)
             ->with('success', 'Import RUP selesai. Berhasil: '.$successRows.', gagal: '.$failedRows.'.');
+    }
+
+    private function redirectBack(bool $isStaf): RedirectResponse
+    {
+        return $isStaf
+            ? redirect()->route('staf.packages.import')
+            : redirect()->route('packages.import.index');
     }
 
     /**
@@ -297,17 +297,54 @@ class ImportBatchController extends Controller
     private function buildHeaderMap(array $headerRow): array
     {
         $aliases = [
-            'id_rup' => ['id rup', 'id_rup', 'idrup'],
-            'nama_paket' => ['nama paket', 'nama_paket'],
-            'kode_sub_kegiatan' => ['kode sub kegiatan', 'kode_sub_kegiatan', 'kode subkegiatan'],
-            'kode_rekening' => ['kode rekening', 'kode_rekening', 'kode rekening belanja'],
-            'pagu' => ['pagu', 'nilai pagu'],
-            'jenis_pengadaan' => ['jenis pengadaan'],
-            'metode_pengadaan' => ['metode pengadaan'],
-            'pemilihan_mulai' => ['pemilihan mulai'],
-            'pemilihan_selesai' => ['pemilihan selesai'],
-            'kontrak_mulai' => ['kontrak mulai'],
-            'kontrak_selesai' => ['kontrak selesai'],
+            'id_rup' => [
+                'id rup', 'id_rup', 'idrup',
+                'no rup', 'no_rup', 'no. rup', 'nomor rup',
+            ],
+            'nama_paket' => [
+                'nama paket', 'nama_paket',
+            ],
+            'kode_sub_kegiatan' => [
+                'kode sub kegiatan', 'kode_sub_kegiatan', 'kode subkegiatan',
+                'sub kegiatan', 'subkegiatan',
+            ],
+            'kode_rekening' => [
+                'kode rekening', 'kode_rekening', 'kode rekening belanja',
+                'mak', 'kode mak', 'rekening',
+                // template baru: kolom index 5 berisi kode MAK/rekening
+                'kode mak / rekening', 'kode rekening belanja (mak)',
+            ],
+            'pagu' => [
+                'pagu', 'nilai pagu',
+            ],
+            'jenis_pengadaan' => [
+                'jenis pengadaan',
+            ],
+            'metode_pengadaan' => [
+                'metode pengadaan',
+                'metode pemilihan',
+            ],
+            'pemilihan_mulai' => [
+                'pemilihan mulai',
+                'waktu mulai pemilihan', 'waktu awal pemilihan',
+                'bulan mulai pemilihan',
+            ],
+            'pemilihan_selesai' => [
+                'pemilihan selesai',
+                'waktu akhir pemilihan',
+                'bulan akhir pemilihan',
+            ],
+            'kontrak_mulai' => [
+                'kontrak mulai',
+                'waktu awal kontrak', 'waktu mulai kontrak',
+                'bulan awal kontrak', 'bulan mulai kontrak',
+            ],
+            'kontrak_selesai' => [
+                'kontrak selesai',
+                'waktu akhir kontrak',
+                'aaktu akhir kontrak', // typo di template lama
+                'bulan akhir kontrak',
+            ],
         ];
 
         $map = [];
@@ -341,7 +378,6 @@ class ImportBatchController extends Controller
             'id_rup',
             'nama_paket',
             'kode_sub_kegiatan',
-            'kode_rekening',
             'pagu',
             'jenis_pengadaan',
             'metode_pengadaan',
@@ -433,6 +469,8 @@ class ImportBatchController extends Controller
 
     private function normalizeText(string $value): string
     {
+        // Hapus tanda kutip di awal/akhir (jika Excel menyimpan header dengan kutip)
+        $value = trim($value, " \t\n\r\0\x0B\"'");
         $value = preg_replace('/\s+/', ' ', trim(mb_strtolower($value))) ?? '';
         return $value;
     }

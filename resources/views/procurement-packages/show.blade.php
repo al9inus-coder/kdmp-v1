@@ -9,7 +9,9 @@
 @stop
 
 @section('content')
-    @include('components.workflow-progress', ['procurementPackage' => $procurementPackage])
+    @if($procurementPackage->package->jenis_pengadaan !== 'Swakelola')
+        @include('components.workflow-progress', ['procurementPackage' => $procurementPackage])
+    @endif
 
     @if(session('error'))
         <div class="alert alert-danger alert-dismissible fade show shadow-sm">
@@ -97,7 +99,7 @@
         <div class="card card-outline card-success shadow-sm h-100 mb-0">
             <div class="card-header">
                 <h3 class="card-title font-weight-bold">
-                    <i class="fas fa-tags text-success mr-2"></i> Klasifikasi Paket
+                    <i class="fas fa-tags text-success mr-2"></i> {{ $procurementPackage->package->jenis_pengadaan === 'Swakelola' ? 'Detail Anggaran' : 'Klasifikasi Paket' }}
                 </h3>
                 <div class="card-tools">
                     <button type="button" class="btn btn-tool" data-card-widget="collapse">
@@ -110,32 +112,53 @@
                 <div class="table-responsive">
                     <table class="table table-striped table-hover mb-0">
                         <tbody>
-                            <tr>
-                                <th style="width: 35%;" class="pl-4">Program</th>
-                                <td>{{ $procurementPackage->package->program?->kode }} {{ $procurementPackage->package->program ? '- '.$procurementPackage->package->program->nama : '' }}</td>
-                            </tr>
-                            <tr>
-                                <th class="pl-4">Kegiatan</th>
-                                <td>{{ $procurementPackage->package->activity?->kode }} {{ $procurementPackage->package->activity ? '- '.$procurementPackage->package->activity->nama : '' }}</td>
-                            </tr>
-                            <tr>
-                                <th class="pl-4">Sub Kegiatan</th>
-                                <td>{{ $procurementPackage->package->subActivity?->kode }} {{ $procurementPackage->package->subActivity ? '- '.$procurementPackage->package->subActivity->nama : '' }}</td>
-                            </tr>
-                            <tr>
-                                <th class="pl-4">Jenis Pengadaan</th>
-                                <td>
-                                    @if(isset($procurementPackage->package->jenis_pengadaan))
+                            @if($procurementPackage->package->jenis_pengadaan === 'Swakelola')
+                                <tr>
+                                    <th style="width: 35%;" class="pl-4">Kegiatan</th>
+                                    <td>{{ $procurementPackage->package->activity?->kode }} {{ $procurementPackage->package->activity ? '- '.$procurementPackage->package->activity->nama : '' }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="pl-4">Sub Kegiatan</th>
+                                    <td>{{ $procurementPackage->package->subActivity?->kode }} {{ $procurementPackage->package->subActivity ? '- '.$procurementPackage->package->subActivity->nama : '' }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="pl-4">Rekening Belanja</th>
+                                    <td>{{ $procurementPackage->package->account?->kode }} {{ $procurementPackage->package->account ? '- '.$procurementPackage->package->account->nama : '' }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="pl-4 border-bottom-0">Jenis Pengadaan</th>
+                                    <td class="border-bottom-0">
                                         <span class="badge badge-secondary px-2 py-1">{{ $procurementPackage->package->jenis_pengadaan }}</span>
-                                    @else
-                                        -
-                                    @endif
-                                </td>
-                            </tr>
-                            <tr>
-                                <th class="pl-4 border-bottom-0">Metode Pengadaan</th>
-                                <td class="border-bottom-0">{{ $procurementPackage->package->metode_pengadaan ?? '-' }}</td>
-                            </tr>
+                                    </td>
+                                </tr>
+                            @else
+                                <tr>
+                                    <th style="width: 35%;" class="pl-4">Program</th>
+                                    <td>{{ $procurementPackage->package->program?->kode }} {{ $procurementPackage->package->program ? '- '.$procurementPackage->package->program->nama : '' }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="pl-4">Kegiatan</th>
+                                    <td>{{ $procurementPackage->package->activity?->kode }} {{ $procurementPackage->package->activity ? '- '.$procurementPackage->package->activity->nama : '' }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="pl-4">Sub Kegiatan</th>
+                                    <td>{{ $procurementPackage->package->subActivity?->kode }} {{ $procurementPackage->package->subActivity ? '- '.$procurementPackage->package->subActivity->nama : '' }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="pl-4">Jenis Pengadaan</th>
+                                    <td>
+                                        @if(isset($procurementPackage->package->jenis_pengadaan))
+                                            <span class="badge badge-secondary px-2 py-1">{{ $procurementPackage->package->jenis_pengadaan }}</span>
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="pl-4 border-bottom-0">Metode Pengadaan</th>
+                                    <td class="border-bottom-0">{{ $procurementPackage->package->metode_pengadaan ?? '-' }}</td>
+                                </tr>
+                            @endif
                         </tbody>
                     </table>
                 </div>
@@ -150,6 +173,7 @@
         @csrf
         @method('PATCH')
 
+        @if($procurementPackage->package->jenis_pengadaan !== 'Swakelola')
         <fieldset {{ $procurementPackage->workflow_status !== \App\Models\ProcurementPackage::WORKFLOW_DRAFT ? 'disabled' : '' }}>
         <div class="row">
             {{-- KOLOM 1: INFORMASI PPK --}}
@@ -447,8 +471,218 @@
                     </div>
                 </div>
             </div>
-        </div>
+            </div>
         </fieldset>
+        @endif
+
+        @if($procurementPackage->package->jenis_pengadaan === 'Swakelola')
+            @php
+                $accountName = strtolower($procurementPackage->package->account?->nama ?? '');
+            @endphp
+            @if(str_contains($accountName, 'lembur'))
+            <div class="card card-outline card-warning mt-4 shadow-sm">
+                <div class="card-header">
+                    <h3 class="card-title font-weight-bold mb-0">
+                        <i class="fas fa-clock text-warning mr-2"></i> Pengelolaan Belanja Lembur
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Modul ini digunakan untuk mengelola administrasi pembayaran lembur, rekapitulasi jam kerja, dan pencetakan kwitansi lembur bulanan. Pilih bulan di bawah ini untuk menginput jam lembur melalui <strong>Sistem Kalender</strong>.</p>
+                    
+                    @php
+                        $months = [
+                            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 
+                            4 => 'April', 5 => 'Mei', 6 => 'Juni', 
+                            7 => 'Juli', 8 => 'Agustus', 9 => 'September', 
+                            10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+                        ];
+                        $sbuRates = \App\Models\SbuLembur::all();
+                        $overtimesList = \App\Models\Overtime::where('package_id', $procurementPackage->package->id)->with('details.employee')->get();
+                        
+                        $totalRealisasiLembur = 0;
+                        $overtimeData = [];
+                        foreach($months as $num => $name) {
+                            $overtime = $overtimesList->where('bulan', $num)->first();
+                            $totalBulanIni = 0;
+                            if ($overtime) {
+                                $totalBulanIni = $overtime->calculateTotalRealisasi($sbuRates);
+                                $totalRealisasiLembur += $totalBulanIni;
+                            }
+                            $overtimeData[$num] = [
+                                'exists' => $overtime != null,
+                                'total' => $totalBulanIni,
+                                'is_locked' => $overtime ? $overtime->is_locked : false
+                            ];
+                        }
+                        $paguLembur = (float) $procurementPackage->package->pagu;
+                        $sisaAnggaranLembur = $paguLembur - $totalRealisasiLembur;
+                        $persenRealisasi = $paguLembur > 0 ? ($totalRealisasiLembur / $paguLembur) * 100 : 0;
+                    @endphp
+
+                    <!-- WIDGET REALISASI ANGGARAN (CREATIVE) -->
+                    <div class="row mb-4 px-2">
+                        <div class="col-md-4">
+                            <div class="info-box bg-light shadow-sm" style="border-left: 4px solid #17a2b8; border-radius: 8px;">
+                                <span class="info-box-icon text-info bg-white shadow-sm" style="border-radius: 8px;"><i class="fas fa-money-bill-wave"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text text-muted font-weight-bold" style="font-size: 0.85rem; letter-spacing: 1px;">PAGU ANGGARAN</span>
+                                    <span class="info-box-number text-dark" style="font-size: 1.3rem;">Rp {{ number_format($paguLembur, 0, ',', '.') }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="info-box bg-light shadow-sm" style="border-left: 4px solid #28a745; border-radius: 8px;">
+                                <span class="info-box-icon text-success bg-white shadow-sm" style="border-radius: 8px;"><i class="fas fa-chart-line"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text text-muted font-weight-bold" style="font-size: 0.85rem; letter-spacing: 1px;">TOTAL REALISASI</span>
+                                    <span class="info-box-number text-success" style="font-size: 1.3rem;">Rp {{ number_format($totalRealisasiLembur, 0, ',', '.') }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="info-box bg-light shadow-sm" style="border-left: 4px solid {{ $sisaAnggaranLembur < 0 ? '#dc3545' : '#ffc107' }}; border-radius: 8px;">
+                                <span class="info-box-icon {{ $sisaAnggaranLembur < 0 ? 'text-danger' : 'text-warning' }} bg-white shadow-sm" style="border-radius: 8px;"><i class="fas fa-wallet"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text text-muted font-weight-bold" style="font-size: 0.85rem; letter-spacing: 1px;">SISA ANGGARAN</span>
+                                    <span class="info-box-number {{ $sisaAnggaranLembur < 0 ? 'text-danger' : 'text-warning' }}" style="font-size: 1.3rem;">Rp {{ number_format($sisaAnggaranLembur, 0, ',', '.') }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 mt-2">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="font-weight-bold text-muted">Persentase Penyerapan</small>
+                                <small class="font-weight-bold {{ $persenRealisasi > 90 ? 'text-danger' : 'text-success' }}">{{ number_format($persenRealisasi, 1) }}%</small>
+                            </div>
+                            <div class="progress shadow-sm" style="height: 8px; border-radius: 10px;">
+                                <div class="progress-bar {{ $persenRealisasi > 90 ? 'bg-danger' : 'bg-success' }}" role="progressbar" style="width: {{ $persenRealisasi }}%" aria-valuenow="{{ $persenRealisasi }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        @foreach($months as $num => $name)
+                            @php
+                                $data = $overtimeData[$num];
+                                $exists = $data['exists'];
+                            @endphp
+                            <div class="col-md-2 col-sm-4 col-6 mb-3">
+                                <a href="{{ route('packages.overtimes.show', [$procurementPackage->package, $num]) }}" class="text-decoration-none text-dark">
+                                    <div class="card shadow-sm h-100 {{ $exists ? 'border-warning' : 'border-light' }}" style="transition: 0.3s; cursor: pointer; border-radius: 12px; background: {{ $exists ? '#fffbf0' : '#ffffff' }};" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 15px rgba(255,193,7,0.2)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 .125rem .25rem rgba(0,0,0,.075)';">
+                                        <div class="card-body text-center p-3 d-flex flex-column justify-content-center">
+                                            <h3 class="text-{{ $exists ? 'warning' : 'secondary' }} mb-2" style="font-size: 1.8rem;">
+                                                <i class="fas {{ $exists ? 'fa-calendar-check' : 'fa-calendar-alt' }}"></i>
+                                            </h3>
+                                            <span class="font-weight-bold d-block text-dark">{{ $name }}</span>
+                                            @if($exists)
+                                                @if($data['is_locked'])
+                                                    <span class="badge badge-success mt-1 mx-auto" style="font-size: 0.7rem; border-radius: 20px; padding: 4px 8px;">Selesai Di-SPJ-kan (Kunci)</span>
+                                                @else
+                                                    <span class="badge badge-info mt-1 mx-auto" style="font-size: 0.7rem; border-radius: 20px; padding: 4px 8px;">Sedang Diproses (Draft)</span>
+                                                @endif
+                                                <div class="mt-2 text-success font-weight-bold" style="font-size: 0.8rem; letter-spacing: 0.5px;">Rp {{ number_format($data['total'], 0, ',', '.') }}</div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endif
+            @if(str_contains($accountName, 'perjalanan dinas'))
+            <div class="card card-outline card-primary mt-4 shadow-sm">
+                <div class="card-header">
+                    <h3 class="card-title font-weight-bold mb-0">
+                        <i class="fas fa-plane text-primary mr-2"></i> Tabel Informasi Perjalanan Dinas
+                    </h3>
+                    <div class="card-tools">
+                        <a href="{{ route('packages.travel-orders.create', $procurementPackage->package) }}" class="btn btn-primary btn-sm btn-modern">
+                            <i class="fas fa-plus mr-1"></i> Tambah Baru
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-striped table-hover mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>No</th>
+                                <th>Pegawai</th>
+                                <th>Tujuan</th>
+                                <th>Tgl Berangkat</th>
+                                <th>Tgl Kembali</th>
+                                <th>Biaya Perkiraan</th>
+                                <th>Biaya Rampung</th>
+                                <th class="text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($procurementPackage->package->travelOrders as $index => $to)
+                                <tr>
+                                    <td>{{ $index + 1 }}</td>
+                                    <td>
+                                        @foreach($to->personnels as $personnel)
+                                            <span class="badge badge-info">{{ $personnel->employee->nama }}</span>
+                                        @endforeach
+                                    </td>
+                                    <td>{{ $to->tempat_tujuan }}</td>
+                                    <td>{{ $to->tanggal_berangkat->format('d/m/Y') }}</td>
+                                    <td>{{ $to->tanggal_kembali->format('d/m/Y') }}</td>
+                                    <td>
+                                        @php
+                                            $totalPerkiraanTo = 0;
+                                            foreach($to->personnels as $p) {
+                                                $est = $p->getEstimatedCosts();
+                                                $totalPerkiraanTo += $est['uang_harian'] + $est['biaya_transport'] + $est['biaya_penginapan'] + $est['biaya_representasi'];
+                                            }
+                                        @endphp
+                                        Rp {{ number_format($totalPerkiraanTo, 0, ',', '.') }}
+                                    </td>
+                                    <td>Rp {{ number_format($to->personnels->sum(function($p) { return $p->uang_harian + $p->biaya_transport + $p->biaya_penginapan + $p->biaya_representasi; }), 0, ',', '.') }}</td>
+                                    <td class="text-center">
+                                        <a href="{{ route('packages.travel-orders.show', [$procurementPackage->package, $to]) }}" class="btn btn-sm btn-info rounded-pill px-3">Detail</a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">Belum ada perjalanan dinas untuk paket ini.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                        <tfoot class="bg-light">
+                            @php
+                                $pagu = $procurementPackage->package->pagu ?? 0;
+                                $realisasi = $procurementPackage->package->travelOrders->sum(function($to) { 
+                                    return $to->personnels->sum(function($p) { 
+                                        return $p->uang_harian + $p->biaya_transport + $p->biaya_penginapan + $p->biaya_representasi; 
+                                    }); 
+                                });
+                                $sisa = $pagu - $realisasi;
+                            @endphp
+                            <tr>
+                                <td colspan="5"></td>
+                                <td class="text-right align-middle font-weight-bold" style="font-size: 1.1rem;">Total Realisasi:</td>
+                                <td class="align-middle font-weight-bold" style="font-size: 1.1rem;">Rp {{ number_format($realisasi, 0, ',', '.') }}</td>
+                                <td class="align-middle text-center">
+                                    <div class="px-2 py-1 bg-white border rounded shadow-sm d-inline-block">
+                                        <small class="text-muted d-block font-weight-bold" style="font-size: 0.7rem; text-transform: uppercase;">Sisa Anggaran</small>
+                                        <strong class="{{ $sisa < 0 ? 'text-danger' : 'text-success' }}">Rp {{ number_format($sisa, 0, ',', '.') }}</strong>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            @endif
+            <!-- Empty replacement to remove the unused table -->
+        @endif
+
 {{-- ACTION BAR (TOMBOL BAWAH) --}}
         <div class="row mt-4 mb-5">
             <div class="col-12">
@@ -462,10 +696,12 @@
                     {{-- TOMBOL KANAN (AKSI) --}}
                     <div class="d-flex flex-column flex-md-row w-100 justify-content-lg-end text-center">
                         @if($procurementPackage->workflow_status === \App\Models\ProcurementPackage::WORKFLOW_DRAFT)
+                            @if($procurementPackage->package->jenis_pengadaan !== 'Swakelola')
                             <button type="submit" 
                                     class="btn btn-success btn-modern mb-2 mb-md-0 mr-md-3">
                                 <i class="fas fa-save mr-1"></i> Simpan Informasi
                             </button>
+                            
                             <button type="button" class="btn btn-warning btn-modern mb-2 mb-md-0 mr-md-2" data-toggle="modal" data-target="#editPromptModal">
                                 <i class="fas fa-cog mr-1"></i> Edit Prompt
                             </button>
@@ -476,10 +712,13 @@
                                     style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); border: none;">
                                 <i class="fas fa-robot mr-1"></i> Buat Dokumen
                             </button>
+                            @endif
                         @else
+                            @if($procurementPackage->package->jenis_pengadaan !== 'Swakelola')
                             <a href="{{ route('procurement-packages.procurement-process.show', $procurementPackage->package) }}" class="btn btn-info btn-modern" style="background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%); border: none;">
                                 <i class="fas fa-arrow-right mr-1"></i> Proses Pengadaan
                             </a>
+                            @endif
                         @endif
                     </div>
                 </div>

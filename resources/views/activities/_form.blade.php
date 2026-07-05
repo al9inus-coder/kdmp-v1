@@ -1,77 +1,78 @@
-@csrf
+@php
+    $val = fn($field) => old($field, $activity->{$field});
+    $hasError = fn($field) => $errors->has($field);
+@endphp
 
-<div class="form-group">
-    <label for="program_id">Program</label>
-    <select id="program_id"
-            name="program_id"
-            class="form-control @error('program_id') is-invalid @enderror"
-            required>
-        <option value="">Pilih Program</option>
-        @foreach($programs as $program)
-            <option value="{{ $program->id }}"
-                @selected((int) old('program_id', $activity->program_id) === $program->id)>
-                {{ $program->kode }} - {{ $program->nama }}
-            </option>
-        @endforeach
-    </select>
-    @error('program_id')
-        <div class="invalid-feedback">{{ $message }}</div>
-    @enderror
-</div>
+@if ($errors->any())
+    <div class="mb-6 flex items-start gap-3 p-4 bg-rose-50 border border-rose-200 rounded-xl">
+        <div class="p-1.5 rounded-full bg-rose-100 shrink-0">
+            <i data-lucide="alert-circle" class="w-4 h-4 text-rose-600"></i>
+        </div>
+        <div>
+            <p class="text-sm font-bold text-rose-800">Terjadi kesalahan validasi</p>
+            <ul class="mt-1 text-xs text-rose-600 list-disc list-inside space-y-0.5">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    </div>
+@endif
 
-<div class="form-group">
-    <label for="kode">Kode Kegiatan</label>
-    <input type="text"
-           id="kode"
-           name="kode"
-           maxlength="50"
-           class="form-control @error('kode') is-invalid @enderror"
-           value="{{ old('kode', $activity->kode) }}"
-           placeholder="Contoh: 1.02.01.001"
-           required>
-    @error('kode')
-        <div class="invalid-feedback">{{ $message }}</div>
-    @enderror
-</div>
+<section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden max-w-2xl">
+    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/60 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <i data-lucide="briefcase" class="w-4 h-4"></i>
+        </div>
+        <h3 class="text-sm font-bold text-slate-900">Informasi Kegiatan</h3>
+    </div>
+    <div class="p-6 space-y-4">
+        <div>
+            <label for="program_id" class="block text-sm font-semibold text-slate-700 mb-1.5">
+                Program <span class="text-rose-500">*</span>
+            </label>
+            <x-ui.select name="program_id" id="program_id" :invalid="$hasError('program_id')" required>
+                <option value="">Pilih Program</option>
+                @foreach($programs as $program)
+                    <option value="{{ $program->id }}" @selected((int) $val('program_id') === $program->id)>
+                        {{ $program->kode }} - {{ $program->nama }}
+                    </option>
+                @endforeach
+            </x-ui.select>
+            @error('program_id') <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
+        </div>
+        <div>
+            <label for="kode" class="block text-sm font-semibold text-slate-700 mb-1.5">
+                Kode Kegiatan <span class="text-rose-500">*</span>
+            </label>
+            <x-ui.input type="text" name="kode" id="kode" maxlength="50" placeholder="Contoh: 1.02.01.001" :value="$val('kode')" :invalid="$hasError('kode')" required />
+            @error('kode') <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
+        </div>
+        <div>
+            <label for="nama" class="block text-sm font-semibold text-slate-700 mb-1.5">
+                Nama Kegiatan <span class="text-rose-500">*</span>
+            </label>
+            <x-ui.input type="text" name="nama" id="nama" maxlength="255" placeholder="Masukkan nama kegiatan" :value="$val('nama')" :invalid="$hasError('nama')" required />
+            @error('nama') <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
+        </div>
+        <div>
+            <label for="is_active" class="block text-sm font-semibold text-slate-700 mb-1.5">
+                Status <span class="text-rose-500">*</span>
+            </label>
+            <x-ui.select name="is_active" id="is_active" :invalid="$hasError('is_active')" required>
+                <option value="1" @selected((int) $val('is_active') === 1)>Aktif</option>
+                <option value="0" @selected((int) $val('is_active') === 0)>Nonaktif</option>
+            </x-ui.select>
+            @error('is_active') <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
+        </div>
+    </div>
+</section>
 
-<div class="form-group">
-    <label for="nama">Nama Kegiatan</label>
-    <input type="text"
-           id="nama"
-           name="nama"
-           maxlength="255"
-           class="form-control @error('nama') is-invalid @enderror"
-           value="{{ old('nama', $activity->nama) }}"
-           placeholder="Masukkan nama kegiatan"
-           required>
-    @error('nama')
-        <div class="invalid-feedback">{{ $message }}</div>
-    @enderror
-</div>
-
-<div class="form-group">
-    <label for="is_active">Status</label>
-    <select id="is_active"
-            name="is_active"
-            class="form-control @error('is_active') is-invalid @enderror"
-            required>
-        <option value="1" @selected((int) old('is_active', $activity->is_active) === 1)>
-            Aktif
-        </option>
-        <option value="0" @selected((int) old('is_active', $activity->is_active) === 0)>
-            Nonaktif
-        </option>
-    </select>
-    @error('is_active')
-        <div class="invalid-feedback">{{ $message }}</div>
-    @enderror
-</div>
-
-<div class="mt-3">
-    <button type="submit" class="btn btn-success">
-        {{ $submitLabel }}
-    </button>
-    <a href="{{ route('activities.index') }}" class="btn btn-secondary">
-        Kembali
-    </a>
+<div class="flex flex-wrap items-center justify-end gap-3 mt-8 max-w-2xl">
+    <x-ui.button variant="secondary" size="md" href="{{ route('activities.index') }}">
+        <i data-lucide="x" class="w-4 h-4 mr-2"></i> Batal
+    </x-ui.button>
+    <x-ui.button variant="primary" size="lg" type="submit">
+        <i data-lucide="save" class="w-4 h-4 mr-2"></i> {{ $submitLabel }}
+    </x-ui.button>
 </div>

@@ -321,6 +321,12 @@ return [
     'icon' => 'fas fa-building',
     ],
     [
+        'text' => 'Master Pegawai',
+        'route' => 'employees.index',
+        'icon' => 'fas fa-users',
+        'active' => ['employees', 'employees/*'],
+    ],
+    [
     'text' => 'Tahun Anggaran',
     'url'  => 'fiscal-years',
     'icon' => 'fas fa-calendar',
@@ -359,9 +365,22 @@ return [
         'header' => 'PAKET PENGADAAN',
     ],
     [
-        'text' => 'Daftar Paket Pengadaan',
-        'route' => 'procurement-packages.index',
-        'icon' => 'fas fa-shopping-cart',
+        'text' => 'Khusus Penyedia',
+        'url'  => 'procurement-packages?type=penyedia',
+        'icon' => 'fas fa-truck',
+        'active' => ['procurement-packages?type=penyedia*'],
+    ],
+    [
+        'text' => 'Khusus Swakelola',
+        'url'  => 'procurement-packages?type=swakelola',
+        'icon' => 'fas fa-people-carry',
+        'active' => ['procurement-packages?type=swakelola*'],
+    ],
+    [
+        'text' => 'Khusus Dikecualikan',
+        'url'  => 'procurement-packages?type=dikecualikan',
+        'icon' => 'fas fa-ban',
+        'active' => ['procurement-packages?type=dikecualikan*'],
     ],
 
     [
@@ -378,11 +397,53 @@ return [
         'icon' => 'fas fa-chart-line',
         'active' => ['monev', 'monev/*'],
     ],
+    [
+        'text' => 'Buku Register',
+        'route' => 'buku-register.index',
+        'icon' => 'fas fa-book',
+        'active' => ['buku-register', 'buku-register/*'],
+    ],
 
     [
         'header' => 'SISTEM',
     ],
 
+    [
+        'text' => 'Data SBU',
+        'icon' => 'fas fa-database',
+        'submenu' => [
+            [
+                'text' => 'SBU Uang Harian',
+                'route' => 'sbu-uang-harians.index',
+                'icon' => 'fas fa-money-bill-wave',
+                'active' => ['sbu-uang-harians', 'sbu-uang-harians/*'],
+            ],
+            [
+                'text' => 'SBU Penginapan',
+                'route' => 'sbu-penginapans.index',
+                'icon' => 'fas fa-bed',
+                'active' => ['sbu-penginapans', 'sbu-penginapans/*'],
+            ],
+            [
+                'text' => 'SBU Tiket Pesawat',
+                'route' => 'sbu-tiket-pesawats.index',
+                'icon' => 'fas fa-plane',
+                'active' => ['sbu-tiket-pesawats', 'sbu-tiket-pesawats/*'],
+            ],
+            [
+                'text' => 'SBU Transportasi',
+                'route' => 'sbu-transport-rates.index',
+                'icon' => 'fas fa-car',
+                'active' => ['sbu-transport-rates', 'sbu-transport-rates/*'],
+            ],
+            [
+                'text' => 'SBU Lembur',
+                'route' => 'sbu-lemburs.index',
+                'icon' => 'fas fa-clock',
+                'active' => ['sbu-lemburs', 'sbu-lemburs/*'],
+            ],
+        ]
+    ],
     [
         'text' => 'Pengaturan',
         'url'  => '#',

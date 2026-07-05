@@ -46,13 +46,9 @@
         </div>
     </div>
 
-    {{-- TOMBOL TAMBAH --}}
+    {{-- JUDUL DAFTAR REFERENSI --}}
     <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
         <h4 class="m-0 text-dark font-weight-bold">Daftar Referensi Harga</h4>
-        <a href="{{ route('procurement-packages.price-references.create', $procurementPackage->package) }}"
-           class="btn btn-primary rounded-pill shadow-sm px-4">
-            <i class="fas fa-plus mr-1"></i> Tambah Referensi
-        </a>
     </div>
 
     {{-- LIST REFERENSI HARGA (LOOPING) --}}
@@ -74,39 +70,45 @@
         @endphp
         <div class="card card-outline card-info shadow-sm mb-4">
             
-            {{-- HEADER CARD BARANG (RAPAT KE KIRI) --}}
-            <div class="card-header bg-white d-flex flex-wrap align-items-center py-3">
-                <h5 class="font-weight-bold text-info mb-2 mb-md-0 mr-4">
-                    <i class="fas fa-cube mr-2"></i>
-                    {{ $item->nama_barang_jasa }}
-                    <span class="badge badge-info ml-2">
-                        {{ $references->count() }}/3 Referensi
-                    </span>
-                </h5>
-                <div class="d-flex flex-wrap">
-                    <span class="badge badge-light border px-3 py-2 mr-2 text-sm text-dark font-weight-normal elevation-1">
-                        <span class="text-secondary mr-1">
-                            Volume:
+            {{-- HEADER CARD BARANG --}}
+            <div class="card-header bg-white d-flex flex-wrap align-items-center justify-content-between py-3">
+                <div class="d-flex flex-wrap align-items-center">
+                    <h5 class="font-weight-bold text-info mb-2 mb-md-0 mr-4">
+                        <i class="fas fa-cube mr-2"></i>
+                        {{ $item->nama_barang_jasa }}
+                        <span class="badge badge-info ml-2">
+                            {{ $references->count() }}/3 Referensi
                         </span>
-                        <strong>
-                            {{ number_format((float) $item->volume,0,',','.') }}
-                            {{ $item->satuan }}
-                        </strong>
-                    </span>
-                    <span class="badge badge-light border px-3 py-2 text-sm text-dark font-weight-normal elevation-1">
-                        <span class="text-secondary mr-1">
-                            Harga Satuan DPA:
+                    </h5>
+                    <div class="d-flex flex-wrap">
+                        <span class="badge badge-light border px-3 py-2 mr-2 text-sm text-dark font-weight-normal elevation-1">
+                            <span class="text-secondary mr-1">
+                                Volume:
+                            </span>
+                            <strong>
+                                {{ number_format((float) $item->volume,0,',','.') }}
+                                {{ $item->satuan }}
+                            </strong>
                         </span>
-                        <strong>
-                            Rp {{ number_format(
-                                $item->harga_satuan_dpa ?? 0,
-                                0,
-                                ',',
-                                '.'
-                            ) }}
-                        </strong>
-                    </span>
+                        <span class="badge badge-light border px-3 py-2 text-sm text-dark font-weight-normal elevation-1">
+                            <span class="text-secondary mr-1">
+                                Harga Satuan DPA:
+                            </span>
+                            <strong>
+                                Rp {{ number_format(
+                                    $item->harga_satuan_dpa ?? 0,
+                                    0,
+                                    ',',
+                                    '.'
+                                ) }}
+                            </strong>
+                        </span>
+                    </div>
                 </div>
+                <a href="{{ route('procurement-packages.price-references.create', ['package' => $procurementPackage->package, 'technical_specification_item_id' => $item->id]) }}"
+                   class="btn btn-sm btn-primary rounded-pill shadow-sm px-3 mt-2 mt-md-0">
+                    <i class="fas fa-plus mr-1"></i> Tambah Referensi
+                </a>
             </div>
 
             {{-- TABEL REFERENSI --}}

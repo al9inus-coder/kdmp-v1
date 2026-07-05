@@ -9,7 +9,23 @@ use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request)
+    public function index()
+    {
+        if (auth()->check()) {
+            if (auth()->user()->hasRole(['Admin', 'Super Admin'])) {
+                return redirect()->route('dashboard.admin');
+            } elseif (auth()->user()->hasRole('Kabid')) {
+                return redirect()->route('dashboard.kabid');
+            } elseif (auth()->user()->hasRole('Staff')) {
+                return redirect()->route('dashboard.staf');
+            }
+        }
+        
+        // Default fallback
+        return redirect()->route('dashboard.admin');
+    }
+
+    public function admin(Request $request)
     {
         $fiscalYears = FiscalYear::orderBy('tahun', 'desc')->get();
         
@@ -60,13 +76,11 @@ class DashboardController extends Controller
             ->toArray();
 
         // Late Packages (Warning System)
-        // Find packages still in draft or preparation when current date > target date
         $latePackages = (clone $packagesQuery)
-            ->where('target_procurement_date', '<', now())
+            ->where('pemilihan_mulai_bulan', '<=', now()->month)
             ->whereHas('procurementPackage', function($q) {
                 $q->whereIn('workflow_status', [
-                    ProcurementPackage::WORKFLOW_DRAFT,
-                    ProcurementPackage::WORKFLOW_PREPARATION_COMPLETED
+                    ProcurementPackage::WORKFLOW_DRAFT
                 ]);
             })
             ->with(['procurementPackage', 'activity', 'subActivity'])
@@ -80,18 +94,132 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        return view('dashboard', compact(
-            'fiscalYears', 
-            'fiscalYearId', 
-            'totalPagu', 
-            'totalPackages', 
-            'completedCount',
-            'realizedBudget',
-            'absorptionPercentage',
-            'statusDistribution',
-            'jenisPengadaanDistribution',
-            'latePackages',
-            'recentActivities'
+        return view('dashboard.admin', compact(
+            'fiscalYears', 'fiscalYearId', 'totalPagu', 'totalPackages', 'completedCount',
+            'realizedBudget', 'absorptionPercentage', 'statusDistribution',
+            'jenisPengadaanDistribution', 'latePackages', 'recentActivities'
+        ));
+    }
+
+    public function kabid(Request $request)
+    {
+        $activeFiscalYear = FiscalYear::where('is_active', true)->first()
+            ?? FiscalYear::orderBy('tahun', 'desc')->first();
+
+        $baseQuery = Package::query();
+        if ($activeFiscalYear) {
+            $baseQuery->where('fiscal_year_id', $activeFiscalYear->id);
+        }
+
+        $totalPaket       = (clone $baseQuery)->count();
+        $totalPagu        = (clone $baseQuery)->sum('pagu');
+        $needsReviewCount = (clone $baseQuery)->where('status', 'needs_review')->count();
+        $draftCount       = (clone $baseQuery)->where('status', 'draft')->count();
+        $submittedCount   = (clone $baseQuery)->where('status', 'submitted')->count();
+        $approvedCount    = (clone $baseQuery)->where('status', 'approved')->count();
+
+        $submittedPagu = (clone $baseQuery)->where('status', 'submitted')->sum('pagu');
+
+        // Paket menunggu persetujuan (yang paling lama diajukan tampil dulu)
+        $pendingPackages = (clone $baseQuery)
+            ->with(['subActivity', 'submitter'])
+            ->where('status', 'submitted')
+            ->orderBy('submitted_at')
+            ->limit(8)
+            ->get();
+
+        // Riwayat persetujuan terakhir
+        $recentApproved = (clone $baseQuery)
+            ->with('approver')
+            ->where('status', 'approved')
+            ->whereNotNull('approved_at')
+            ->orderByDesc('approved_at')
+            ->limit(6)
+            ->get();
+
+        return view('dashboard.kabid', compact(
+            'activeFiscalYear',
+            'totalPaket', 'totalPagu',
+            'needsReviewCount', 'draftCount', 'submittedCount', 'approvedCount',
+            'submittedPagu', 'pendingPackages', 'recentApproved'
+        ));
+    }
+
+    public function staf(Request $request)
+    {
+        $user = auth()->user();
+
+        // Ambil tahun fiskal aktif
+        $activeFiscalYear = FiscalYear::where('is_active', true)->first()
+            ?? FiscalYear::orderBy('tahun', 'desc')->first();
+
+        // Statistik paket berdasarkan status
+        $baseQuery = Package::query();
+        if ($activeFiscalYear) {
+            $baseQuery->where('fiscal_year_id', $activeFiscalYear->id);
+        }
+
+        $totalPaket      = (clone $baseQuery)->count();
+        $totalPagu       = (clone $baseQuery)->sum('pagu');
+        $draftCount      = (clone $baseQuery)->where('status', 'draft')->count();
+        $needsReviewCount = (clone $baseQuery)->where('status', 'needs_review')->count();
+        $submittedCount  = (clone $baseQuery)->where('status', 'submitted')->count();
+        $approvedCount   = (clone $baseQuery)->where('status', 'approved')->count();
+
+        // Paket terbaru (5 terakhir)
+        $recentPackages = (clone $baseQuery)
+            ->with(['subActivity.activity.program'])
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        // Paket needs_review (perlu dilengkapi)
+        $needsReviewPackages = (clone $baseQuery)
+            ->where('status', 'needs_review')
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        // Aktivitas terakhir user ini: impor RUP dan pengajuan paket
+        $recentActivities = collect()
+            ->concat(
+                \App\Models\ImportBatch::where('created_by', $user->id)
+                    ->orderByDesc('created_at')
+                    ->limit(6)
+                    ->get()
+                    ->map(fn ($batch) => [
+                        'icon'  => 'upload',
+                        'color' => 'emerald',
+                        'title' => 'Impor RUP: '.$batch->file_name,
+                        'desc'  => $batch->success_rows.' berhasil, '.$batch->failed_rows.' gagal',
+                        'time'  => $batch->created_at,
+                        'url'   => route('staf.packages.import.show', $batch),
+                    ])
+            )
+            ->concat(
+                Package::where('submitted_by', $user->id)
+                    ->whereNotNull('submitted_at')
+                    ->orderByDesc('submitted_at')
+                    ->limit(6)
+                    ->get()
+                    ->map(fn ($pkg) => [
+                        'icon'  => 'send',
+                        'color' => 'blue',
+                        'title' => 'Mengajukan: '.$pkg->nama_paket,
+                        'desc'  => 'Rp '.number_format((float) $pkg->pagu, 0, ',', '.'),
+                        'time'  => $pkg->submitted_at,
+                        'url'   => route('staf.packages.show', $pkg),
+                    ])
+            )
+            ->sortByDesc('time')
+            ->take(6)
+            ->values();
+
+        return view('staf.dashboard', compact(
+            'activeFiscalYear',
+            'totalPaket', 'totalPagu',
+            'draftCount', 'needsReviewCount', 'submittedCount', 'approvedCount',
+            'recentPackages', 'needsReviewPackages', 'recentActivities'
         ));
     }
 }

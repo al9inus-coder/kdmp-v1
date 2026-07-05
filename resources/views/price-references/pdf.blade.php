@@ -131,7 +131,9 @@ table.tabel-referensi td.right {
 </head>
 <body>
 
+@if(!request('embed'))
 <button class="btn-print no-print" onclick="window.print()">Cetak</button>
+@endif
 
 <div class="document-viewer">
     <div class="document-paper">

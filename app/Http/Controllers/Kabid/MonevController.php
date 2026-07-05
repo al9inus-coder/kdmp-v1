@@ -1,0 +1,53 @@
+<?php
+
+namespace App\Http\Controllers\Kabid;
+
+use App\Http\Controllers\Controller;
+use App\Models\Program;
+use App\Models\SbuLembur;
+use App\Models\SubActivity;
+use Illuminate\View\View;
+
+class MonevController extends Controller
+{
+    public function index(): View
+    {
+        $programs = Program::query()
+            ->with([
+                'activities.subActivities.packages' => function ($query) {
+                    $query->where('status', 'approved');
+                },
+                'activities.subActivities.packages.procurementPackage.procurementProcess',
+                'activities.subActivities.packages.procurementPackage.externalRecords',
+                'activities.subActivities.packages.travelOrders.personnels',
+                'activities.subActivities.packages.overtimes.details.employee',
+            ])
+            ->whereHas('activities.subActivities')
+            ->orderBy('kode')
+            ->get();
+
+        $sbuRates = SbuLembur::all();
+
+        return view('kabid.monev.index', compact('programs', 'sbuRates'));
+    }
+
+    public function show(SubActivity $subActivity): View
+    {
+        $subActivity->load([
+            'activity.program',
+            'packages' => function ($query) {
+                $query->where('status', 'approved');
+            },
+            'packages.procurementPackage.procurementProcess',
+            'packages.procurementPackage.externalRecords',
+            'packages.travelOrders.personnels',
+            'packages.overtimes.details.employee',
+            'packages.account',
+            'packages.fiscalYear',
+        ]);
+
+        $sbuRates = SbuLembur::all();
+
+        return view('kabid.monev.show', compact('subActivity', 'sbuRates'));
+    }
+}

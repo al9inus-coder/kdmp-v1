@@ -1,18 +1,18 @@
-@extends('adminlte::page')
-
+@component('layouts.kdmp')
 @section('title', 'Tambah Program')
 
-@section('content_header')
-    <h1>Tambah Program</h1>
-@stop
+<x-ui.toast />
 
-@section('content')
-    <div class="card">
-        <div class="card-body">
-            <form action="{{ route('programs.store') }}" method="POST">
-                @php($submitLabel = 'Simpan')
-                @include('programs._form', ['submitLabel' => $submitLabel])
-            </form>
-        </div>
-    </div>
-@stop
+<x-ui.workspace title="Tambah Program" description="Tambahkan program anggaran baru.">
+    <x-slot:actions>
+        <x-ui.button variant="outline" size="md" href="{{ route('programs.index') }}">
+            <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
+        </x-ui.button>
+    </x-slot:actions>
+
+    <form action="{{ route('programs.store') }}" method="POST">
+        @csrf
+        @include('programs._form', ['submitLabel' => 'Simpan'])
+    </form>
+</x-ui.workspace>
+@endcomponent

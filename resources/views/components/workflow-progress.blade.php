@@ -18,10 +18,7 @@ $steps = [
     [
         'title' => 'Pemilihan Penyedia',
         'icon' => 'fas fa-users',
-        'status_keys' => [
-            \App\Models\ProcurementPackage::WORKFLOW_PROVIDER_SELECTION,
-            \App\Models\ProcurementPackage::WORKFLOW_PURCHASE_ORDER
-        ],
+        'status_key' => \App\Models\ProcurementPackage::WORKFLOW_PROVIDER_SELECTION,
         'url' => route('procurement-packages.procurement-process.show', $procurementPackage->package),
     ],
     [
@@ -44,10 +41,7 @@ $steps = [
     ],
 ];
 
-// Special correction for when workflow is past draft but still labeled as draft due to preparations completed
-if ($procurementPackage->workflow_status === \App\Models\ProcurementPackage::WORKFLOW_PREPARATION_COMPLETED) {
-    $currentStatusIndex = 0; // It acts as index 0 (Draft) but with isCompleted = true for Draft.
-}
+// Special correction logic removed
 
 $percentage = min(100, max(0, ($currentStatusIndex / (count($steps) - 1)) * 100));
 @endphp
@@ -176,10 +170,7 @@ $percentage = min(100, max(0, ($currentStatusIndex / (count($steps) - 1)) * 100)
                         $stepKeyToCheck = $step['status_key'];
                     }
                     
-                    if ($stepKeyToCheck === \App\Models\ProcurementPackage::WORKFLOW_DRAFT && $procurementPackage->workflow_status === \App\Models\ProcurementPackage::WORKFLOW_PREPARATION_COMPLETED) {
-                        $isCompleted = true;
-                        $isActive = false;
-                    }
+                    // Special case logic for preparation completed removed.
                     
                     // Special case to light up "Persiapan Pengadaan" if completed
                     if ($stepKeyToCheck === \App\Models\ProcurementPackage::WORKFLOW_DRAFT && $currentStatusIndex > 0) {

@@ -16,7 +16,6 @@
 
             <table class="inner-table mt-3">
                 <tr><td class="inner-label">Penyedia</td><td class="col-colon">:</td><td>{{ strtoupper($process->nama_penyedia) }}</td></tr>
-                <tr><td class="inner-label">Nama</td><td class="col-colon">:</td><td>{{ strtoupper($process->nama_pic) }}</td></tr>
                 <tr><td class="inner-label">Alamat</td><td class="col-colon">:</td><td>{{ $process->alamat_penyedia ?? '-' }}</td></tr>
                 <tr><td class="inner-label">Telepon</td><td class="col-colon">:</td><td>-</td></tr>
                 <tr><td class="inner-label">Website</td><td class="col-colon">:</td><td>-</td></tr>

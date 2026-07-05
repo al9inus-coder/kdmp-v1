@@ -91,6 +91,7 @@
                 $no = 1;
                 $sumPagu = 0;
                 $sumRealisasi = 0;
+                $sbuRates = \App\Models\SbuLembur::all();
             @endphp
             
             @php
@@ -106,8 +107,22 @@
                     $groupPagu = $packages->sum('pagu');
                     $groupRealisasi = 0;
                     foreach($packages as $pkg) {
-                        if($pkg->procurementPackage && $pkg->procurementPackage->procurementProcess) {
-                            $groupRealisasi += (float) $pkg->procurementPackage->procurementProcess->nilai_kontrak;
+                        if($pkg->procurementPackage) {
+                            $groupRealisasi += (float) $pkg->procurementPackage->realisasi;
+                        }
+                        if($pkg->travelOrders) {
+                            foreach($pkg->travelOrders as $to) {
+                                foreach($to->personnels as $personnel) {
+                                    $groupRealisasi += $personnel->uang_harian + $personnel->biaya_penginapan + $personnel->biaya_representasi + $personnel->biaya_transport + ($personnel->biaya_taksi ?? 0);
+                                }
+                            }
+                        }
+                        if($pkg->overtimes) {
+                            foreach($pkg->overtimes as $overtime) {
+                                if($overtime->is_locked) {
+                                    $groupRealisasi += $overtime->calculateTotalRealisasi($sbuRates);
+                                }
+                            }
                         }
                     }
                     

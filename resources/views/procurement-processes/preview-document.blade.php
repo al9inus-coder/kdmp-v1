@@ -132,7 +132,7 @@
                 </button>
 
                 @if(in_array($procurementPackage->workflow_status, [
-                    \App\Models\ProcurementPackage::WORKFLOW_PURCHASE_ORDER,
+                    \App\Models\ProcurementPackage::WORKFLOW_PROVIDER_SELECTION,
                     \App\Models\ProcurementPackage::WORKFLOW_EXECUTION,
                     \App\Models\ProcurementPackage::WORKFLOW_PAYMENT_PROCESS,
                     \App\Models\ProcurementPackage::WORKFLOW_COMPLETED

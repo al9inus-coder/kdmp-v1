@@ -1,7 +1,7 @@
 @csrf
 
 @php
-    $selectedBarangJasaId = old('technical_specification_item_id');
+    $selectedBarangJasaId = old('technical_specification_item_id', request('technical_specification_item_id'));
 
     if (!$selectedBarangJasaId) {
         $selectedBarangJasaId = collect($barangJasaOptions)

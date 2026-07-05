@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Package extends Model
 {
@@ -32,12 +33,6 @@ class Package extends Model
 
     'status',
 
-    'procurement_status',
-    'target_procurement_date',
-    'pptk_name',
-    'ppk_name',
-    'procurement_notes',
-
     'submitted_at',
     'submitted_by',
     'approved_at',
@@ -52,7 +47,6 @@ class Package extends Model
 
     'kontrak_mulai_bulan' => 'integer',
     'kontrak_selesai_bulan' => 'integer',
-    'target_procurement_date' => 'date',
 
     'submitted_at' => 'datetime',
     'approved_at' => 'datetime',
@@ -81,6 +75,16 @@ class Package extends Model
         return $this->belongsTo(SubActivity::class);
     }
 
+    public function submitter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'submitted_by');
+    }
+
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
     public function account(): BelongsTo
     {
         return $this->belongsTo(Account::class);
@@ -89,6 +93,16 @@ class Package extends Model
     public function procurementPackage(): HasOne
     {
         return $this->hasOne(ProcurementPackage::class);
+    }
+
+    public function travelOrders(): HasMany
+    {
+        return $this->hasMany(TravelOrder::class);
+    }
+
+    public function overtimes(): HasMany
+    {
+        return $this->hasMany(Overtime::class);
     }
     public static function monthNames(): array
     {
@@ -128,8 +142,14 @@ class Package extends Model
 
     public function resolveRouteBinding($value, $field = null)
     {
-        return $this->where('id_rup', $value)
-                    ->orWhere('id', $value)
-                    ->firstOrFail();
+        // Cari berdasarkan id_rup terlebih dahulu (exact match)
+        $package = $this->where('id_rup', $value)->first();
+
+        // Jika tidak ditemukan berdasarkan id_rup, cari berdasarkan primary key
+        if (!$package) {
+            $package = $this->where('id', $value)->firstOrFail();
+        }
+
+        return $package ?? abort(404);
     }
 }

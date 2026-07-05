@@ -23,6 +23,8 @@ class Skpd extends Model
         'nama_pptk',
         'nip_pptk',
         'pangkat_pptk',
+        'nama_bendahara',
+        'nip_bendahara',
     ];
 
     public function programs()

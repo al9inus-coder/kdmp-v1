@@ -1,192 +1,303 @@
-@extends('adminlte::page')
+@component('layouts.kdmp')
+@section('title', 'Monitoring & Evaluasi')
 
-@section('title', 'Monitoring & Evaluasi (Monev)')
+@php
+    $summary = [
+        'pagu' => 0,
+        'realisasi' => 0,
+        'penyedia' => 0,
+        'swakelola' => 0,
+        'sub_kegiatan' => 0,
+    ];
 
-@section('content_header')
-    <h1>Monitoring & Evaluasi (Monev)</h1>
-@stop
+    $packageRealisasi = function ($pkg) use ($sbuRates) {
+        $total = 0;
 
-@section('content')
-<style>
-    .card-progress-wrapper {
-        position: relative;
-        padding: 4px;
-        border-radius: 0.35rem;
-        background: conic-gradient(
-            var(--progress-color, #28a745) calc(var(--progress, 0) * 1%), 
-            #e9ecef 0
-        );
-        margin-bottom: 1.5rem;
-        transition: all 0.3s ease;
-        height: calc(100% - 1.5rem);
-        display: flex;
-        flex-direction: column;
-    }
-    .card-progress-wrapper::before {
-        content: "";
-        position: absolute;
-        top: 4px; left: 4px; right: 4px; bottom: 4px;
-        background-color: white;
-        border-radius: calc(0.35rem - 2px);
-        z-index: 0;
-    }
-    .card-progress-wrapper .card {
-        margin-bottom: 0;
-        height: 100%;
-        border: none;
-        border-radius: 0.25rem;
-        z-index: 1;
-        background: transparent;
-    }
-    .card-progress-wrapper .card-header {
-        border-bottom: 1px solid rgba(0,0,0,.125);
-        color: #fff; /* Ensure text is readable on colored backgrounds */
-    }
-    .card-progress-wrapper .list-group-item {
-        background: transparent;
-    }
-    .card-link-wrapper {
-        text-decoration: none !important;
-        color: inherit;
-    }
-    .card-progress-wrapper:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,.15) !important;
-    }
-</style>
-
-<div class="container-fluid pb-4">
-    @forelse($programs as $program)
-        <h4 class="text-primary mt-4 mb-3 border-bottom pb-2">
-            <i class="fas fa-project-diagram mr-2"></i>{{ $program->kode }} - {{ $program->nama }}
-        </h4>
-
-        @foreach($program->activities as $activity)
-            @php
-                // Generate a consistent color based on the Activity ID
-                $bgColors = ['bg-primary', 'bg-success', 'bg-info', 'bg-warning text-dark', 'bg-danger', 'bg-secondary', 'bg-dark'];
-                $headerColorClass = $bgColors[$activity->id % count($bgColors)];
-            @endphp
-            <div class="d-flex justify-content-between align-items-center mb-3 mt-3 ml-2 mr-3">
-                <h5 class="text-secondary mb-0">
-                    <i class="fas fa-tasks mr-2"></i>Kegiatan: {{ $activity->kode }} - {{ $activity->nama }}
-                </h5>
-                <button type="button" class="btn btn-sm btn-outline-info font-weight-bold" onclick="printHidden('{{ route('control-cards.print', $activity) }}')">
-                    <i class="fas fa-print mr-1"></i> Cetak Kendali
-                </button>
-            </div>
-            
-            <div class="row ml-1">
-                @foreach($activity->subActivities as $subActivity)
-                    @php
-                        $totalPagu = 0;
-                        $totalRealisasi = 0;
-                        $paketSwakelola = 0;
-                        $paketPenyedia = 0;
-
-                        foreach($subActivity->packages as $pkg) {
-                            $totalPagu += $pkg->pagu;
-                            
-                            if($pkg->procurementPackage && $pkg->procurementPackage->procurementProcess) {
-                                $totalRealisasi += $pkg->procurementPackage->procurementProcess->nilai_kontrak;
-                            }
-                            
-                            $jenis = strtolower(($pkg->jenis_pengadaan ?? '') . ' ' . ($pkg->metode_pengadaan ?? ''));
-                            if(str_contains($jenis, 'swakelola')) {
-                                $paketSwakelola++;
-                            } else {
-                                $paketPenyedia++;
-                            }
-                        }
-
-                        $sisaPagu = $totalPagu - $totalRealisasi;
-                        $progress = $totalPagu > 0 ? min(100, ($totalRealisasi / $totalPagu) * 100) : 0;
-                        
-                        $progressColor = '#dc3545';
-                        if($progress >= 40) $progressColor = '#ffc107';
-                        if($progress >= 75) $progressColor = '#28a745';
-                        if($progress == 100) $progressColor = '#007bff';
-                    @endphp
-
-                    <div class="col-md-6 col-lg-4 col-xl-3 d-flex align-items-stretch">
-                        <a href="{{ route('monev.show', $subActivity->id) }}" class="card-link-wrapper w-100">
-                            <div class="card-progress-wrapper shadow-sm" style="--progress: {{ $progress }}; --progress-color: {{ $progressColor }};">
-                                <div class="card">
-                                    <div class="card-header {{ $headerColorClass }}">
-                                        <h3 class="card-title text-truncate w-100" title="{{ $subActivity->kode }} - {{ $subActivity->nama }}">
-                                            <b>{{ $subActivity->kode }}</b><br>
-                                            <small class="text-wrap" style="line-height: 1.2;">{{ $subActivity->nama }}</small>
-                                        </h3>
-                                    </div>
-                                    <div class="card-body bg-white">
-                                        <ul class="list-group list-group-flush mb-3 small">
-                                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                            <span>Total Pagu</span>
-                                            <span class="badge bg-primary rounded-pill">Rp {{ number_format($totalPagu, 0, ',', '.') }}</span>
-                                        </li>
-                                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                            <span>Realisasi</span>
-                                            <span class="badge bg-success rounded-pill">Rp {{ number_format($totalRealisasi, 0, ',', '.') }}</span>
-                                        </li>
-                                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                            <span>Sisa Dana</span>
-                                            <span class="badge bg-danger rounded-pill">Rp {{ number_format($sisaPagu, 0, ',', '.') }}</span>
-                                        </li>
-                                    </ul>
-                                    
-                                    <div class="d-flex justify-content-between mb-3 text-muted small">
-                                        <span><i class="fas fa-users text-info"></i> Penyedia: <b>{{ $paketPenyedia }}</b></span>
-                                        <span><i class="fas fa-people-carry text-warning"></i> Swakelola: <b>{{ $paketSwakelola }}</b></span>
-                                    </div>
-                                    
-                                    <div class="progress mb-1" style="height: 6px;">
-                                        <div class="progress-bar" role="progressbar" style="width: {{ $progress }}%; background-color: {{ $progressColor }}" aria-valuenow="{{ $progress }}" aria-valuemin="0" aria-valuemax="100"></div>
-                                    </div>
-                                    <div class="text-center font-weight-bold" style="color: {{ $progressColor }}; font-size: 0.85rem;">
-                                        {{ number_format($progress, 1, ',', '.') }}% Terserap
-                                    </div>
-                                </div>
-                                <div class="card-footer text-center bg-light border-0 pt-2 pb-2">
-                                    <span class="text-primary small font-weight-bold">
-                                        Klik untuk Detail <i class="fas fa-arrow-right ml-1"></i>
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        </a>
-                    </div>
-                @endforeach
-            </div>
-        @endforeach
-    @empty
-        <div class="alert alert-info">
-            <i class="fas fa-info-circle"></i> Belum ada data Program, Kegiatan, dan Sub Kegiatan yang dapat dimonitor.
-        </div>
-    @endforelse
-</div>
-
-@push('js')
-<script>
-    function printHidden(url) {
-        var oldIframe = document.getElementById('hidden-print-iframe');
-        if (oldIframe) {
-            oldIframe.remove();
+        if ($pkg->procurementPackage) {
+            $total += (float) $pkg->procurementPackage->realisasi;
         }
 
-        var iframe = document.createElement('iframe');
+        foreach ($pkg->travelOrders ?? [] as $travelOrder) {
+            foreach ($travelOrder->personnels ?? [] as $personnel) {
+                $total += (float) $personnel->uang_harian
+                    + (float) $personnel->biaya_penginapan
+                    + (float) $personnel->biaya_representasi
+                    + (float) $personnel->biaya_transport
+                    + (float) ($personnel->biaya_taksi ?? 0);
+            }
+        }
+
+        foreach ($pkg->overtimes ?? [] as $overtime) {
+            if ($overtime->is_locked) {
+                $total += (float) $overtime->calculateTotalRealisasi($sbuRates);
+            }
+        }
+
+        return $total;
+    };
+
+    foreach ($programs as $program) {
+        foreach ($program->activities as $activity) {
+            foreach ($activity->subActivities as $subActivity) {
+                $summary['sub_kegiatan']++;
+
+                foreach ($subActivity->packages as $pkg) {
+                    $summary['pagu'] += (float) $pkg->pagu;
+                    $summary['realisasi'] += $packageRealisasi($pkg);
+
+                    $jenis = strtolower(($pkg->jenis_pengadaan ?? '') . ' ' . ($pkg->metode_pengadaan ?? ''));
+                    if (str_contains($jenis, 'swakelola')) {
+                        $summary['swakelola']++;
+                    } else {
+                        $summary['penyedia']++;
+                    }
+                }
+            }
+        }
+    }
+
+    $summary['sisa'] = $summary['pagu'] - $summary['realisasi'];
+    $summary['serapan'] = $summary['pagu'] > 0 ? min(100, $summary['realisasi'] / $summary['pagu'] * 100) : 0;
+    $rupiah = fn($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
+@endphp
+
+<div class="space-y-6">
+    <x-ui.toast />
+
+    <x-ui.workspace title="Monitoring & Evaluasi" description="Pantau serapan anggaran per program, kegiatan, dan sub kegiatan.">
+        <x-slot:actions>
+            <div class="flex items-center gap-2 bg-slate-50 rounded-full px-4 py-1.5 text-sm text-slate-600 font-medium border border-slate-100 shadow-sm">
+                <i data-lucide="layers" class="w-4 h-4 text-emerald-500"></i>
+                {{ $summary['sub_kegiatan'] }} sub kegiatan
+            </div>
+            <x-ui.button variant="outline" size="md" href="{{ route('dashboard.admin') }}">
+                <i data-lucide="layout-dashboard" class="w-4 h-4 mr-2"></i> Dashboard
+            </x-ui.button>
+        </x-slot:actions>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <x-ui.card padding="md" class="relative">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Pagu</p>
+                        <p class="text-2xl font-extrabold text-slate-900 mt-2">{{ $rupiah($summary['pagu']) }}</p>
+                    </div>
+                    <span class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                        <i data-lucide="wallet" class="w-5 h-5"></i>
+                    </span>
+                </div>
+            </x-ui.card>
+
+            <x-ui.card padding="md" class="relative">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Realisasi</p>
+                        <p class="text-2xl font-extrabold text-emerald-600 mt-2">{{ $rupiah($summary['realisasi']) }}</p>
+                    </div>
+                    <span class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                        <i data-lucide="hand-coins" class="w-5 h-5"></i>
+                    </span>
+                </div>
+            </x-ui.card>
+
+            <x-ui.card padding="md" class="relative">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Sisa Dana</p>
+                        <p class="text-2xl font-extrabold {{ $summary['sisa'] < 0 ? 'text-rose-600' : 'text-slate-900' }} mt-2">{{ $rupiah($summary['sisa']) }}</p>
+                    </div>
+                    <span class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                        <i data-lucide="banknote" class="w-5 h-5"></i>
+                    </span>
+                </div>
+            </x-ui.card>
+
+            <x-ui.card padding="md" class="relative">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="min-w-0 flex-1">
+                        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Serapan</p>
+                        <p class="text-2xl font-extrabold text-orange-600 mt-2">{{ number_format($summary['serapan'], 1, ',', '.') }}%</p>
+                        <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden mt-3">
+                            <div class="h-full rounded-full bg-orange-500" style="width: {{ $summary['serapan'] }}%;"></div>
+                        </div>
+                    </div>
+                    <span class="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
+                        <i data-lucide="chart-pie" class="w-5 h-5"></i>
+                    </span>
+                </div>
+            </x-ui.card>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-[1fr_280px] gap-6">
+            <div class="space-y-6 min-w-0">
+                @forelse($programs as $program)
+                    <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                        <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/60">
+                            <h2 class="text-base font-extrabold text-slate-800 flex items-center gap-2">
+                                <i data-lucide="folder-kanban" class="w-5 h-5 text-blue-500"></i>
+                                {{ $program->kode }} - {{ $program->nama }}
+                            </h2>
+                        </div>
+
+                        <div class="divide-y divide-slate-100">
+                            @foreach($program->activities as $activity)
+                                <div class="p-5">
+                                    <div class="flex flex-col md:flex-row md:items-start justify-between gap-3 mb-4">
+                                        <div>
+                                            <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Kegiatan</p>
+                                            <h3 class="text-sm font-bold text-slate-800 mt-1">{{ $activity->kode }} - {{ $activity->nama }}</h3>
+                                        </div>
+                                        <button type="button" onclick="printHidden('{{ route('control-cards.print', $activity) }}')"
+                                            class="inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm shrink-0">
+                                            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                                            Cetak Kendali
+                                        </button>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
+                                        @foreach($activity->subActivities as $subActivity)
+                                            @php
+                                                $totalPagu = 0;
+                                                $totalRealisasi = 0;
+                                                $paketSwakelola = 0;
+                                                $paketPenyedia = 0;
+
+                                                foreach($subActivity->packages as $pkg) {
+                                                    $totalPagu += (float) $pkg->pagu;
+                                                    $totalRealisasi += $packageRealisasi($pkg);
+
+                                                    $jenis = strtolower(($pkg->jenis_pengadaan ?? '') . ' ' . ($pkg->metode_pengadaan ?? ''));
+                                                    if(str_contains($jenis, 'swakelola')) {
+                                                        $paketSwakelola++;
+                                                    } else {
+                                                        $paketPenyedia++;
+                                                    }
+                                                }
+
+                                                $sisaPagu = $totalPagu - $totalRealisasi;
+                                                $progress = $totalPagu > 0 ? min(100, ($totalRealisasi / $totalPagu) * 100) : 0;
+                                                $progressTone = $progress >= 75 ? 'emerald' : ($progress >= 40 ? 'amber' : 'rose');
+                                                $toneClass = [
+                                                    'emerald' => 'text-emerald-600 bg-emerald-50 border-emerald-100',
+                                                    'amber' => 'text-amber-600 bg-amber-50 border-amber-100',
+                                                    'rose' => 'text-rose-600 bg-rose-50 border-rose-100',
+                                                ][$progressTone];
+                                                $barClass = [
+                                                    'emerald' => 'bg-emerald-500',
+                                                    'amber' => 'bg-amber-500',
+                                                    'rose' => 'bg-rose-500',
+                                                ][$progressTone];
+                                            @endphp
+
+                                            <a href="{{ route('monev.show', $subActivity) }}"
+                                                class="group block rounded-2xl border border-slate-200 bg-white hover:border-emerald-200 hover:shadow-md transition-all overflow-hidden">
+                                                <div class="p-4">
+                                                    <div class="flex items-start justify-between gap-3">
+                                                        <div class="min-w-0">
+                                                            <p class="text-xs font-extrabold text-slate-500">{{ $subActivity->kode }}</p>
+                                                            <h4 class="text-sm font-bold text-slate-800 mt-1 leading-snug group-hover:text-emerald-700">
+                                                                {{ $subActivity->nama }}
+                                                            </h4>
+                                                        </div>
+                                                        <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full border text-[11px] font-bold {{ $toneClass }} shrink-0">
+                                                            {{ number_format($progress, 1, ',', '.') }}%
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="space-y-2.5 mt-4 text-xs">
+                                                        <div class="flex items-center justify-between gap-3">
+                                                            <span class="text-slate-400 font-semibold">Total Pagu</span>
+                                                            <span class="text-slate-800 font-bold text-right">{{ $rupiah($totalPagu) }}</span>
+                                                        </div>
+                                                        <div class="flex items-center justify-between gap-3">
+                                                            <span class="text-slate-400 font-semibold">Realisasi</span>
+                                                            <span class="text-emerald-600 font-bold text-right">{{ $rupiah($totalRealisasi) }}</span>
+                                                        </div>
+                                                        <div class="flex items-center justify-between gap-3">
+                                                            <span class="text-slate-400 font-semibold">Sisa Dana</span>
+                                                            <span class="{{ $sisaPagu < 0 ? 'text-rose-600' : 'text-slate-800' }} font-bold text-right">{{ $rupiah($sisaPagu) }}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="mt-4">
+                                                        <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
+                                                            <div class="h-full rounded-full {{ $barClass }}" style="width: {{ $progress }}%;"></div>
+                                                        </div>
+                                                        <div class="flex items-center justify-between mt-3 text-[11px] font-bold text-slate-500">
+                                                            <span class="inline-flex items-center gap-1.5">
+                                                                <i data-lucide="briefcase-business" class="w-3 h-3 text-blue-500"></i>
+                                                                Penyedia {{ $paketPenyedia }}
+                                                            </span>
+                                                            <span class="inline-flex items-center gap-1.5">
+                                                                <i data-lucide="users-round" class="w-3 h-3 text-amber-500"></i>
+                                                                Swakelola {{ $paketSwakelola }}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="px-4 py-3 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-emerald-700">
+                                                    <span>Lihat detail</span>
+                                                    <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                                                </div>
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </section>
+                @empty
+                    <x-ui.empty-state icon="info" title="Belum Ada Data" description="Belum ada data program, kegiatan, dan sub kegiatan yang dapat dimonitor." />
+                @endforelse
+            </div>
+
+            <aside class="space-y-4">
+                <x-ui.card padding="md">
+                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Komposisi Paket</p>
+                    <div class="mt-4 space-y-3">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="inline-flex items-center gap-2 font-semibold text-slate-600">
+                                <i data-lucide="briefcase-business" class="w-4 h-4 text-blue-500"></i>
+                                Penyedia
+                            </span>
+                            <span class="font-extrabold text-slate-900">{{ $summary['penyedia'] }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="inline-flex items-center gap-2 font-semibold text-slate-600">
+                                <i data-lucide="users-round" class="w-4 h-4 text-amber-500"></i>
+                                Swakelola
+                            </span>
+                            <span class="font-extrabold text-slate-900">{{ $summary['swakelola'] }}</span>
+                        </div>
+                    </div>
+                </x-ui.card>
+
+                <x-ui.card padding="md">
+                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Catatan</p>
+                    <p class="text-sm text-slate-500 leading-relaxed mt-3">
+                        Realisasi dihitung dari kontrak pengadaan, catatan dikecualikan, perjalanan dinas, dan lembur yang sudah dikunci.
+                    </p>
+                </x-ui.card>
+            </aside>
+        </div>
+    </x-ui.workspace>
+</div>
+
+<script>
+    function printHidden(url) {
+        const oldIframe = document.getElementById('hidden-print-iframe');
+        if (oldIframe) oldIframe.remove();
+
+        const iframe = document.createElement('iframe');
         iframe.id = 'hidden-print-iframe';
-        // Use visibility hidden instead of display none to ensure browser renders it for printing
         iframe.style.position = 'absolute';
         iframe.style.width = '0';
         iframe.style.height = '0';
         iframe.style.border = 'none';
         iframe.style.visibility = 'hidden';
-        
+
         document.body.appendChild(iframe);
-        
-        // The loaded page already has window.onload = function() { window.print(); }
         iframe.src = url;
     }
 </script>
-@endpush
-@stop
+@endcomponent

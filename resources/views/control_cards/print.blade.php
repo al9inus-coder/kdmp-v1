@@ -100,8 +100,8 @@
                 @forelse($subActivity->packages as $pkg)
                     @php
                         $realisasi = 0;
-                        if($pkg->procurementPackage && $pkg->procurementPackage->procurementProcess) {
-                            $realisasi = (float) $pkg->procurementPackage->procurementProcess->nilai_kontrak;
+                        if($pkg->procurementPackage) {
+                            $realisasi = (float) $pkg->procurementPackage->realisasi;
                         }
                         
                         $pagu = (float) $pkg->pagu;

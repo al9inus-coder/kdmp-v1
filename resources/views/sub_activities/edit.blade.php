@@ -1,19 +1,23 @@
-@extends('adminlte::page')
-
+@component('layouts.kdmp')
 @section('title', 'Edit Sub Kegiatan')
 
-@section('content_header')
-    <h1>Edit Sub Kegiatan</h1>
-@stop
+<x-ui.toast />
 
-@section('content')
-    <div class="card">
-        <div class="card-body">
-            <form action="{{ route('sub-activities.update', $subActivity) }}" method="POST">
-                @method('PUT')
-                @php($submitLabel = 'Perbarui')
-                @include('sub_activities._form', ['submitLabel' => $submitLabel])
-            </form>
-        </div>
-    </div>
-@stop
+<x-ui.workspace title="Edit Sub Kegiatan" description="Perbarui data sub kegiatan {{ $subActivity->kode }}.">
+    <x-slot:actions>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg font-mono">
+            <i data-lucide="hash" class="w-3.5 h-3.5"></i>
+            {{ $subActivity->kode }}
+        </span>
+        <x-ui.button variant="outline" size="md" href="{{ route('sub-activities.index') }}">
+            <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
+        </x-ui.button>
+    </x-slot:actions>
+
+    <form action="{{ route('sub-activities.update', $subActivity) }}" method="POST">
+        @csrf
+        @method('PUT')
+        @include('sub_activities._form', ['submitLabel' => 'Perbarui'])
+    </form>
+</x-ui.workspace>
+@endcomponent

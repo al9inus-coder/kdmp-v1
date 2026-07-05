@@ -153,6 +153,12 @@ public function store(PackageRequest $request): RedirectResponse
 
     $package->save();
 
+    if ($request->input('source') === 'staf') {
+        return redirect()
+            ->route('staf.packages.create')
+            ->with('success', 'Paket Pekerjaan berhasil ditambahkan.');
+    }
+
     return redirect()
         ->route('packages.index')
         ->with('success', 'Paket Pekerjaan berhasil ditambahkan.');
@@ -284,6 +290,12 @@ public function update(
 
     $package->save();
 
+    if ($request->input('source') === 'staf') {
+        return redirect()
+            ->route('staf.packages.show', $package)
+            ->with('success', 'Paket berhasil diperbarui.');
+    }
+
     return redirect()
         ->route('packages.show', $package)
         ->with('success', 'Paket berhasil diperbarui.');
@@ -375,32 +387,28 @@ public function update(
 
     public function updateProcurement(Request $request, Package $package)
     {
-        $request->validate([
-            'pptk_name' => ['nullable', 'string', 'max:255'],
-            'ppk_name' => ['nullable', 'string', 'max:255'],
-            'target_procurement_date' => ['nullable', 'date'],
-            'procurement_notes' => ['nullable', 'string'],
-        ]);
-
-        $package->update([
-            'pptk_name' => $request->pptk_name,
-            'ppk_name' => $request->ppk_name,
-            'target_procurement_date' => $request->target_procurement_date,
-            'procurement_notes' => $request->procurement_notes,
-            'procurement_status' => 'preparation',
-        ]);
-
+        // Not used anymore. Kept for legacy routes or refactor it out if route is removed.
+        // The preparation steps are now managed via ProcurementProcessController
         return back()->with(
             'success',
             'Data persiapan pengadaan berhasil disimpan.'
         );
     }
 
-    public function destroy(Package $package): RedirectResponse
+    public function destroy(Request $request, Package $package): RedirectResponse
     {
         Gate::authorize('delete', $package);
 
+        // Hapus data relasi terlebih dahulu untuk menghindari FK constraint
+        $package->procurementPackage()->delete();
+
         $package->delete();
+
+        if ($request->input('source') === 'staf') {
+            return redirect()
+                ->route('staf.packages.index')
+                ->with('success', 'Paket Pekerjaan berhasil dihapus.');
+        }
 
         return redirect()
             ->route('packages.index')

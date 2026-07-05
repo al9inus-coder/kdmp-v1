@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Program;
+use App\Models\SbuLembur;
 use App\Models\SubActivity;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -16,13 +17,18 @@ class MonevController extends Controller
                 'activities.subActivities.packages' => function ($query) {
                     $query->where('status', 'approved');
                 },
-                'activities.subActivities.packages.procurementPackage.procurementProcess'
+                'activities.subActivities.packages.procurementPackage.procurementProcess',
+                'activities.subActivities.packages.procurementPackage.externalRecords',
+                'activities.subActivities.packages.travelOrders.personnels',
+                'activities.subActivities.packages.overtimes.details.employee',
             ])
             ->whereHas('activities.subActivities')
             ->orderBy('kode')
             ->get();
 
-        return view('monev.index', compact('programs'));
+        $sbuRates = SbuLembur::all();
+
+        return view('monev.index', compact('programs', 'sbuRates'));
     }
 
     public function show(SubActivity $subActivity): View
@@ -33,11 +39,16 @@ class MonevController extends Controller
                 $query->where('status', 'approved');
             },
             'packages.procurementPackage.procurementProcess',
+            'packages.procurementPackage.externalRecords',
+            'packages.travelOrders.personnels',
+            'packages.overtimes.details.employee',
             'packages.account',
-            'packages.fiscalYear'
+            'packages.fiscalYear',
         ]);
 
-        return view('monev.show', compact('subActivity'));
+        $sbuRates = SbuLembur::all();
+
+        return view('monev.show', compact('subActivity', 'sbuRates'));
     }
 
     public function print(SubActivity $subActivity): View
@@ -48,6 +59,9 @@ class MonevController extends Controller
                 $query->where('status', 'approved');
             },
             'packages.procurementPackage.procurementProcess',
+            'packages.procurementPackage.externalRecords',
+            'packages.travelOrders.personnels',
+            'packages.overtimes.details.employee',
             'packages.account',
             'packages.fiscalYear'
         ]);

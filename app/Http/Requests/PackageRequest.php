@@ -18,7 +18,10 @@ class PackageRequest extends FormRequest
             'fiscal_year_id' => ['required', 'exists:fiscal_years,id'],
             'sub_activity_id' => ['nullable', 'exists:sub_activities,id'],
             'account_id' => ['nullable', 'exists:accounts,id'],
-            'id_rup' => ['required', 'string', 'max:100'],
+            'id_rup' => [
+                'required', 'string', 'max:100',
+                Rule::unique('packages', 'id_rup')->ignore($this->route('package')),
+            ],
             'nama_paket' => ['required', 'string', 'max:255'],
             'pagu' => ['required', 'numeric', 'min:0'],
             'jenis_pengadaan' => ['nullable', 'string', 'max:100'],
@@ -31,6 +34,13 @@ class PackageRequest extends FormRequest
                 'nullable',
                 Rule::in(['needs_review', 'draft','submitted', 'approved']),
             ],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'id_rup.unique' => 'ID RUP ini sudah terdaftar pada paket lain.',
         ];
     }
 

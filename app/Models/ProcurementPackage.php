@@ -10,9 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class ProcurementPackage extends Model
 {
     public const WORKFLOW_DRAFT = 'draft';
-    public const WORKFLOW_PREPARATION_COMPLETED = 'preparation_completed';
     public const WORKFLOW_PROVIDER_SELECTION = 'provider_selection';
-    public const WORKFLOW_PURCHASE_ORDER = 'purchase_order';
     public const WORKFLOW_EXECUTION = 'execution';
     public const WORKFLOW_PAYMENT_PROCESS = 'payment_process';
     public const WORKFLOW_COMPLETED = 'completed';
@@ -21,9 +19,7 @@ class ProcurementPackage extends Model
     {
         return [
             self::WORKFLOW_DRAFT => 'Persiapan Pengadaan',
-            self::WORKFLOW_PREPARATION_COMPLETED => 'Persiapan Selesai',
             self::WORKFLOW_PROVIDER_SELECTION => 'Pemilihan Penyedia',
-            self::WORKFLOW_PURCHASE_ORDER => 'Surat Pesanan',
             self::WORKFLOW_EXECUTION => 'Pelaksanaan',
             self::WORKFLOW_PAYMENT_PROCESS => 'Pembayaran',
             self::WORKFLOW_COMPLETED => 'Selesai',
@@ -52,6 +48,8 @@ class ProcurementPackage extends Model
     'garansi_nilai',
     'garansi_satuan',
     'layanan_purna_jual',
+    'workflow_status',
+    'dikecualikan_type',
     'tanggal_barang_diterima',
     ];
 
@@ -93,5 +91,21 @@ class ProcurementPackage extends Model
     public function addendums(): HasMany
     {
         return $this->hasMany(ProcurementAddendum::class);
+    }
+
+    public function externalRecords()
+    {
+        return $this->hasMany(ProcurementExternalRecord::class);
+    }
+
+    public function getRealisasiAttribute()
+    {
+        // Jika metode Dikecualikan
+        if ($this->package && $this->package->metode_pengadaan == 'Dikecualikan') {
+            return $this->externalRecords->sum('nilai_kontrak');
+        }
+
+        // Jika metode E-Purchasing atau lainnya yang menggunakan procurementProcess
+        return $this->procurementProcess ? $this->procurementProcess->nilai_kontrak : 0;
     }
 }
