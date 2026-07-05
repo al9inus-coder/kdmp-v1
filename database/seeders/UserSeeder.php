@@ -11,10 +11,20 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         User::firstOrCreate(
+            ['email' => 'superadmin@kdmp.local'],
+            [
+                'name' => 'Super Administrator',
+                'password' => Hash::make('123PassKDMP!@#'),
+                'is_active' => true,
+            ]
+        )->assignRole('Super Admin');
+
+        User::firstOrCreate(
             ['email' => 'admin@kdmp.local'],
             [
                 'name' => 'Administrator',
-                'password' => Hash::make('password')
+                'password' => Hash::make('password'),
+                'is_active' => true,
             ]
         )->assignRole('Admin');
 
@@ -22,7 +32,8 @@ class UserSeeder extends Seeder
             ['email' => 'kabid@kdmp.local'],
             [
                 'name' => 'Kabid',
-                'password' => Hash::make('password')
+                'password' => Hash::make('password'),
+                'is_active' => true,
             ]
         )->assignRole('Kabid');
 
@@ -30,7 +41,8 @@ class UserSeeder extends Seeder
             ['email' => 'staff@kdmp.local'],
             [
                 'name' => 'Staff',
-                'password' => Hash::make('password')
+                'password' => Hash::make('password'),
+                'is_active' => true,
             ]
         )->assignRole('Staff');
     }

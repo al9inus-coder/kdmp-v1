@@ -14,7 +14,6 @@ use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\SkpdController;
 use App\Http\Controllers\SubActivityController;
 use App\Http\Controllers\TechnicalSpecificationController;
-use App\Http\Controllers\UserController;
 use App\Http\Controllers\ControlCardController;
 use App\Http\Controllers\MonevController;
 use App\Http\Controllers\BukuRegisterController;
@@ -128,13 +127,18 @@ Route::middleware('auth')->group(function () {
         Route::post('procurement-packages/{package}/unlock-execution', [\App\Http\Controllers\Admin\ProcurementPackageController::class, 'unlockExecution'])->name('procurement-packages.unlock-execution');
         Route::post('procurement-packages/{package}/unlock-payment', [\App\Http\Controllers\Admin\ProcurementPackageController::class, 'unlockPayment'])->name('procurement-packages.unlock-payment');
         Route::get('procurement-packages/{package}/payment', [\App\Http\Controllers\Admin\ProcurementPackageController::class, 'payment'])->name('procurement-packages.payment');
+
+        // Manajemen User
+        Route::get('users/{user}/reset-password', [\App\Http\Controllers\Admin\UserController::class, 'editPassword'])->name('users.reset-password');
+        Route::put('users/{user}/reset-password', [\App\Http\Controllers\Admin\UserController::class, 'updatePassword'])->name('users.update-password');
+        Route::patch('users/{user}/toggle-status', [\App\Http\Controllers\Admin\UserController::class, 'toggleStatus'])->name('users.toggle-status');
+        Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
     });
 
     Route::get('/schedules', [\App\Http\Controllers\ScheduleController::class, 'index'])->name('schedules.index');
     Route::get('/buku-register', [BukuRegisterController::class, 'index'])->name('buku-register.index');
 
     // Resource Routes
-    Route::resource('users', UserController::class);
     Route::resource('skpds', SkpdController::class);
     Route::resource('programs', ProgramController::class)->except('destroy');
     Route::resource('activities', ActivityController::class)->except('destroy');

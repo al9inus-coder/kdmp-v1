@@ -268,7 +268,7 @@ return [
             ],
             [
                 'title' => 'Manajemen User',
-                'route' => 'users.index',
+                'route' => 'admin.users.index',
                 'icon'  => 'users',
                 'roles' => ['Admin', 'Super Admin'],
             ],
