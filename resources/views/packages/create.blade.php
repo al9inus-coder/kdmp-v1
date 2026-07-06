@@ -1,26 +1,17 @@
-@extends('adminlte::page')
-
+@component('layouts.kdmp')
 @section('title', 'Tambah Paket Pekerjaan')
 
-@section('content_header')
-    <h1>Tambah Paket Pekerjaan</h1>
-@stop
+<x-ui.toast />
 
-@section('content')
+<x-ui.workspace title="Tambah Paket Pekerjaan" description="Buat paket pekerjaan / RUP baru.">
+    <x-slot:actions>
+        <x-ui.button variant="outline" size="md" href="{{ route('packages.index') }}">
+            <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
+        </x-ui.button>
+    </x-slot:actions>
 
-<div class="card">
-
-    <form action="{{ route('packages.store') }}"
-          method="POST">
-
-        @csrf
-
-        @include('packages._form', [
-            'submitLabel' => 'Simpan'
-        ])
-
+    <form action="{{ route('packages.store') }}" method="POST">
+        @include('packages._form', ['submitLabel' => 'Simpan'])
     </form>
-
-</div>
-
-@stop
+</x-ui.workspace>
+@endcomponent

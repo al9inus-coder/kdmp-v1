@@ -1,275 +1,153 @@
-@extends('adminlte::page')
-
+@component('layouts.kdmp')
 @section('title', 'Referensi Harga')
 
-@section('content_header')
-    {{-- Memanggil komponen progress bar yang sudah dibuat sebelumnya --}}
-    @include('components.procurement-progress', [
-        'procurementPackage' => $procurementPackage
-    ])
-@stop
+<x-ui.toast />
 
-@section('content')
+<x-ui.workspace title="Referensi Harga" description="{{ $procurementPackage->package->nama_paket }}">
+    <x-slot:actions>
+        <x-ui.button variant="outline" size="md" href="{{ route('procurement-packages.index') }}">
+            <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
+        </x-ui.button>
+    </x-slot:actions>
 
-    {{-- ALERT PESAN --}}
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show shadow-sm">
-            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-            <i class="fas fa-check-circle mr-1"></i> {{ session('success') }}
+    {{-- Progress bar --}}
+    <div class="mb-6">
+        @include('components.procurement-progress', ['procurementPackage' => $procurementPackage])
+    </div>
+
+    {{-- Ribbon info paket --}}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-px bg-slate-200 border border-slate-200 rounded-2xl overflow-hidden mb-6 shadow-sm">
+        <div class="bg-white px-5 py-4">
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Nama Paket</p>
+            <p class="text-sm font-bold text-slate-900 leading-snug">{{ $procurementPackage->package->nama_paket }}</p>
         </div>
-    @endif
-
-    @if(session('warning'))
-        <div class="alert alert-warning alert-dismissible fade show shadow-sm">
-            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-            <i class="fas fa-exclamation-triangle mr-1"></i> {{ session('warning') }}
+        <div class="bg-white px-5 py-4">
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">ID RUP</p>
+            <p class="text-sm font-bold text-slate-900 font-mono">{{ $procurementPackage->package->id_rup ?? '-' }}</p>
         </div>
-    @endif
-
-    {{-- INFORMASI PAKET UTAMA (SLIM RIBBON) --}}
-    <div class="bg-white rounded border shadow-sm mb-4 px-4 py-3" style="border-left: 4px solid #007bff !important;">
-        <div class="row align-items-center text-center text-md-left">
-            <div class="col-md-5 mb-2 mb-md-0">
-                <small class="text-muted text-uppercase font-weight-bold d-block mb-1">Nama Paket</small>
-                <h6 class="font-weight-bold text-dark mb-0">{{ $procurementPackage->package->nama_paket }}</h6>
-            </div>
-            <div class="col-md-3 border-left border-right mb-2 mb-md-0 px-md-3">
-                <small class="text-muted text-uppercase font-weight-bold d-block mb-1">ID RUP</small>
-                <h6 class="font-weight-bold text-dark mb-0">{{ $procurementPackage->package->id_rup ?? '-' }}</h6>
-            </div>
-            <div class="col-md-4 px-md-4">
-                <small class="text-muted text-uppercase font-weight-bold d-block mb-1">Pagu Paket</small>
-                <h6 class="font-weight-bold text-primary mb-0" style="font-size: 1.1rem;">
-                    Rp {{ number_format((float) $procurementPackage->package->pagu, 0, ',', '.') }}
-                </h6>
-            </div>
+        <div class="bg-white px-5 py-4">
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Pagu Paket</p>
+            <p class="text-base font-bold text-emerald-700">Rp {{ number_format((float) $procurementPackage->package->pagu, 0, ',', '.') }}</p>
         </div>
     </div>
 
-    {{-- JUDUL DAFTAR REFERENSI --}}
-    <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
-        <h4 class="m-0 text-dark font-weight-bold">Daftar Referensi Harga</h4>
-    </div>
+    <h4 class="text-base font-bold text-slate-900 mb-4">Daftar Referensi Harga</h4>
 
-    {{-- LIST REFERENSI HARGA (LOOPING) --}}
     @forelse($technicalItems as $item)
         @php
-            $namaBarang =
-                $item->nama_barang_jasa;
-            $references =
-                $groupedReferences[$namaBarang]
-                ?? collect();
-            $first =
-                $references->first();
-            $rataRataHargaSatuan =
-                $references->avg('harga_satuan') ?? 0;
-            $rataRataJumlahHarga =
-                $references->avg('jumlah_harga') ?? 0;
-            $hargaTerendah =
-                $references->min('harga_satuan') ?? 0;
+            $namaBarang = $item->nama_barang_jasa;
+            $references = $groupedReferences[$namaBarang] ?? collect();
+            $rataRataHargaSatuan = $references->avg('harga_satuan') ?? 0;
+            $rataRataJumlahHarga = $references->avg('jumlah_harga') ?? 0;
+            $hargaTerendah = $references->min('harga_satuan') ?? 0;
         @endphp
-        <div class="card card-outline card-info shadow-sm mb-4">
-            
-            {{-- HEADER CARD BARANG --}}
-            <div class="card-header bg-white d-flex flex-wrap align-items-center justify-content-between py-3">
-                <div class="d-flex flex-wrap align-items-center">
-                    <h5 class="font-weight-bold text-info mb-2 mb-md-0 mr-4">
-                        <i class="fas fa-cube mr-2"></i>
-                        {{ $item->nama_barang_jasa }}
-                        <span class="badge badge-info ml-2">
-                            {{ $references->count() }}/3 Referensi
-                        </span>
+        <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-5">
+            {{-- Header barang --}}
+            <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/60 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-3">
+                    <h5 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <i data-lucide="box" class="w-4 h-4 text-sky-500"></i> {{ $item->nama_barang_jasa }}
+                        <span class="inline-flex px-2 py-0.5 rounded-md text-xs font-bold bg-sky-50 text-sky-700 border border-sky-100">{{ $references->count() }}/3 Referensi</span>
                     </h5>
-                    <div class="d-flex flex-wrap">
-                        <span class="badge badge-light border px-3 py-2 mr-2 text-sm text-dark font-weight-normal elevation-1">
-                            <span class="text-secondary mr-1">
-                                Volume:
-                            </span>
-                            <strong>
-                                {{ number_format((float) $item->volume,0,',','.') }}
-                                {{ $item->satuan }}
-                            </strong>
-                        </span>
-                        <span class="badge badge-light border px-3 py-2 text-sm text-dark font-weight-normal elevation-1">
-                            <span class="text-secondary mr-1">
-                                Harga Satuan DPA:
-                            </span>
-                            <strong>
-                                Rp {{ number_format(
-                                    $item->harga_satuan_dpa ?? 0,
-                                    0,
-                                    ',',
-                                    '.'
-                                ) }}
-                            </strong>
-                        </span>
-                    </div>
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs bg-white border border-slate-200 text-slate-600">Volume: <strong class="text-slate-800">{{ number_format((float) $item->volume, 0, ',', '.') }} {{ $item->satuan }}</strong></span>
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs bg-white border border-slate-200 text-slate-600">Harga Satuan DPA: <strong class="text-slate-800">Rp {{ number_format($item->harga_satuan_dpa ?? 0, 0, ',', '.') }}</strong></span>
                 </div>
                 <a href="{{ route('procurement-packages.price-references.create', ['package' => $procurementPackage->package, 'technical_specification_item_id' => $item->id]) }}"
-                   class="btn btn-sm btn-primary rounded-pill shadow-sm px-3 mt-2 mt-md-0">
-                    <i class="fas fa-plus mr-1"></i> Tambah Referensi
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-200">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> Tambah Referensi
                 </a>
             </div>
 
-            {{-- TABEL REFERENSI --}}
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover table-striped mb-0 text-nowrap">
-                        <thead class="bg-light">
-                            <tr>
-                                <th class="text-center border-top-0" width="5%">No</th>
-                                <th class="border-top-0">Produk Etalase</th>
-                                <th class="border-top-0">Pelaku Usaha</th>
-                                <th class="text-right border-top-0">Harga Satuan</th>
-                                <th class="text-right border-top-0">Jumlah Harga</th>
-                                <th class="text-center border-top-0">Link Produk</th>
-                                <th class="text-center border-top-0" width="10%">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if($references->isEmpty())
-                                <tr>
-                                    <td colspan="7" class="text-center py-4">
-                                        <div class="alert alert-warning mb-0">
-                                            <i class="fas fa-exclamation-circle mr-2"></i>
-                                            Belum ada referensi harga untuk barang ini.
-                                        </div>
-                                    </td>
-                                </tr>
-                            @else
-                                @foreach($references as $index => $priceReference)
-                                <tr>
-                                    <td class="text-center align-middle">
-                                        {{ $index + 1 }}
-                                    </td>
-                                    <td class="align-middle">
-                                        {{ $priceReference->nama_produk_etalase ?? '-' }}
-                                    </td>
-                                    <td class="align-middle">
-                                        {{ $priceReference->nama_pelaku_usaha ?? '-' }}
-                                    </td>
-                                    <td class="text-right align-middle font-weight-bold text-dark">
-                                        Rp {{ number_format(
-                                            (float) $priceReference->harga_satuan,
-                                            0,
-                                            ',',
-                                            '.'
-                                        ) }}
-                                    </td>
-                                    <td class="text-right align-middle font-weight-bold text-primary">
-                                        Rp {{ number_format(
-                                            (float) $priceReference->jumlah_harga,
-                                            0,
-                                            ',',
-                                            '.'
-                                        ) }}
-                                    </td>
-                                    <td class="text-center align-middle">
+            {{-- Tabel referensi --}}
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-slate-50 border-b border-slate-100">
+                        <tr>
+                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-center w-12">No</th>
+                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Produk Etalase</th>
+                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Pelaku Usaha</th>
+                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Harga Satuan</th>
+                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Jumlah Harga</th>
+                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Link</th>
+                            <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-center w-20">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @if($references->isEmpty())
+                            <tr><td colspan="7" class="px-4 py-6 text-center">
+                                <span class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-amber-50 text-amber-700 border border-amber-200"><i data-lucide="alert-circle" class="w-4 h-4"></i> Belum ada referensi harga untuk barang ini.</span>
+                            </td></tr>
+                        @else
+                            @foreach($references as $index => $priceReference)
+                                <tr class="hover:bg-slate-50/60 transition-colors">
+                                    <td class="px-4 py-3 text-center text-slate-500">{{ $index + 1 }}</td>
+                                    <td class="px-4 py-3 text-slate-700">{{ $priceReference->nama_produk_etalase ?? '-' }}</td>
+                                    <td class="px-4 py-3 text-slate-700">{{ $priceReference->nama_pelaku_usaha ?? '-' }}</td>
+                                    <td class="px-4 py-3 text-right font-semibold text-slate-800 tabular-nums">Rp {{ number_format((float) $priceReference->harga_satuan, 0, ',', '.') }}</td>
+                                    <td class="px-4 py-3 text-right font-semibold text-emerald-700 tabular-nums">Rp {{ number_format((float) $priceReference->jumlah_harga, 0, ',', '.') }}</td>
+                                    <td class="px-4 py-3 text-center">
                                         @if($priceReference->link_produk)
-                                            <a href="{{ $priceReference->link_produk }}"
-                                            target="_blank"
-                                            class="btn btn-xs btn-outline-info rounded-pill px-3">
-                                                <i class="fas fa-external-link-alt mr-1"></i>
-                                                Buka Link
-                                            </a>
-                                        @else
-                                            -
-                                        @endif
+                                            <a href="{{ $priceReference->link_produk }}" target="_blank" class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold text-sky-700 bg-sky-50 border border-sky-100 hover:bg-sky-100 transition-colors"><i data-lucide="external-link" class="w-3 h-3"></i> Buka</a>
+                                        @else - @endif
                                     </td>
-                                    <td class="text-center align-middle">
-                                        <div class="btn-group">
-                                            <a href="{{ route('procurement-packages.price-references.edit', [$procurementPackage->package, $priceReference]) }}"
-                                               class="btn btn-sm btn-warning" title="Edit">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <form action="{{ route('procurement-packages.price-references.destroy', [$procurementPackage->package, $priceReference]) }}"
-                                                  method="POST"
-                                                  class="d-inline"
-                                                  onsubmit="return confirm('Apakah Anda yakin ingin menghapus referensi harga ini?')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-danger" title="Hapus">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center justify-center gap-1.5">
+                                            <a href="{{ route('procurement-packages.price-references.edit', [$procurementPackage->package, $priceReference]) }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-emerald-600 bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 transition-colors" title="Edit"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></a>
+                                            <form action="{{ route('procurement-packages.price-references.destroy', [$procurementPackage->package, $priceReference]) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus referensi harga ini?');">
+                                                @csrf @method('DELETE')
+                                                <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-100 transition-colors" title="Hapus"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                                             </form>
                                         </div>
                                     </td>
                                 </tr>
-                                @endforeach
-                            @endif
-                        </tbody>
-                    </table>
-                </div>
+                            @endforeach
+                        @endif
+                    </tbody>
+                </table>
             </div>
 
-            {{-- FOOTER: RATA-RATA & HARGA TERENDAH (3 KOLOM PROPORSIONAL) --}}
-            <div class="card-footer bg-white pt-3 pb-3 border-top">
-                <div class="row">
-                    <div class="col-md-4 mb-2 mb-md-0">
-                        <div class="callout callout-info border shadow-none mb-0 bg-light py-2">
-                            <small class="text-muted text-uppercase font-weight-bold d-block mb-1">Rata-rata Satuan</small>
-                            <h5 class="text-info font-weight-bold mb-0">Rp {{ number_format((float) $rataRataHargaSatuan,0,',','.') }}</h5>
-                        </div>
-                    </div>
-                    <div class="col-md-4 mb-2 mb-md-0">
-                        <div class="callout callout-success border shadow-none mb-0 bg-light py-2">
-                            <small class="text-muted text-uppercase font-weight-bold d-block mb-1">Rata-rata Jumlah</small>
-                            <h5 class="text-success font-weight-bold mb-0">Rp {{ number_format((float) $rataRataJumlahHarga,0,',','.') }}</h5>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="callout callout-warning border shadow-none mb-0 bg-light py-2">
-                            <small class="text-muted text-uppercase font-weight-bold d-block mb-1">Harga Terendah</small>
-                            <h5 class="text-warning font-weight-bold mb-0">Rp {{ number_format((float) $hargaTerendah,0,',','.') }}</h5>
-                        </div>
-                    </div>
+            {{-- Footer stats --}}
+            <div class="px-6 py-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="rounded-xl bg-sky-50 border border-sky-100 px-4 py-2.5">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Rata-rata Satuan</p>
+                    <p class="text-base font-bold text-sky-700">Rp {{ number_format((float) $rataRataHargaSatuan, 0, ',', '.') }}</p>
+                </div>
+                <div class="rounded-xl bg-emerald-50 border border-emerald-100 px-4 py-2.5">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Rata-rata Jumlah</p>
+                    <p class="text-base font-bold text-emerald-700">Rp {{ number_format((float) $rataRataJumlahHarga, 0, ',', '.') }}</p>
+                </div>
+                <div class="rounded-xl bg-amber-50 border border-amber-100 px-4 py-2.5">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Harga Terendah</p>
+                    <p class="text-base font-bold text-amber-700">Rp {{ number_format((float) $hargaTerendah, 0, ',', '.') }}</p>
                 </div>
             </div>
-        </div>
+        </section>
     @empty
-        <div class="alert alert-info shadow-sm">
-            <i class="fas fa-info-circle mr-2"></i> Belum ada referensi harga yang ditambahkan untuk paket ini.
-        </div>
+        <x-ui.empty-state icon="tag" title="Belum Ada Referensi Harga" description="Belum ada referensi harga yang ditambahkan untuk paket ini." />
     @endforelse
 
-{{-- NAVIGASI BAWAH: KEMBALI (KIRI) & LANJUT SURAT PERMOHONAN (KANAN) --}}
-<div class="d-flex justify-content-between align-items-center mt-4 mb-5">
-    <a href="{{ route('procurement-packages.index') }}"
-       class="btn btn-default btn-lg shadow-sm">
-        <i class="fas fa-arrow-left mr-1"></i>
-        Kembali
-    </a>
-    
-    <div class="d-flex align-items-center">
-        <button type="button" class="btn btn-secondary btn-lg shadow-sm px-4 mr-2" onclick="printPdf('{{ route('procurement-packages.price-references.print', $procurementPackage->package) }}')">
-            <i class="fas fa-print mr-1"></i>
-            Cetak Referensi Harga
-        </button>
-        @if($procurementPackage->procurementRequest)
-            <a href="{{ route(
-                'procurement-packages.procurement-request.show',
-                $procurementPackage->package
-            ) }}"
-               class="btn btn-info btn-lg shadow-sm px-4">
-                <i class="fas fa-file-alt mr-1"></i>
-                Lihat Surat Permohonan
-            </a>
-        @else
-            <a href="{{ route(
-                'procurement-packages.procurement-request.create',
-                $procurementPackage->package
-            ) }}"
-               class="btn btn-success btn-lg shadow-sm px-4">
-                Lanjut Surat Permohonan
-                <i class="fas fa-arrow-right ml-1"></i>
-            </a>
-        @endif
+    {{-- Navigasi bawah --}}
+    <div class="flex flex-wrap items-center justify-between gap-3 mt-6">
+        <x-ui.button variant="secondary" size="md" href="{{ route('procurement-packages.index') }}">
+            <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
+        </x-ui.button>
+        <div class="flex flex-wrap items-center gap-2">
+            <x-ui.button variant="secondary" size="md" type="button" onclick="printPdf('{{ route('procurement-packages.price-references.print', $procurementPackage->package) }}')">
+                <i data-lucide="printer" class="w-4 h-4 mr-2"></i> Cetak Referensi Harga
+            </x-ui.button>
+            @if($procurementPackage->procurementRequest)
+                <x-ui.button variant="primary" size="md" href="{{ route('procurement-packages.procurement-request.show', $procurementPackage->package) }}">
+                    <i data-lucide="file-text" class="w-4 h-4 mr-2"></i> Lihat Surat Permohonan
+                </x-ui.button>
+            @else
+                <x-ui.button variant="success" size="md" href="{{ route('procurement-packages.procurement-request.create', $procurementPackage->package) }}">
+                    Lanjut Surat Permohonan <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+                </x-ui.button>
+            @endif
+        </div>
     </div>
-</div>
+</x-ui.workspace>
 
-@stop
-
-@push('js')
 <script>
 function printPdf(url) {
     let iframe = document.getElementById('print-iframe');
@@ -280,10 +158,10 @@ function printPdf(url) {
         document.body.appendChild(iframe);
     }
     iframe.src = url;
-    iframe.onload = function() {
+    iframe.onload = function () {
         iframe.contentWindow.focus();
         iframe.contentWindow.print();
     };
 }
 </script>
-@endpush
+@endcomponent

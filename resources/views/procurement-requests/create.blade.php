@@ -1,19 +1,17 @@
-@extends('adminlte::page')
-
+@component('layouts.kdmp')
 @section('title', 'Buat Surat Permohonan')
 
-@section('content_header')
-    <h1>Buat Surat Permohonan</h1>
-@stop
+<x-ui.toast />
 
-@section('content')
-    <div class="card">
-        <div class="card-body">
-            <form action="{{ route('procurement-packages.procurement-request.store', $procurementPackage->package) }}"
-                  method="POST">
-                @php($submitLabel = 'Simpan')
-                @include('procurement-requests._form', ['submitLabel' => $submitLabel])
-            </form>
-        </div>
-    </div>
-@stop
+<x-ui.workspace title="Buat Surat Permohonan" description="{{ $procurementPackage->package->nama_paket ?? '' }}">
+    <x-slot:actions>
+        <x-ui.button variant="outline" size="md" href="{{ route('procurement-packages.show', $procurementPackage->package) }}">
+            <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
+        </x-ui.button>
+    </x-slot:actions>
+
+    <form action="{{ route('procurement-packages.procurement-request.store', $procurementPackage->package) }}" method="POST">
+        @include('procurement-requests._form', ['submitLabel' => 'Simpan'])
+    </form>
+</x-ui.workspace>
+@endcomponent

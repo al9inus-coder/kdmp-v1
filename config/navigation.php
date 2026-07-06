@@ -29,7 +29,7 @@ return [
         'roles'  => ['Staff'],
         'children' => [
             [
-                'title' => 'Paket Pengadaan',
+                'title' => 'Paket RUP',
                 'route' => 'staf.packages.index',
                 'icon'  => 'package',
                 'roles' => ['Staff'],
@@ -69,7 +69,7 @@ return [
         'roles'  => ['Kabid'],
         'children' => [
             [
-                'title' => 'Paket Pekerjaan',
+                'title' => 'Paket RUP',
                 'route' => 'kabid.packages.index',
                 'icon'  => 'file-search',
                 'roles' => ['Kabid'],
@@ -89,6 +89,12 @@ return [
         'type'   => 'group',
         'roles'  => ['Admin', 'Super Admin'],
         'children' => [
+            [
+                'title' => 'Paket RUP',
+                'route' => 'packages.index',
+                'icon'  => 'briefcase',
+                'roles' => ['Admin', 'Super Admin'],
+            ],
             [
                 'title' => 'Paket Pengadaan',
                 'route' => 'procurement-packages.index',
@@ -117,6 +123,12 @@ return [
                 'title' => 'Pembayaran',
                 'route' => 'procurement-payments.index',
                 'icon'  => 'credit-card',
+                'roles' => ['Admin', 'Super Admin'],
+            ],
+            [
+                'title' => 'Jadwal Pengadaan',
+                'route' => 'schedules.index',
+                'icon'  => 'calendar-clock',
                 'roles' => ['Admin', 'Super Admin'],
             ],
         ],
@@ -223,6 +235,49 @@ return [
                 'icon'  => 'building-2',
                 'roles' => ['Admin', 'Super Admin'],
             ],
+            [
+                'title' => 'Pegawai',
+                'route' => 'employees.index',
+                'icon'  => 'id-card',
+                'roles' => ['Admin', 'Super Admin'],
+            ],
+            [
+                'title' => 'Data SBU',
+                'icon'  => 'database',
+                'roles' => ['Admin', 'Super Admin'],
+                'children' => [
+                    [
+                        'title' => 'SBU Uang Harian',
+                        'route' => 'sbu-uang-harians.index',
+                        'icon'  => 'banknote',
+                        'roles' => ['Admin', 'Super Admin'],
+                    ],
+                    [
+                        'title' => 'SBU Penginapan',
+                        'route' => 'sbu-penginapans.index',
+                        'icon'  => 'bed',
+                        'roles' => ['Admin', 'Super Admin'],
+                    ],
+                    [
+                        'title' => 'SBU Tiket Pesawat',
+                        'route' => 'sbu-tiket-pesawats.index',
+                        'icon'  => 'plane',
+                        'roles' => ['Admin', 'Super Admin'],
+                    ],
+                    [
+                        'title' => 'SBU Transportasi',
+                        'route' => 'sbu-transport-rates.index',
+                        'icon'  => 'car',
+                        'roles' => ['Admin', 'Super Admin'],
+                    ],
+                    [
+                        'title' => 'SBU Lembur',
+                        'route' => 'sbu-lemburs.index',
+                        'icon'  => 'clock',
+                        'roles' => ['Admin', 'Super Admin'],
+                    ],
+                ],
+            ],
         ],
     ],
 
@@ -238,6 +293,12 @@ return [
                 'icon'  => 'pie-chart',
                 'roles' => ['Admin', 'Super Admin'],
             ],
+            [
+                'title' => 'Buku Register',
+                'route' => 'admin.buku-register.index',
+                'icon'  => 'book-marked',
+                'roles' => ['Admin', 'Super Admin'],
+            ],
         ],
     ],
     [
@@ -249,6 +310,12 @@ return [
                 'title' => 'Monitoring',
                 'route' => 'kabid.monev.index',
                 'icon'  => 'pie-chart',
+                'roles' => ['Kabid'],
+            ],
+            [
+                'title' => 'Buku Register',
+                'route' => 'kabid.buku-register.index',
+                'icon'  => 'book-marked',
                 'roles' => ['Kabid'],
             ],
         ],

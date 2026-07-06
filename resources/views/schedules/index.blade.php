@@ -1,94 +1,92 @@
-@extends('adminlte::page')
-
+@component('layouts.kdmp')
 @section('title', 'Jadwal Rencana Pengadaan')
 
-@section('content_header')
-    <div class="d-flex justify-content-between align-items-end mb-2">
-        <div>
-            <h2 class="font-weight-bold text-dark" style="letter-spacing: -1px;">
-                Jadwal <span class="text-primary">Pengadaan</span>
-            </h2>
-            <p class="text-muted mb-0">Timeline Rencana Umum Pengadaan (RUP) Tahun Anggaran Berjalan.</p>
-        </div>
-        <div>
-            <form method="GET" action="{{ route('schedules.index') }}" class="form-inline">
-                <label class="mr-2 font-weight-bold">Tahun Anggaran:</label>
-                <select name="fiscal_year_id" class="form-control rounded-pill border-primary" style="font-weight: bold; padding-left: 20px; padding-right: 20px;" onchange="this.form.submit()">
-                    @foreach($fiscalYears as $year)
-                        <option value="{{ $year->id }}" {{ $fiscalYearId == $year->id ? 'selected' : '' }}>
-                            {{ $year->tahun }} {{ $year->is_active ? '(Aktif)' : '' }}
-                        </option>
-                    @endforeach
-                </select>
-            </form>
-        </div>
-    </div>
-@stop
+<x-ui.toast />
 
-@section('content')
-    <div class="card" style="border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: none;">
-        <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center">
-            <h5 class="font-weight-bold mb-0"><i class="fas fa-calendar-alt text-primary mr-2"></i> Timeline Master RUP</h5>
-            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill"><i class="fas fa-filter mr-1"></i> Top {{ $packages->count() }} Paket (Pagu Tertinggi)</span>
+<x-ui.workspace title="Jadwal Pengadaan" description="Timeline Rencana Umum Pengadaan (RUP) tahun anggaran berjalan.">
+    <x-slot:actions>
+        <form method="GET" action="{{ route('schedules.index') }}" class="flex items-center gap-2">
+            <label class="text-sm font-semibold text-slate-600">Tahun Anggaran:</label>
+            <select name="fiscal_year_id" onchange="this.form.submit()"
+                class="px-4 py-2 text-sm font-semibold border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                @foreach($fiscalYears as $year)
+                    <option value="{{ $year->id }}" @selected($fiscalYearId == $year->id)>
+                        {{ $year->tahun }} {{ $year->is_active ? '(Aktif)' : '' }}
+                    </option>
+                @endforeach
+            </select>
+        </form>
+    </x-slot:actions>
+
+    <x-ui.card padding="none">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-3">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <i data-lucide="calendar-range" class="w-4 h-4 text-emerald-500"></i> Timeline Master RUP
+            </h3>
+            <div class="flex items-center gap-4 text-xs">
+                <span class="inline-flex items-center gap-1.5 text-slate-600"><span class="w-3 h-3 rounded bg-amber-400"></span> Pemilihan</span>
+                <span class="inline-flex items-center gap-1.5 text-slate-600"><span class="w-3 h-3 rounded bg-sky-500"></span> Kontrak</span>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 border border-slate-200 font-semibold">Top {{ $packages->count() }} Paket</span>
+            </div>
         </div>
-        
-        <div class="card-body px-4 pb-4">
-            <div class="table-responsive rounded border" style="max-height: 600px; overflow-y: auto;">
-                <table class="table table-bordered table-sm text-center mb-0" style="font-size: 0.85rem; min-width: 900px;">
-                    <thead class="bg-light" style="position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                        <tr>
-                            <th rowspan="2" class="align-middle text-left bg-light" style="width: 300px; padding-left: 15px;">Nama Paket</th>
-                            <th colspan="12" class="bg-light py-2">Bulan Pelaksanaan</th>
-                        </tr>
-                        <tr>
-                            @for($i=1; $i<=12; $i++)
-                                <th class="bg-light pb-2" style="width: 50px;">{{ \Carbon\Carbon::create()->month($i)->translatedFormat('M') }}</th>
+
+        <div class="overflow-auto" style="max-height: 620px;">
+            <table class="w-full text-sm border-collapse" style="min-width: 900px;">
+                <thead class="sticky top-0 z-10">
+                    <tr class="bg-slate-50">
+                        <th rowspan="2" class="align-middle text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 bg-slate-50" style="width: 320px;">Nama Paket</th>
+                        <th colspan="12" class="text-center px-3 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-l border-slate-200 bg-slate-50">Bulan Pelaksanaan</th>
+                    </tr>
+                    <tr class="bg-slate-50">
+                        @for($i = 1; $i <= 12; $i++)
+                            <th class="px-1 py-2 text-[11px] font-bold text-slate-500 uppercase border-b border-l border-slate-200 bg-slate-50" style="width: 48px;">{{ \Carbon\Carbon::create()->month($i)->translatedFormat('M') }}</th>
+                        @endfor
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @forelse($packages as $paket)
+                        <tr class="hover:bg-slate-50/60 transition-colors">
+                            <td class="px-5 py-3 align-middle border-r border-slate-100" style="max-width: 320px;">
+                                <a href="{{ route('procurement-packages.show', $paket) }}" class="font-semibold text-slate-800 hover:text-emerald-600 transition-colors leading-snug block" title="{{ $paket->nama_paket }}">
+                                    {{ \Illuminate\Support\Str::limit($paket->nama_paket, 55) }}
+                                </a>
+                            </td>
+                            @for($i = 1; $i <= 12; $i++)
+                                @php
+                                    $isPemilihan = ($i >= $paket->pemilihan_mulai_bulan && $i <= $paket->pemilihan_selesai_bulan);
+                                    $isKontrak = ($i >= $paket->kontrak_mulai_bulan && $i <= $paket->kontrak_selesai_bulan);
+                                    $style = '';
+                                    if ($isPemilihan && $isKontrak) {
+                                        $style = 'background: linear-gradient(135deg, #fbbf24 50%, #0ea5e9 50%);';
+                                    } elseif ($isPemilihan) {
+                                        $style = 'background-color: #fbbf24;';
+                                    } elseif ($isKontrak) {
+                                        $style = 'background-color: #0ea5e9;';
+                                    }
+                                @endphp
+                                <td class="border-l border-slate-100 p-1">
+                                    <div class="h-6 rounded" style="{{ $style }}"></div>
+                                </td>
                             @endfor
                         </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($packages as $paket)
-                            <tr>
-                                <td class="text-left font-weight-bold align-middle" style="max-width: 300px; white-space: normal; padding-left: 15px;" title="{{ $paket->nama_paket }}">
-                                    <a href="{{ route('procurement-packages.show', $paket) }}" class="text-dark">{{ Str::limit($paket->nama_paket, 50) }}</a>
-                                    <div class="text-xs text-muted font-weight-normal mt-1">
-                                        <i class="fas fa-square text-warning mr-1"></i>Pemilihan 
-                                        <i class="fas fa-square text-info ml-2 mr-1"></i>Kontrak
-                                    </div>
-                                </td>
-                                @for($i=1; $i<=12; $i++)
-                                    @php
-                                        $isPemilihan = ($i >= $paket->pemilihan_mulai_bulan && $i <= $paket->pemilihan_selesai_bulan);
-                                        $isKontrak = ($i >= $paket->kontrak_mulai_bulan && $i <= $paket->kontrak_selesai_bulan);
-                                        
-                                        $bgStyle = '';
-                                        if ($isPemilihan && $isKontrak) {
-                                            $bgStyle = 'background: linear-gradient(135deg, #ffc107 50%, #17a2b8 50%);';
-                                        } elseif ($isPemilihan) {
-                                            $bgStyle = 'background-color: #ffc107;'; // Warning (Kuning)
-                                        } elseif ($isKontrak) {
-                                            $bgStyle = 'background-color: #17a2b8;'; // Info (Biru)
-                                        }
-                                    @endphp
-                                    <td class="align-middle" style="{{ $bgStyle }} border-radius: 4px; border: 2px solid white;"></td>
-                                @endfor
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="13" class="text-muted py-5 text-center">
-                                    <i class="fas fa-calendar-times fa-3x mb-3 opacity-25 d-block"></i>
-                                    Belum ada data jadwal paket (Bulan Pemilihan/Kontrak belum diatur di Master Paket).
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-            
-            <div class="mt-4 border-top pt-3 text-muted text-sm d-flex align-items-center">
-                <i class="fas fa-info-circle mr-2 text-info"></i>
-                <p class="mb-0">Data ini ditarik secara otomatis dari Rencana Umum Pengadaan (RUP). Kotak kuning menandakan rentang jadwal <strong>Pemilihan Penyedia</strong>, sedangkan kotak biru menandakan rentang jadwal <strong>Pelaksanaan Kontrak</strong>.</p>
-            </div>
+                    @empty
+                        <tr>
+                            <td colspan="13" class="px-6 py-12 text-center">
+                                <div class="flex flex-col items-center gap-3 text-slate-400">
+                                    <i data-lucide="calendar-off" class="w-10 h-10 opacity-40"></i>
+                                    <p class="text-sm">Belum ada data jadwal paket (Bulan Pemilihan/Kontrak belum diatur di Master Paket).</p>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
-    </div>
-@stop
+
+        <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex items-start gap-2 text-sm text-slate-500">
+            <i data-lucide="info" class="w-4 h-4 text-sky-500 mt-0.5 shrink-0"></i>
+            <p>Data ditarik otomatis dari Rencana Umum Pengadaan (RUP). Kotak <span class="font-semibold text-amber-600">kuning</span> menandakan rentang jadwal <strong>Pemilihan Penyedia</strong>, kotak <span class="font-semibold text-sky-600">biru</span> menandakan rentang <strong>Pelaksanaan Kontrak</strong>.</p>
+        </div>
+    </x-ui.card>
+</x-ui.workspace>
+@endcomponent

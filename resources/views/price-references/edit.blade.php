@@ -1,20 +1,18 @@
-@extends('adminlte::page')
-
+@component('layouts.kdmp')
 @section('title', 'Edit Referensi Harga')
 
-@section('content_header')
-    <h1>Edit Referensi Harga</h1>
-@stop
+<x-ui.toast />
 
-@section('content')
-    <div class="card">
-        <div class="card-body">
-            <form action="{{ route('procurement-packages.price-references.update', [$procurementPackage->package, $priceReference]) }}"
-                  method="POST">
-                @method('PUT')
-                @php($submitLabel = 'Perbarui')
-                @include('price-references._form', ['submitLabel' => $submitLabel])
-            </form>
-        </div>
-    </div>
-@stop
+<x-ui.workspace title="Edit Referensi Harga" description="{{ $procurementPackage->package->nama_paket ?? '' }}">
+    <x-slot:actions>
+        <x-ui.button variant="outline" size="md" href="{{ route('procurement-packages.price-references.index', $procurementPackage->package) }}">
+            <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
+        </x-ui.button>
+    </x-slot:actions>
+
+    <form action="{{ route('procurement-packages.price-references.update', [$procurementPackage->package, $priceReference]) }}" method="POST">
+        @method('PUT')
+        @include('price-references._form', ['submitLabel' => 'Perbarui'])
+    </form>
+</x-ui.workspace>
+@endcomponent

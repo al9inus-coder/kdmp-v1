@@ -234,7 +234,10 @@ class ProcurementPackageController extends Controller
 
     private function buildTravelStats(Package $package): array
     {
-        $travelOrders = $package->travelOrders;
+        // Hanya perjalanan dinas dengan SPJ (biaya rampung) yang sudah disetujui yang dihitung
+        // sebagai realisasi — konsisten dengan daftar yang ditampilkan di halaman ini.
+        $travelOrders = $package->travelOrders
+            ->filter(fn ($travelOrder) => $travelOrder->spjStatus() === \App\Models\TravelOrder::SPJ_APPROVED);
 
         $totalRealisasi = $travelOrders->sum(function ($travelOrder) {
             return $travelOrder->personnels->sum(function ($personnel) {

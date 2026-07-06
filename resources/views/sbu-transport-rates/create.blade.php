@@ -1,64 +1,18 @@
-@extends('adminlte::page')
-
+@component('layouts.kdmp')
 @section('title', 'Tambah Biaya Transportasi')
 
-@section('content_header')
-    <h1>Tambah Biaya Transportasi</h1>
-@stop
+<x-ui.toast />
 
-@section('content')
-    <div class="card">
-        <div class="card-body">
-            <form action="{{ route('sbu-transport-rates.store') }}" method="POST">
-                @csrf
-                <div class="form-group">
-                    <label>Tempat Kedudukan</label>
-                    <input type="text" name="tempat_kedudukan" class="form-control @error('tempat_kedudukan') is-invalid @enderror" value="{{ old('tempat_kedudukan', 'Bengkayang') }}" required>
-                    @error('tempat_kedudukan')
-                        <span class="invalid-feedback">{{ $message }}</span>
-                    @enderror
-                </div>
-                
-                <div class="form-group">
-                    <label>Tempat Tujuan</label>
-                    <input type="text" name="tempat_tujuan" class="form-control @error('tempat_tujuan') is-invalid @enderror" value="{{ old('tempat_tujuan') }}" placeholder="Contoh: Sungai Raya" required>
-                    @error('tempat_tujuan')
-                        <span class="invalid-feedback">{{ $message }}</span>
-                    @enderror
-                </div>
+<x-ui.workspace title="Tambah Biaya Transportasi" description="Tambahkan standar biaya transportasi baru.">
+    <x-slot:actions>
+        <x-ui.button variant="outline" size="md" href="{{ route('sbu-transport-rates.index') }}">
+            <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
+        </x-ui.button>
+    </x-slot:actions>
 
-                <div class="form-group">
-                    <label>Satuan</label>
-                    <input type="text" name="satuan" class="form-control @error('satuan') is-invalid @enderror" value="{{ old('satuan', 'PP') }}" required>
-                    @error('satuan')
-                        <span class="invalid-feedback">{{ $message }}</span>
-                    @enderror
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label>Biaya Mobil (Rp)</label>
-                            <input type="number" name="biaya_mobil" class="form-control @error('biaya_mobil') is-invalid @enderror" value="{{ old('biaya_mobil', 0) }}" min="0" required>
-                            @error('biaya_mobil')
-                                <span class="invalid-feedback">{{ $message }}</span>
-                            @enderror
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label>Biaya Sepeda Motor (Rp)</label>
-                            <input type="number" name="biaya_motor" class="form-control @error('biaya_motor') is-invalid @enderror" value="{{ old('biaya_motor', 0) }}" min="0" required>
-                            @error('biaya_motor')
-                                <span class="invalid-feedback">{{ $message }}</span>
-                            @enderror
-                        </div>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-primary">Simpan</button>
-                <a href="{{ route('sbu-transport-rates.index') }}" class="btn btn-default">Batal</a>
-            </form>
-        </div>
-    </div>
-@stop
+    <form action="{{ route('sbu-transport-rates.store') }}" method="POST">
+        @csrf
+        @include('sbu-transport-rates._form', ['submitLabel' => 'Simpan'])
+    </form>
+</x-ui.workspace>
+@endcomponent

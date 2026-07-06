@@ -8,12 +8,9 @@
        :class="{'translate-x-0': sidebarOpen, '-translate-x-full': !sidebarOpen, 'md:translate-x-0': true}">
     
     <!-- Logo Area -->
-    <div class="flex items-center justify-center h-[64px] border-b border-slate-100 px-6 shrink-0">
-        <a href="/" class="flex items-center gap-2">
-            <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500 text-white shadow-sm">
-                <i data-lucide="shield-check" class="w-5 h-5"></i>
-            </div>
-            <span class="text-xl font-bold tracking-tight text-slate-800">KDMP <span class="text-emerald-500">v2</span></span>
+    <div class="flex items-center justify-center h-[64px] border-b border-slate-100 px-4 shrink-0">
+        <a href="/" class="flex items-center justify-center">
+            <img src="{{ asset('images/logo_kdmp.png') }}" alt="KDMP - Kendali Digital Manajemen Pengadaan" class="h-12 w-auto object-contain">
         </a>
     </div>
 

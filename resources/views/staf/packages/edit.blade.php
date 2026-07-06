@@ -277,6 +277,29 @@
                 e.target.value = '';
             }
         });
+
+        // Jenis Pengadaan -> Metode Pengadaan (dinamis)
+        const jenis = document.getElementById('jenis_pengadaan');
+        const metode = document.getElementById('metode_pengadaan');
+        let currentMetode = @json(old('metode_pengadaan', $package->metode_pengadaan ?? ''));
+
+        const standardOptions = [['', '-- Pilih Metode --'], ['E-Purchasing', 'E-Purchasing'], ['Pengadaan Langsung', 'Pengadaan Langsung'], ['Dikecualikan', 'Dikecualikan']];
+        const swakelolaOptions = [['', '-- Pilih Metode --'], ['Swakelola Tipe 1', 'Swakelola Tipe 1'], ['Swakelola Tipe 2', 'Swakelola Tipe 2'], ['Swakelola Tipe 3', 'Swakelola Tipe 3'], ['Swakelola Tipe 4', 'Swakelola Tipe 4']];
+
+        function renderMetode() {
+            if (!jenis || !metode) return;
+            const opts = jenis.value === 'Swakelola' ? swakelolaOptions : standardOptions;
+            metode.innerHTML = opts.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+            if (currentMetode) {
+                const opt = Array.from(metode.options).find(o => o.value === currentMetode);
+                if (opt) opt.selected = true;
+            }
+        }
+
+        if (jenis && metode) {
+            jenis.addEventListener('change', function () { currentMetode = ''; renderMetode(); });
+            renderMetode();
+        }
     });
 </script>
 @endcomponent

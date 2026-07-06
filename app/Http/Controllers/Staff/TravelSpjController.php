@@ -36,18 +36,35 @@ class TravelSpjController extends Controller
         return view('staf.travel-spj.show', compact('package', 'travelOrder', 'estimates'));
     }
 
-    public function store(StoreTravelSpjRequest $request, Package $package, TravelOrder $travelOrder): RedirectResponse
+    /**
+     * Partial form SPJ untuk dimuat inline (AJAX) di halaman detail SPPD.
+     * Mengembalikan HANYA konten (tanpa layout).
+     */
+    public function spjPartial(Package $package, TravelOrder $travelOrder): View
+    {
+        Gate::authorize('view', $package);
+        abort_if((int) $travelOrder->package_id !== (int) $package->id, 404);
+        abort_unless($travelOrder->status === TravelOrder::STATUS_APPROVED, 403, 'SPJ SPD hanya tersedia setelah SPPD disetujui.');
+
+        return $this->renderSpjPartial($package, $travelOrder);
+    }
+
+    public function store(StoreTravelSpjRequest $request, Package $package, TravelOrder $travelOrder): \Illuminate\Http\Response|RedirectResponse
     {
         Gate::authorize('view', $package);
         abort_if((int) $travelOrder->package_id !== (int) $package->id, 404);
 
+        $isAjax = $request->ajax();
+
         if ($travelOrder->status !== TravelOrder::STATUS_APPROVED) {
+            abort_if($isAjax, 403, 'SPJ SPD hanya dapat disimpan setelah SPPD disetujui.');
             return redirect()
                 ->route('staf.packages.travel-orders.show', [$package, $travelOrder])
                 ->with('error', 'SPJ SPD hanya dapat disimpan setelah SPPD disetujui.');
         }
 
         if (!$travelOrder->isSpjEditable()) {
+            abort_if($isAjax, 422, 'SPJ yang sudah diajukan tidak dapat diubah.');
             return redirect()
                 ->route('staf.packages.travel-orders.spj.show', [$package, $travelOrder])
                 ->with('error', 'SPJ yang sudah diajukan tidak dapat diubah.');
@@ -85,15 +102,33 @@ class TravelSpjController extends Controller
                 'spj_reviewed_at' => null,
                 'spj_reviewed_by' => null,
             ]);
+            $message = 'Biaya rampung tersimpan dan SPJ berhasil diajukan.';
+        } else {
+            $message = 'Biaya rampung SPJ berhasil disimpan.';
+        }
 
-            return redirect()
-                ->route('staf.packages.travel-orders.spj.show', [$package, $travelOrder])
-                ->with('success', 'Biaya rampung tersimpan dan SPJ berhasil diajukan.');
+        // Mode inline (AJAX): kembalikan partial SPJ yang sudah diperbarui + pesan di header.
+        if ($isAjax) {
+            return response($this->renderSpjPartial($package, $travelOrder)->render())
+                ->header('X-SPJ-Message', $message);
         }
 
         return redirect()
             ->route('staf.packages.travel-orders.spj.show', [$package, $travelOrder])
-            ->with('success', 'Biaya rampung SPJ berhasil disimpan.');
+            ->with('success', $message);
+    }
+
+    /**
+     * Render partial SPJ dengan data terbaru (dipakai oleh spjPartial & store mode AJAX).
+     */
+    private function renderSpjPartial(Package $package, TravelOrder $travelOrder): View
+    {
+        $package->load('account', 'program', 'activity', 'subActivity', 'fiscalYear');
+        $travelOrder->load('personnels.employee', 'spjReviewer');
+
+        $estimates = $this->buildEstimates($travelOrder);
+
+        return view('staf.travel-orders.partials.spj', compact('package', 'travelOrder', 'estimates'));
     }
 
     public function submit(Package $package, TravelOrder $travelOrder): RedirectResponse

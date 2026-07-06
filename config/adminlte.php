@@ -399,9 +399,9 @@ return [
     ],
     [
         'text' => 'Buku Register',
-        'route' => 'buku-register.index',
+        'route' => 'admin.buku-register.index',
         'icon' => 'fas fa-book',
-        'active' => ['buku-register', 'buku-register/*'],
+        'active' => ['admin/buku-register', 'admin/buku-register/*'],
     ],
 
     [

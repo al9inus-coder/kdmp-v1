@@ -112,6 +112,8 @@
                         }
                         if($pkg->travelOrders) {
                             foreach($pkg->travelOrders as $to) {
+                                // Hanya SPJ (biaya rampung) yang sudah disetujui yang masuk realisasi.
+                                if ($to->spjStatus() !== \App\Models\TravelOrder::SPJ_APPROVED) { continue; }
                                 foreach($to->personnels as $personnel) {
                                     $groupRealisasi += $personnel->uang_harian + $personnel->biaya_penginapan + $personnel->biaya_representasi + $personnel->biaya_transport + ($personnel->biaya_taksi ?? 0);
                                 }

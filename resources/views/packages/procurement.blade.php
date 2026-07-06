@@ -1,95 +1,76 @@
-@extends('adminlte::page')
-
+@component('layouts.kdmp')
 @section('title', 'Persiapan Pengadaan')
 
-@section('content_header')
-    <h1>Persiapan Pengadaan</h1>
-@stop
+<x-ui.toast />
 
-@section('content')
+<x-ui.workspace title="Persiapan Pengadaan" description="{{ $package->nama_paket }}">
+    <x-slot:actions>
+        <x-ui.button variant="outline" size="md" href="{{ route('packages.show', $package) }}">
+            <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
+        </x-ui.button>
+    </x-slot:actions>
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title">
-            {{ $package->nama_paket }}
-        </h3>
-    </div>
-
-    <form method="POST"
-          action="{{ route('packages.procurement.update', $package) }}">
+    <form method="POST" action="{{ route('packages.procurement.update', $package) }}">
         @csrf
         @method('PUT')
 
-        <div class="card-body">
+        <div class="max-w-2xl">
+            <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/60 flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                        <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-slate-900">Data Persiapan Pengadaan</h3>
+                </div>
+                <div class="p-6 space-y-5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">ID RUP</label>
+                            <x-ui.input type="text" :value="$package->id_rup" readonly />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Status Pengadaan</label>
+                            <x-ui.input type="text" :value="$package->procurement_status" readonly />
+                        </div>
+                    </div>
 
-            <div class="row">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="pptk_name" class="block text-sm font-semibold text-slate-700 mb-1.5">PPTK</label>
+                            <x-ui.input type="text" name="pptk_name" id="pptk_name" :value="old('pptk_name', $package->pptk_name)" :invalid="$errors->has('pptk_name')" />
+                            @error('pptk_name') <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label for="ppk_name" class="block text-sm font-semibold text-slate-700 mb-1.5">PPK</label>
+                            <x-ui.input type="text" name="ppk_name" id="ppk_name" :value="old('ppk_name', $package->ppk_name)" :invalid="$errors->has('ppk_name')" />
+                            @error('ppk_name') <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
+                        </div>
+                    </div>
 
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>ID RUP</label>
-                        <input type="text"
-                               class="form-control"
-                               value="{{ $package->id_rup }}"
-                               readonly>
+                    <div>
+                        <label for="target_procurement_date" class="block text-sm font-semibold text-slate-700 mb-1.5">Target Pengadaan</label>
+                        <x-ui.input type="date" name="target_procurement_date" id="target_procurement_date"
+                            :value="old('target_procurement_date', optional($package->target_procurement_date)->format('Y-m-d'))" :invalid="$errors->has('target_procurement_date')" />
+                        @error('target_procurement_date') <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div>
+                        <label for="procurement_notes" class="block text-sm font-semibold text-slate-700 mb-1.5">Catatan</label>
+                        <x-ui.textarea name="procurement_notes" id="procurement_notes" rows="4" :invalid="$errors->has('procurement_notes')">{{ old('procurement_notes', $package->procurement_notes) }}</x-ui.textarea>
+                        @error('procurement_notes') <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
                     </div>
                 </div>
+            </section>
 
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Status Pengadaan</label>
-                        <input type="text"
-                               class="form-control"
-                               value="{{ $package->procurement_status }}"
-                               readonly>
-                    </div>
-                </div>
-
+            <div class="flex flex-wrap items-center justify-end gap-3 mt-6">
+                <x-ui.button variant="secondary" size="md" href="{{ route('packages.show', $package) }}">
+                    <i data-lucide="x" class="w-4 h-4 mr-2"></i> Batal
+                </x-ui.button>
+                <x-ui.button variant="primary" size="lg" type="submit">
+                    <i data-lucide="save" class="w-4 h-4 mr-2"></i> Simpan
+                </x-ui.button>
             </div>
-
-            <div class="form-group">
-                <label>PPTK</label>
-                <input type="text"
-                       name="pptk_name"
-                       class="form-control"
-                       value="{{ old('pptk_name', $package->pptk_name) }}">
-            </div>
-
-            <div class="form-group">
-                <label>PPK</label>
-                <input type="text"
-                       name="ppk_name"
-                       class="form-control"
-                       value="{{ old('ppk_name', $package->ppk_name) }}">
-            </div>
-
-            <div class="form-group">
-                <label>Target Pengadaan</label>
-                <input type="date"
-                       name="target_procurement_date"
-                       class="form-control"
-                       value="{{ old(
-                            'target_procurement_date',
-                            optional($package->target_procurement_date)->format('Y-m-d')
-                       ) }}">
-            </div>
-
-            <div class="form-group">
-                <label>Catatan</label>
-                <textarea name="procurement_notes"
-                          class="form-control"
-                          rows="4">{{ old('procurement_notes', $package->procurement_notes) }}</textarea>
-            </div>
-
         </div>
-
-        <div class="card-footer">
-            <button type="submit"
-                    class="btn btn-primary">
-                Simpan
-            </button>
-        </div>
-
     </form>
-</div>
-
-@stop
+</x-ui.workspace>
+@endcomponent

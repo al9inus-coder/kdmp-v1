@@ -1,13 +1,7 @@
 @component('layouts.kdmp')
 @section('title', 'Pengajuan SPPD')
 
-<div class="space-y-6"
-    x-data="{
-        review: { open: false, mode: 'revisi', action: '', tujuan: '' },
-        openReview(mode, action, tujuan) {
-            this.review = { open: true, mode, action, tujuan };
-        },
-    }">
+<div class="space-y-6">
     <x-ui.toast />
 
     {{-- Header --}}
@@ -17,7 +11,7 @@
                 <i data-lucide="plane" class="w-6 h-6 text-emerald-600"></i>
                 Pengajuan <span class="text-emerald-600">SPPD</span>
             </h1>
-            <p class="text-sm text-slate-500 mt-1">Tinjau pengajuan surat perjalanan dinas dari staf: setujui, revisi, atau tolak.</p>
+            <p class="text-sm text-slate-500 mt-1">Tinjau pengajuan surat perjalanan dinas dari staf: setujui, revisi, atau tolak di halaman detail.</p>
         </div>
         <a href="{{ route('dashboard.kabid') }}"
             class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm shrink-0">
@@ -26,7 +20,7 @@
         </a>
     </div>
 
-    {{-- Filter --}}
+    {{-- Filter panel --}}
     @php
         $statusTabs = [
             ''          => ['label' => 'Semua',        'dot' => 'bg-slate-400',   'active' => 'text-emerald-700 border-emerald-600 bg-emerald-50/60'],
@@ -54,6 +48,7 @@
                 </a>
             @endforeach
         </div>
+
         <form method="GET" action="{{ route('kabid.sppd.index') }}" class="p-4 flex flex-col sm:flex-row gap-3">
             @if($status)<input type="hidden" name="status" value="{{ $status }}">@endif
             <div class="relative flex-1">
@@ -73,12 +68,21 @@
     {{-- List --}}
     <div class="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full min-w-[1080px] text-sm text-left text-slate-600">
+            <table class="w-full min-w-[1180px] table-fixed text-sm text-left text-slate-600">
+                <colgroup>
+                    <col class="w-[18%]">
+                    <col class="w-[28%]">
+                    <col class="w-[18%]">
+                    <col class="w-[20%]">
+                    <col class="w-[9%]">
+                    <col class="w-[7%]">
+                </colgroup>
                 <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
                     <tr>
-                        <th class="px-6 py-4 font-semibold">Pelaksana</th>
-                        <th class="px-6 py-4 font-semibold">Maksud &amp; Tujuan</th>
-                        <th class="px-6 py-4 font-semibold">Tanggal</th>
+                        <th class="px-6 py-4 font-semibold">Nama Pelaksana</th>
+                        <th class="px-6 py-4 font-semibold">Maksud dan Tujuan</th>
+                        <th class="px-6 py-4 font-semibold">Tanggal Perjalanan</th>
+                        <th class="px-6 py-4 font-semibold">Sub Kegiatan</th>
                         <th class="px-6 py-4 font-semibold text-center">Status</th>
                         <th class="px-6 py-4 font-semibold text-center">Aksi</th>
                     </tr>
@@ -88,14 +92,18 @@
                         @php
                             $meta = $to->statusMeta();
                             $isDiajukan = $to->status === \App\Models\TravelOrder::STATUS_SUBMITTED;
-                            $duration = $to->tanggal_berangkat && $to->tanggal_kembali ? $to->tanggal_berangkat->diffInDays($to->tanggal_kembali) + 1 : 0;
+                            $duration = $to->tanggal_berangkat && $to->tanggal_kembali
+                                ? $to->tanggal_berangkat->diffInDays($to->tanggal_kembali) + 1
+                                : 0;
                         @endphp
-                        <tr class="hover:bg-slate-50 transition-colors {{ $isDiajukan ? 'bg-blue-50/20' : '' }}">
+                        <tr class="hover:bg-slate-50 transition-colors group cursor-pointer {{ $isDiajukan ? 'bg-blue-50/20' : '' }}"
+                            onclick="window.location.href='{{ route('kabid.packages.travel-orders.show', [$to->package, $to]) }}'">
                             <td class="px-6 py-4">
-                                <div class="flex flex-wrap gap-1.5 max-w-xs">
+                                <div class="flex flex-wrap gap-1.5">
                                     @forelse($to->personnels->take(4) as $personnel)
                                         <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-semibold">
-                                            <i data-lucide="user" class="w-3 h-3 text-slate-400"></i>{{ $personnel->employee?->nama ?? 'Pegawai' }}
+                                            <i data-lucide="user" class="w-3 h-3 text-slate-400"></i>
+                                            {{ $personnel->employee?->nama ?? 'Pegawai' }}
                                         </span>
                                     @empty
                                         <span class="text-xs text-slate-400 font-semibold">Belum ada pelaksana</span>
@@ -109,61 +117,46 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4">
-                                <p class="font-semibold text-slate-800 line-clamp-2">{{ $to->maksud_perjalanan }}</p>
+                                <p class="font-semibold text-slate-800 group-hover:text-emerald-600 transition-colors line-clamp-2">{{ $to->maksud_perjalanan }}</p>
                                 <p class="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                                    <i data-lucide="map-pin" class="w-3 h-3 text-slate-400"></i>{{ $to->tempat_tujuan }}
+                                    <i data-lucide="map-pin" class="w-3 h-3 text-slate-400"></i>
+                                    {{ $to->tempat_tujuan }}
                                 </p>
                                 @if(in_array($to->status, [\App\Models\TravelOrder::STATUS_REVISION, \App\Models\TravelOrder::STATUS_REJECTED]) && $to->catatan_review)
                                     <p class="text-[11px] {{ $to->status === \App\Models\TravelOrder::STATUS_REJECTED ? 'text-rose-600' : 'text-amber-600' }} font-semibold mt-1 flex items-center gap-1">
-                                        <i data-lucide="message-square-warning" class="w-3 h-3"></i>{{ Str::limit($to->catatan_review, 45) }}
+                                        <i data-lucide="message-square-warning" class="w-3 h-3"></i>
+                                        {{ Str::limit($to->catatan_review, 50) }}
                                     </p>
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-xs">
                                 <p class="font-medium text-slate-700">{{ $to->tanggal_berangkat?->locale('id')->translatedFormat('d M Y') }}</p>
                                 <p class="text-slate-400">s.d. {{ $to->tanggal_kembali?->locale('id')->translatedFormat('d M Y') }}</p>
-                                <span class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-semibold">
-                                    <i data-lucide="clock" class="w-3 h-3"></i>{{ $duration }} hari
+                                <span class="mt-1 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 font-semibold">
+                                    <i data-lucide="clock" class="w-3 h-3"></i>
+                                    {{ $duration }} hari
                                 </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <p class="text-xs font-semibold text-slate-700 line-clamp-2">{{ $to->package?->subActivity?->nama ?? '-' }}</p>
+                                <p class="text-[11px] text-slate-400 mt-1">{{ $to->package?->subActivity?->kode ?? ($to->package?->nama_paket ?? '-') }}</p>
                             </td>
                             <td class="px-6 py-4 text-center whitespace-nowrap">
                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border {{ $meta['badge'] }}">
                                     <i data-lucide="{{ $meta['icon'] }}" class="w-3.5 h-3.5"></i> {{ $meta['label'] }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                @if($isDiajukan)
-                                    <div class="flex items-center justify-center gap-1.5">
-                                        <button type="button"
-                                            @click="openReview('tolak', '{{ route('kabid.packages.travel-orders.reject', [$to->package, $to]) }}', '{{ addslashes($to->tempat_tujuan) }}')"
-                                            class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-rose-700 bg-white border border-rose-200 rounded-lg hover:bg-rose-50 transition-colors" title="Tolak">
-                                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                                        </button>
-                                        <button type="button"
-                                            @click="openReview('revisi', '{{ route('kabid.packages.travel-orders.revise', [$to->package, $to]) }}', '{{ addslashes($to->tempat_tujuan) }}')"
-                                            class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-amber-700 bg-white border border-amber-200 rounded-lg hover:bg-amber-50 transition-colors" title="Minta Revisi">
-                                            <i data-lucide="file-warning" class="w-3.5 h-3.5"></i>
-                                        </button>
-                                        <form method="POST" action="{{ route('kabid.packages.travel-orders.approve', [$to->package, $to]) }}" onsubmit="return confirm('Setujui pengajuan SPPD ini?');">
-                                            @csrf
-                                            <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-colors">
-                                                <i data-lucide="check" class="w-3.5 h-3.5"></i> Setujui
-                                            </button>
-                                        </form>
-                                    </div>
-                                @else
-                                    <div class="flex justify-center">
-                                        <a href="{{ route('kabid.packages.travel-orders.show', [$to->package, $to]) }}"
-                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-                                            <i data-lucide="eye" class="w-3.5 h-3.5"></i> Detail
-                                        </a>
-                                    </div>
-                                @endif
+                            <td class="px-6 py-4 text-center whitespace-nowrap">
+                                <a href="{{ route('kabid.packages.travel-orders.show', [$to->package, $to]) }}"
+                                    onclick="event.stopPropagation()"
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                                    <i data-lucide="eye" class="w-3.5 h-3.5"></i> Detail
+                                </a>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-6 py-16 text-center text-slate-500">
+                            <td colspan="6" class="px-6 py-16 text-center text-slate-500">
                                 <div class="flex flex-col items-center justify-center">
                                     <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
                                         <i data-lucide="inbox" class="w-8 h-8 text-slate-400"></i>
@@ -177,57 +170,10 @@
                 </tbody>
             </table>
         </div>
+
         @if($travelOrders->hasPages())
             <div class="p-4 border-t border-slate-100 bg-slate-50/50">{{ $travelOrders->links() }}</div>
         @endif
     </div>
-
-    {{-- Modal Revisi / Tolak (bersama) --}}
-    <div x-show="review.open" style="display:none;" class="fixed inset-0 z-[70] flex items-center justify-center p-4"
-        x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-        @keydown.escape.window="review.open = false">
-        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="review.open = false"></div>
-        <div class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
-            x-transition:enter="transition ease-out duration-200 delay-75" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
-            <form method="POST" :action="review.action">
-                @csrf
-                <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-2"
-                    :class="review.mode === 'tolak' ? 'bg-rose-50/60' : 'bg-amber-50/60'">
-                    <span class="w-7 h-7 rounded-lg border flex items-center justify-center"
-                        :class="review.mode === 'tolak' ? 'bg-rose-100 border-rose-200 text-rose-600' : 'bg-amber-100 border-amber-200 text-amber-600'">
-                        <i x-show="review.mode === 'tolak'" data-lucide="x-circle" class="w-4 h-4"></i>
-                        <i x-show="review.mode !== 'tolak'" data-lucide="file-warning" class="w-4 h-4"></i>
-                    </span>
-                    <h3 class="font-bold text-slate-800" x-text="review.mode === 'tolak' ? 'Tolak Pengajuan SPPD' : 'Minta Revisi SPPD'"></h3>
-                </div>
-                <div class="p-5">
-                    <p class="text-xs text-slate-400 mb-2">Tujuan: <span class="font-semibold text-slate-600" x-text="review.tujuan"></span></p>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">
-                        <span x-text="review.mode === 'tolak' ? 'Alasan Penolakan' : 'Catatan Revisi'"></span> <span class="text-rose-500">*</span>
-                    </label>
-                    <textarea name="catatan_review" rows="4" required
-                        :placeholder="review.mode === 'tolak' ? 'Jelaskan alasan penolakan...' : 'Jelaskan apa yang perlu diperbaiki staf...'"
-                        class="w-full rounded-lg border-slate-300 sm:text-sm"
-                        :class="review.mode === 'tolak' ? 'focus:border-rose-500 focus:ring-rose-500' : 'focus:border-amber-500 focus:ring-amber-500'"></textarea>
-                    <p x-show="review.mode === 'tolak'" class="text-[11px] text-slate-400 mt-1.5">Penolakan bersifat final — staf tidak dapat mengajukan ulang.</p>
-                </div>
-                <div class="px-5 py-4 bg-slate-50/70 border-t border-slate-100 flex items-stretch justify-end gap-2">
-                    <button type="button" @click="review.open = false" class="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors whitespace-nowrap">Batal</button>
-                    <button type="submit"
-                        class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white rounded-xl shadow-sm transition-colors whitespace-nowrap"
-                        :class="review.mode === 'tolak' ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-200' : 'bg-amber-500 hover:bg-amber-600 shadow-amber-200'">
-                        <i data-lucide="send" class="w-4 h-4 shrink-0"></i>
-                        <span x-text="review.mode === 'tolak' ? 'Tolak' : 'Kirim Revisi'"></span>
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
 </div>
-
-<script>
-    document.addEventListener('alpine:initialized', () => {
-        Alpine.effect(() => { setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 50); });
-    });
-</script>
 @endcomponent

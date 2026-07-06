@@ -18,6 +18,8 @@
         }
 
         foreach ($pkg->travelOrders ?? [] as $travelOrder) {
+            // Hanya SPJ (biaya rampung) yang sudah disetujui yang masuk realisasi.
+            if ($travelOrder->spjStatus() !== \App\Models\TravelOrder::SPJ_APPROVED) { continue; }
             foreach ($travelOrder->personnels ?? [] as $personnel) {
                 $total += (float) $personnel->uang_harian
                     + (float) $personnel->biaya_penginapan

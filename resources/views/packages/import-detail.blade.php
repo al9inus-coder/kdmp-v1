@@ -1,84 +1,60 @@
-@extends('adminlte::page')
-
+@component('layouts.kdmp')
 @section('title', 'Detail Import Batch')
 
-@section('content_header')
-    <h1>Detail Import Batch #{{ $batch->id }}</h1>
-@stop
+<x-ui.toast />
 
-@section('content')
+<x-ui.workspace title="Detail Import Batch #{{ $batch->id }}" description="Ringkasan hasil impor dan daftar error.">
+    <x-slot:actions>
+        <x-ui.button variant="outline" size="md" href="{{ route('packages.import.index') }}">
+            <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
+        </x-ui.button>
+    </x-slot:actions>
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title">Informasi Import</h3>
-    </div>
+    {{-- Informasi Import --}}
+    <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-6 max-w-3xl">
+        <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/60 flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center"><i data-lucide="file-spreadsheet" class="w-4 h-4"></i></div>
+            <h3 class="text-sm font-bold text-slate-900">Informasi Import</h3>
+        </div>
+        <dl class="divide-y divide-slate-100">
+            <div class="px-6 py-3 flex gap-4"><dt class="w-48 text-sm font-semibold text-slate-500 shrink-0">File</dt><dd class="text-sm text-slate-800">{{ $batch->file_name }}</dd></div>
+            <div class="px-6 py-3 flex gap-4"><dt class="w-48 text-sm font-semibold text-slate-500 shrink-0">Tahun Anggaran</dt><dd class="text-sm text-slate-800">{{ $batch->fiscalYear->tahun ?? '-' }}</dd></div>
+            <div class="px-6 py-3 flex gap-4"><dt class="w-48 text-sm font-semibold text-slate-500 shrink-0">Total Data</dt><dd class="text-sm font-semibold text-slate-800">{{ $batch->total_rows }}</dd></div>
+            <div class="px-6 py-3 flex gap-4"><dt class="w-48 text-sm font-semibold text-slate-500 shrink-0">Berhasil</dt><dd class="text-sm font-semibold text-emerald-600">{{ $batch->success_rows }}</dd></div>
+            <div class="px-6 py-3 flex gap-4"><dt class="w-48 text-sm font-semibold text-slate-500 shrink-0">Gagal</dt><dd class="text-sm font-semibold text-rose-600">{{ $batch->failed_rows }}</dd></div>
+            <div class="px-6 py-3 flex gap-4"><dt class="w-48 text-sm font-semibold text-slate-500 shrink-0">Status</dt><dd><x-ui.badge variant="info">{{ $batch->status }}</x-ui.badge></dd></div>
+        </dl>
+    </section>
 
-    <div class="card-body">
-        <table class="table table-bordered">
-            <tr>
-                <th width="250">File</th>
-                <td>{{ $batch->file_name }}</td>
-            </tr>
-            <tr>
-                <th>Tahun Anggaran</th>
-                <td>{{ $batch->fiscalYear->tahun ?? '-' }}</td>
-            </tr>
-            <tr>
-                <th>Total Data</th>
-                <td>{{ $batch->total_rows }}</td>
-            </tr>
-            <tr>
-                <th>Berhasil</th>
-                <td>{{ $batch->success_rows }}</td>
-            </tr>
-            <tr>
-                <th>Gagal</th>
-                <td>{{ $batch->failed_rows }}</td>
-            </tr>
-            <tr>
-                <th>Status</th>
-                <td>{{ $batch->status }}</td>
-            </tr>
-        </table>
-    </div>
-</div>
-
-@if($batch->errors->count())
-
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title">Daftar Error</h3>
-    </div>
-
-    <div class="card-body p-0">
-        <table class="table table-bordered table-hover mb-0">
-            <thead>
-                <tr>
-                    <th width="100">Baris</th>
-                    <th width="150">ID RUP</th>
-                    <th width="200">Jenis Error</th>
-                    <th>Pesan</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($batch->errors as $error)
-                    <tr>
-                        <td>{{ $error->row_number }}</td>
-                        <td>{{ $error->id_rup }}</td>
-                        <td>{{ $error->error_type }}</td>
-                        <td>{{ $error->error_message }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-</div>
-
-@endif
-
-<a href="{{ route('packages.import.index') }}"
-   class="btn btn-secondary">
-    Kembali
-</a>
-
-@stop
+    @if($batch->errors->count())
+        <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 bg-rose-50/50 flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center"><i data-lucide="alert-triangle" class="w-4 h-4"></i></div>
+                <h3 class="text-sm font-bold text-slate-900">Daftar Error ({{ $batch->errors->count() }})</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-slate-50 border-b border-slate-100">
+                        <tr>
+                            <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider w-24">Baris</th>
+                            <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider w-40">ID RUP</th>
+                            <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider w-48">Jenis Error</th>
+                            <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Pesan</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @foreach($batch->errors as $error)
+                            <tr class="hover:bg-slate-50/60 transition-colors">
+                                <td class="px-6 py-3 text-slate-600">{{ $error->row_number }}</td>
+                                <td class="px-6 py-3 font-mono text-xs text-slate-500">{{ $error->id_rup }}</td>
+                                <td class="px-6 py-3"><x-ui.badge variant="danger">{{ $error->error_type }}</x-ui.badge></td>
+                                <td class="px-6 py-3 text-slate-700">{{ $error->error_message }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    @endif
+</x-ui.workspace>
+@endcomponent

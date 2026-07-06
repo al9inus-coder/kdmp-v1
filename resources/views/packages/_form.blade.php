@@ -1,408 +1,209 @@
+@php $package = $package ?? new \App\Models\Package(); @endphp
 @csrf
 
-{{-- BANNER STATUS & ID RUP --}}
-@if(isset($package) && $package->exists)
-<div class="callout callout-info shadow-sm mb-4">
-    <div class="d-flex justify-content-between align-items-center">
+@if ($errors->any())
+    <div class="mb-6 flex items-start gap-3 p-4 bg-rose-50 border border-rose-200 rounded-xl">
+        <div class="p-1.5 rounded-full bg-rose-100 shrink-0"><i data-lucide="alert-circle" class="w-4 h-4 text-rose-600"></i></div>
         <div>
-            <h5 class="mb-1"><i class="fas fa-info-circle text-info mr-2"></i>Status Paket</h5>
-            @if($package->status === 'needs_review')
-                <span class="badge badge-danger px-3 py-2 text-md elevation-1"><i class="fas fa-exclamation-triangle mr-1"></i> Needs Review</span>
-            @elseif($package->status === 'draft')
-                <span class="badge badge-warning px-3 py-2 text-md elevation-1"><i class="fas fa-pencil-alt mr-1"></i> Draft</span>
-            @elseif($package->status === 'submitted')
-                <span class="badge badge-primary px-3 py-2 text-md elevation-1"><i class="fas fa-paper-plane mr-1"></i> Diajukan</span>
-            @elseif($package->status === 'approved')
-                <span class="badge badge-success px-3 py-2 text-md elevation-1"><i class="fas fa-check-circle mr-1"></i> Approved</span>
-            @endif
+            <p class="text-sm font-bold text-rose-800">Terjadi kesalahan validasi</p>
+            <ul class="mt-1 text-xs text-rose-600 list-disc list-inside space-y-0.5">
+                @foreach ($errors->all() as $error) <li>{{ $error }}</li> @endforeach
+            </ul>
         </div>
+    </div>
+@endif
 
+{{-- Banner status (edit) --}}
+@if($package->exists)
+    <div class="mb-6 flex items-center justify-between gap-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+        <div class="flex items-center gap-3">
+            <span class="text-sm font-semibold text-slate-600">Status Paket:</span>
+            @switch($package->status)
+                @case('needs_review') <x-ui.badge variant="danger">Needs Review</x-ui.badge> @break
+                @case('draft') <x-ui.badge variant="warning">Draft</x-ui.badge> @break
+                @case('submitted') <x-ui.badge variant="info">Diajukan</x-ui.badge> @break
+                @case('approved') <x-ui.badge variant="success">Approved</x-ui.badge> @break
+            @endswitch
+        </div>
         @if($package->id_rup)
             <div class="text-right">
-                <span class="d-block text-muted text-sm"><i class="fas fa-hashtag mr-1"></i>ID RUP</span>
-                <strong class="text-lg text-dark">{{ $package->id_rup }}</strong>
+                <span class="block text-xs text-slate-400">ID RUP</span>
+                <strong class="text-sm text-slate-800 font-mono">{{ $package->id_rup }}</strong>
             </div>
         @endif
     </div>
-</div>
 @endif
 
-{{-- INFORMASI PAKET --}}
-<div class="card card-outline card-primary shadow-sm mb-4">
-    <div class="card-header">
-        <h3 class="card-title font-weight-bold">
-            <i class="fas fa-box text-primary mr-2"></i> Informasi Paket
-        </h3>
-        <div class="card-tools">
-            <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                <i class="fas fa-minus"></i>
-            </button>
+<div class="space-y-6 max-w-4xl">
+    {{-- Informasi Paket --}}
+    <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/60 flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center"><i data-lucide="package" class="w-4 h-4"></i></div>
+            <h3 class="text-sm font-bold text-slate-900">Informasi Paket</h3>
         </div>
-    </div>
-
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="fiscal_year_id">
-                        <i class="fas fa-calendar-alt text-muted mr-1"></i> Tahun Anggaran <span class="text-danger">*</span>
-                    </label>
-                    <select id="fiscal_year_id"
-                            name="fiscal_year_id"
-                            class="form-control select2 @error('fiscal_year_id') is-invalid @enderror"
-                            required>
-                        <option value="">-- Pilih Tahun Anggaran --</option>
-                        @foreach($fiscalYears as $fiscalYear)
-                            <option value="{{ $fiscalYear->id }}"
-                                @selected((string) old('fiscal_year_id', $package->fiscal_year_id) === (string) $fiscalYear->id)>
-                                {{ $fiscalYear->tahun }} @if($fiscalYear->is_active) (Aktif) @endif
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('fiscal_year_id')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
+        <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+                <label for="fiscal_year_id" class="block text-sm font-semibold text-slate-700 mb-1.5">Tahun Anggaran <span class="text-rose-500">*</span></label>
+                <x-ui.select name="fiscal_year_id" id="fiscal_year_id" :invalid="$errors->has('fiscal_year_id')" required>
+                    <option value="">-- Pilih Tahun Anggaran --</option>
+                    @foreach($fiscalYears as $fiscalYear)
+                        <option value="{{ $fiscalYear->id }}" @selected((string) old('fiscal_year_id', $package->fiscal_year_id) === (string) $fiscalYear->id)>
+                            {{ $fiscalYear->tahun }} @if($fiscalYear->is_active) (Aktif) @endif
+                        </option>
+                    @endforeach
+                </x-ui.select>
+                @error('fiscal_year_id') <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
             </div>
-
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="id_rup">
-                        <i class="fas fa-fingerprint text-muted mr-1"></i> ID RUP <span class="text-danger">*</span>
-                    </label>
-                    <div class="input-group">
-                        <input type="text"
-                               id="id_rup"
-                               name="id_rup"
-                               class="form-control @error('id_rup') is-invalid @enderror"
-                               value="{{ old('id_rup', $package->id_rup) }}"
-                               placeholder="Masukkan ID RUP"
-                               required>
-                    </div>
-                    @error('id_rup')
-                        <div class="invalid-feedback d-block">{{ $message }}</div>
-                    @enderror
+            <div>
+                <label for="id_rup" class="block text-sm font-semibold text-slate-700 mb-1.5">ID RUP <span class="text-rose-500">*</span></label>
+                <x-ui.input type="text" name="id_rup" id="id_rup" :value="old('id_rup', $package->id_rup)" :invalid="$errors->has('id_rup')" placeholder="Masukkan ID RUP" required />
+                @error('id_rup') <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
+            </div>
+            <div>
+                <label for="nama_paket" class="block text-sm font-semibold text-slate-700 mb-1.5">Nama Paket <span class="text-rose-500">*</span></label>
+                <x-ui.input type="text" name="nama_paket" id="nama_paket" :value="old('nama_paket', $package->nama_paket)" :invalid="$errors->has('nama_paket')" placeholder="Contoh: Pengadaan Komputer Kantor..." required />
+                @error('nama_paket') <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
+            </div>
+            <div>
+                <label for="pagu" class="block text-sm font-semibold text-slate-700 mb-1.5">Pagu <span class="text-rose-500">*</span></label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-sm font-semibold text-slate-400 pointer-events-none">Rp</span>
+                    <input type="text" name="pagu" id="pagu" required
+                        value="{{ old('pagu', number_format((float)($package->pagu ?? 0), 0, ',', '.')) }}" placeholder="0"
+                        class="block w-full rounded-md shadow-sm sm:text-sm pl-9 pr-3 py-2 font-semibold text-emerald-700 border {{ $errors->has('pagu') ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-slate-300 focus:ring-emerald-500 focus:border-emerald-500' }} focus:outline-none focus:ring-2 bg-white transition-colors">
                 </div>
+                @error('pagu') <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
             </div>
         </div>
+    </section>
 
-        <div class="row mt-2">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="nama_paket">
-                        <i class="fas fa-file-signature text-muted mr-1"></i> Nama Paket <span class="text-danger">*</span>
-                    </label>
-                    <input type="text"
-                           id="nama_paket"
-                           name="nama_paket"
-                           class="form-control @error('nama_paket') is-invalid @enderror"
-                           value="{{ old('nama_paket', $package->nama_paket) }}"
-                           placeholder="Contoh: Pengadaan Komputer Kantor..."
-                           required>
-                    @error('nama_paket')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
+    {{-- Klasifikasi --}}
+    <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/60 flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center"><i data-lucide="tags" class="w-4 h-4"></i></div>
+            <h3 class="text-sm font-bold text-slate-900">Klasifikasi Paket</h3>
+        </div>
+        <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+                <label for="sub_activity_id" class="block text-sm font-semibold text-slate-700 mb-1.5">Sub Kegiatan</label>
+                <x-ui.select name="sub_activity_id" id="sub_activity_id" :invalid="$errors->has('sub_activity_id')">
+                    <option value="">-- Pilih Sub Kegiatan --</option>
+                    @foreach($subActivities as $subActivity)
+                        <option value="{{ $subActivity->id }}" @selected((string) old('sub_activity_id', $package->sub_activity_id) === (string) $subActivity->id)>{{ $subActivity->kode }} - {{ $subActivity->nama }}</option>
+                    @endforeach
+                </x-ui.select>
+                @error('sub_activity_id') <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
             </div>
-
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="pagu">
-                        <i class="fas fa-money-bill-wave text-muted mr-1"></i> Pagu <span class="text-danger">*</span>
-                    </label>
-                    <div class="input-group">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text bg-light font-weight-bold">Rp</span>
-                        </div>
-                        <input type="text"
-                               id="pagu"
-                               name="pagu"
-                               class="form-control font-weight-bold text-primary @error('pagu') is-invalid @enderror"
-                               value="{{ old('pagu', number_format((float)($package->pagu ?? 0), 0, ',', '.')) }}"
-                               placeholder="0"
-                               required>
-                    </div>
-                    @error('pagu')
-                        <div class="invalid-feedback d-block">{{ $message }}</div>
-                    @enderror
-                </div>
+            <div>
+                <label for="account_id" class="block text-sm font-semibold text-slate-700 mb-1.5">Rekening Belanja</label>
+                <x-ui.select name="account_id" id="account_id" :invalid="$errors->has('account_id')">
+                    <option value="">-- Pilih Rekening --</option>
+                    @foreach($accounts as $account)
+                        <option value="{{ $account->id }}" @selected((string) old('account_id', $package->account_id) === (string) $account->id)>{{ $account->kode }} - {{ $account->nama }}</option>
+                    @endforeach
+                </x-ui.select>
+                @error('account_id') <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
+            </div>
+            <div>
+                <label for="jenis_pengadaan" class="block text-sm font-semibold text-slate-700 mb-1.5">Jenis Pengadaan</label>
+                <x-ui.select name="jenis_pengadaan" id="jenis_pengadaan" :invalid="$errors->has('jenis_pengadaan')">
+                    <option value="">-- Pilih Jenis Pengadaan --</option>
+                    <option value="Barang" @selected(old('jenis_pengadaan', $package->jenis_pengadaan) == 'Barang')>Pengadaan Barang</option>
+                    <option value="Jasa Konsultansi" @selected(old('jenis_pengadaan', $package->jenis_pengadaan) == 'Jasa Konsultansi')>Jasa Konsultansi</option>
+                    <option value="Jasa Lainnya" @selected(old('jenis_pengadaan', $package->jenis_pengadaan) == 'Jasa Lainnya')>Jasa Lainnya</option>
+                    <option value="Pekerjaan Konstruksi" @selected(old('jenis_pengadaan', $package->jenis_pengadaan) == 'Pekerjaan Konstruksi')>Pekerjaan Konstruksi</option>
+                    <option value="Swakelola" @selected(old('jenis_pengadaan', $package->jenis_pengadaan) == 'Swakelola')>Swakelola</option>
+                </x-ui.select>
+                @error('jenis_pengadaan') <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
+            </div>
+            <div>
+                <label for="metode_pengadaan" class="block text-sm font-semibold text-slate-700 mb-1.5">Metode Pengadaan</label>
+                <x-ui.select name="metode_pengadaan" id="metode_pengadaan" :invalid="$errors->has('metode_pengadaan')">
+                    <option value="">-- Pilih Metode --</option>
+                    <option value="E-Purchasing" @selected(old('metode_pengadaan', $package->metode_pengadaan) == 'E-Purchasing')>E-Purchasing</option>
+                    <option value="Pengadaan Langsung" @selected(old('metode_pengadaan', $package->metode_pengadaan) == 'Pengadaan Langsung')>Pengadaan Langsung</option>
+                    <option value="Dikecualikan" @selected(old('metode_pengadaan', $package->metode_pengadaan) == 'Dikecualikan')>Dikecualikan</option>
+                </x-ui.select>
+                @error('metode_pengadaan') <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
             </div>
         </div>
-    </div>
-</div>
+    </section>
 
-{{-- KLASIFIKASI & ANGGARAN --}}
-<div class="card card-outline card-info shadow-sm mb-4">
-    <div class="card-header">
-        <h3 class="card-title font-weight-bold">
-            <i class="fas fa-tags text-info mr-2"></i> Klasifikasi Paket
-        </h3>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="sub_activity_id">
-                        <i class="fas fa-project-diagram text-muted mr-1"></i> Sub Kegiatan
-                    </label>
-                    <select id="sub_activity_id"
-                            name="sub_activity_id"
-                            class="form-control select2 @error('sub_activity_id') is-invalid @enderror">
-                        <option value="">-- Pilih Sub Kegiatan --</option>
-                        @foreach($subActivities as $subActivity)
-                            <option value="{{ $subActivity->id }}"
-                                @selected((string) old('sub_activity_id', $package->sub_activity_id) === (string) $subActivity->id)>
-                                {{ $subActivity->kode }} - {{ $subActivity->nama }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('sub_activity_id')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-            </div>
-
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="account_id">
-                        <i class="fas fa-wallet text-muted mr-1"></i> Rekening Belanja
-                    </label>
-                    <select id="account_id"
-                            name="account_id"
-                            class="form-control select2 @error('account_id') is-invalid @enderror">
-                        <option value="">-- Pilih Rekening --</option>
-                        @foreach($accounts as $account)
-                            <option value="{{ $account->id }}"
-                                @selected((string) old('account_id', $package->account_id) === (string) $account->id)>
-                                {{ $account->kode }} - {{ $account->nama }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('account_id')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-            </div>
+    {{-- Jadwal --}}
+    <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/60 flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center"><i data-lucide="calendar-check" class="w-4 h-4"></i></div>
+            <h3 class="text-sm font-bold text-slate-900">Jadwal Pelaksanaan</h3>
         </div>
-
-        <div class="row mt-2">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="jenis_pengadaan">
-                        <i class="fas fa-layer-group text-muted mr-1"></i> Jenis Pengadaan
-                    </label>
-                    <select id="jenis_pengadaan"
-                            name="jenis_pengadaan"
-                            class="form-control select2 @error('jenis_pengadaan') is-invalid @enderror">
-                        <option value="">-- Pilih Jenis Pengadaan --</option>
-                        <option value="Barang" @selected(old('jenis_pengadaan', $package->jenis_pengadaan) == 'Barang')>Pengadaan Barang</option>
-                        <option value="Jasa Konsultansi" @selected(old('jenis_pengadaan', $package->jenis_pengadaan) == 'Jasa Konsultansi')>Jasa Konsultansi</option>
-                        <option value="Jasa Lainnya" @selected(old('jenis_pengadaan', $package->jenis_pengadaan) == 'Jasa Lainnya')>Jasa Lainnya</option>
-                        <option value="Pekerjaan Konstruksi" @selected(old('jenis_pengadaan', $package->jenis_pengadaan) == 'Pekerjaan Konstruksi')>Pekerjaan Konstruksi</option>
-                        <option value="Swakelola" @selected(old('jenis_pengadaan', $package->jenis_pengadaan) == 'Swakelola')>Swakelola</option>
-                    </select>
-                    @error('jenis_pengadaan')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-            </div>
-
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="metode_pengadaan">
-                        <i class="fas fa-shopping-cart text-muted mr-1"></i> Metode Pengadaan
-                    </label>
-                    <select id="metode_pengadaan"
-                            name="metode_pengadaan"
-                            class="form-control select2 @error('metode_pengadaan') is-invalid @enderror">
-                        <option value="">-- Pilih Metode --</option>
-                        <option value="E-Purchasing" @selected(old('metode_pengadaan', $package->metode_pengadaan) == 'E-Purchasing')>E-Purchasing</option>
-                        <option value="Pengadaan Langsung" @selected(old('metode_pengadaan', $package->metode_pengadaan) == 'Pengadaan Langsung')>Pengadaan Langsung</option>
-                        <option value="Dikecualikan" @selected(old('metode_pengadaan', $package->metode_pengadaan) == 'Dikecualikan')>Dikecualikan</option>
-                    </select>
-                    @error('metode_pengadaan')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-            </div>
-        </div>
-
-    </div>
-</div>
-
-{{-- JADWAL PENGADAAN --}}
-<div class="card card-outline card-success shadow-sm mb-4">
-    <div class="card-header">
-        <h3 class="card-title font-weight-bold">
-            <i class="fas fa-calendar-check text-success mr-2"></i> Jadwal Pelaksanaan
-        </h3>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="pemilihan_mulai_bulan"><i class="far fa-calendar-alt text-muted mr-1"></i> Pemilihan Mulai</label>
-                    <select name="pemilihan_mulai_bulan" class="form-control select2 @error('pemilihan_mulai_bulan') is-invalid @enderror">
+        <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+            @foreach([
+                'pemilihan_mulai_bulan' => 'Pemilihan Mulai',
+                'pemilihan_selesai_bulan' => 'Pemilihan Selesai',
+                'kontrak_mulai_bulan' => 'Kontrak Mulai',
+                'kontrak_selesai_bulan' => 'Kontrak Selesai',
+            ] as $field => $label)
+                <div>
+                    <label for="{{ $field }}" class="block text-sm font-semibold text-slate-700 mb-1.5">{{ $label }}</label>
+                    <x-ui.select name="{{ $field }}" id="{{ $field }}" :invalid="$errors->has($field)">
                         <option value="">-- Pilih Bulan --</option>
-                        @foreach(daftarBulanIndonesia() as $value => $label)
-                            <option value="{{ $value }}" @selected(old('pemilihan_mulai_bulan', $package->pemilihan_mulai_bulan) == $value)>
-                                {{ $label }}
-                            </option>
+                        @foreach(daftarBulanIndonesia() as $value => $bulan)
+                            <option value="{{ $value }}" @selected(old($field, $package->{$field}) == $value)>{{ $bulan }}</option>
                         @endforeach
-                    </select>
-                    @error('pemilihan_mulai_bulan')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                    </x-ui.select>
+                    @error($field) <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
                 </div>
-            </div>
-
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="pemilihan_selesai_bulan"><i class="far fa-calendar-check text-muted mr-1"></i> Pemilihan Selesai</label>
-                    <select name="pemilihan_selesai_bulan" class="form-control select2 @error('pemilihan_selesai_bulan') is-invalid @enderror">
-                        <option value="">-- Pilih Bulan --</option>
-                        @foreach(daftarBulanIndonesia() as $value => $label)
-                            <option value="{{ $value }}" @selected(old('pemilihan_selesai_bulan', $package->pemilihan_selesai_bulan) == $value)>
-                                {{ $label }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('pemilihan_selesai_bulan')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-            </div>
+            @endforeach
         </div>
+    </section>
 
-        <div class="row mt-2">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="kontrak_mulai_bulan"><i class="far fa-handshake text-muted mr-1"></i> Kontrak Mulai</label>
-                    <select name="kontrak_mulai_bulan" class="form-control select2 @error('kontrak_mulai_bulan') is-invalid @enderror">
-                        <option value="">-- Pilih Bulan --</option>
-                        @foreach(daftarBulanIndonesia() as $value => $label)
-                            <option value="{{ $value }}" @selected(old('kontrak_mulai_bulan', $package->kontrak_mulai_bulan) == $value)>
-                                {{ $label }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('kontrak_mulai_bulan')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-            </div>
-
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="kontrak_selesai_bulan"><i class="fas fa-flag-checkered text-muted mr-1"></i> Kontrak Selesai</label>
-                    <select name="kontrak_selesai_bulan" class="form-control select2 @error('kontrak_selesai_bulan') is-invalid @enderror">
-                        <option value="">-- Pilih Bulan --</option>
-                        @foreach(daftarBulanIndonesia() as $value => $label)
-                            <option value="{{ $value }}" @selected(old('kontrak_selesai_bulan', $package->kontrak_selesai_bulan) == $value)>
-                                {{ $label }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('kontrak_selesai_bulan')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-{{-- TOMBOL AKSI --}}
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center p-3 bg-white border rounded shadow-sm">
-            <a href="{{ route('packages.index') }}" class="btn btn-default btn-lg shadow-sm">
-                <i class="fas fa-arrow-left mr-1"></i> Kembali
-            </a>
-            
-            <button type="submit" class="btn btn-success btn-lg shadow-sm px-4">
-                <i class="fas fa-save mr-1"></i> {{ $submitLabel ?? 'Simpan' }}
-            </button>
-        </div>
+    {{-- Aksi --}}
+    <div class="flex flex-wrap items-center justify-between gap-3 p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+        <x-ui.button variant="secondary" size="md" href="{{ route('packages.index') }}">
+            <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
+        </x-ui.button>
+        <x-ui.button variant="primary" size="lg" type="submit">
+            <i data-lucide="save" class="w-4 h-4 mr-2"></i> {{ $submitLabel ?? 'Simpan' }}
+        </x-ui.button>
     </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // Format Pagu Input
+    // Format Pagu (pemisah ribuan), strip sebelum submit
     const pagu = document.getElementById('pagu');
     if (pagu) {
         pagu.addEventListener('input', function () {
-            let value = this.value.replace(/\D/g, '');
-            this.value = new Intl.NumberFormat('id-ID').format(value);
+            const value = this.value.replace(/\D/g, '');
+            this.value = value ? new Intl.NumberFormat('id-ID').format(value) : '';
         });
-
-        // Hapus pemisah ribuan sebelum form disubmit agar database menerima angka asli
-        pagu.form.addEventListener('submit', function () {
-            pagu.value = pagu.value.replace(/\./g, '');
-        });
-    }
-
-    // Inisialisasi Select2 jika library tersedia (opsional tapi disarankan untuk AdminLTE)
-    if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
-        $('.select2').select2({
-            theme: 'bootstrap4',
-            width: '100%'
-        });
-    }
-
-    // Logika Dinamis Jenis Pengadaan -> Metode Pengadaan
-    const jenisPengadaan = document.getElementById('jenis_pengadaan');
-    const metodePengadaan = document.getElementById('metode_pengadaan');
-    let currentMetode = "{{ old('metode_pengadaan', $package->metode_pengadaan ?? '') }}";
-
-    const originalMetodeOptions = `
-        <option value="">-- Pilih Metode --</option>
-        <option value="E-Purchasing">E-Purchasing</option>
-        <option value="Pengadaan Langsung">Pengadaan Langsung</option>
-        <option value="Dikecualikan">Dikecualikan</option>
-    `;
-
-    const swakelolaOptions = `
-        <option value="">-- Pilih Metode --</option>
-        <option value="Swakelola Tipe 1">Swakelola Tipe 1</option>
-        <option value="Swakelola Tipe 2">Swakelola Tipe 2</option>
-        <option value="Swakelola Tipe 3">Swakelola Tipe 3</option>
-        <option value="Swakelola Tipe 4">Swakelola Tipe 4</option>
-    `;
-
-    function updateMetodeOptions() {
-        if (!jenisPengadaan || !metodePengadaan) return;
-
-        if (jenisPengadaan.value === 'Swakelola') {
-            metodePengadaan.innerHTML = swakelolaOptions;
-        } else {
-            metodePengadaan.innerHTML = originalMetodeOptions;
+        if (pagu.form) {
+            pagu.form.addEventListener('submit', function () {
+                pagu.value = pagu.value.replace(/\./g, '');
+            });
         }
+    }
 
-        // Restore the previously selected value
+    // Jenis Pengadaan -> Metode Pengadaan (dinamis)
+    const jenis = document.getElementById('jenis_pengadaan');
+    const metode = document.getElementById('metode_pengadaan');
+    let currentMetode = @json(old('metode_pengadaan', $package->metode_pengadaan ?? ''));
+
+    const standardOptions = [['', '-- Pilih Metode --'], ['E-Purchasing', 'E-Purchasing'], ['Pengadaan Langsung', 'Pengadaan Langsung'], ['Dikecualikan', 'Dikecualikan']];
+    const swakelolaOptions = [['', '-- Pilih Metode --'], ['Swakelola Tipe 1', 'Swakelola Tipe 1'], ['Swakelola Tipe 2', 'Swakelola Tipe 2'], ['Swakelola Tipe 3', 'Swakelola Tipe 3'], ['Swakelola Tipe 4', 'Swakelola Tipe 4']];
+
+    function renderMetode() {
+        if (!jenis || !metode) return;
+        const opts = jenis.value === 'Swakelola' ? swakelolaOptions : standardOptions;
+        metode.innerHTML = opts.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
         if (currentMetode) {
-            let optionToSelect = Array.from(metodePengadaan.options).find(opt => opt.value === currentMetode);
-            if (optionToSelect) {
-                optionToSelect.selected = true;
-            }
-        }
-
-        // Refresh Select2 UI if used
-        if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
-            $(metodePengadaan).trigger('change.select2');
+            const opt = Array.from(metode.options).find(o => o.value === currentMetode);
+            if (opt) opt.selected = true;
         }
     }
 
-    if (jenisPengadaan && metodePengadaan) {
-        // Handle change event using jQuery since it's a select2 component
-        $(jenisPengadaan).on('change', function() {
-            currentMetode = ''; // reset method when type changes
-            updateMetodeOptions();
-        });
-
-        // Initialize on load
-        updateMetodeOptions();
+    if (jenis && metode) {
+        jenis.addEventListener('change', function () { currentMetode = ''; renderMetode(); });
+        renderMetode();
     }
 });
 </script>

@@ -3,10 +3,10 @@
 
 @php
     $package = $procurementPackage->package;
-    // Hanya SPPD yang sudah disetujui (atau dibuat langsung Kabid) yang muncul di sini.
-    // Pengajuan staf yang masih draf/diajukan/revisi/ditolak ada di menu Pengajuan SPPD.
+    // Hanya perjalanan dinas dengan SPJ (biaya rampung) yang sudah disetujui yang muncul di sini.
+    // Pengajuan/tinjauan SPPD & SPJ dilakukan di menu Pengajuan SPPD.
     $travelOrders = $package->travelOrders
-        ->filter(fn ($to) => $to->status === \App\Models\TravelOrder::STATUS_APPROVED)
+        ->filter(fn ($to) => $to->spjStatus() === \App\Models\TravelOrder::SPJ_APPROVED)
         ->values();
     $money = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
     $statusBudgetClass = $travelStats['sisa_anggaran'] < 0 ? 'text-rose-700 bg-rose-50 border-rose-100' : 'text-emerald-700 bg-emerald-50 border-emerald-100';
@@ -35,11 +35,6 @@
                 class="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 shadow-sm">
                 <i data-lucide="arrow-left" class="w-4 h-4"></i>
                 Kembali
-            </a>
-            <a href="{{ route('kabid.packages.travel-orders.create', $package) }}"
-                class="inline-flex items-center gap-2 px-3 py-2 text-sm font-bold text-white bg-slate-900 rounded-lg hover:bg-black shadow-sm">
-                <i data-lucide="plus" class="w-4 h-4"></i>
-                Tambah Perjalanan
             </a>
         </div>
     </div>
@@ -185,11 +180,6 @@
                                             class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                                             title="Lihat detail">
                                             <i data-lucide="eye" class="w-4 h-4"></i>
-                                        </a>
-                                        <a href="{{ route('kabid.packages.travel-orders.edit', [$package, $travelOrder]) }}"
-                                            class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                                            title="Edit perjalanan">
-                                            <i data-lucide="pencil" class="w-4 h-4"></i>
                                         </a>
                                     </div>
                                 </td>

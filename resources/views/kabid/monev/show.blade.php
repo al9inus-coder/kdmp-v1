@@ -10,6 +10,8 @@
         }
 
         foreach ($pkg->travelOrders ?? [] as $travelOrder) {
+            // Hanya SPJ (biaya rampung) yang sudah disetujui yang masuk realisasi.
+            if ($travelOrder->spjStatus() !== \App\Models\TravelOrder::SPJ_APPROVED) { continue; }
             foreach ($travelOrder->personnels ?? [] as $personnel) {
                 $total += (float) $personnel->uang_harian
                     + (float) $personnel->biaya_penginapan
@@ -51,7 +53,6 @@
     $toneText = ['emerald' => 'text-emerald-600', 'amber' => 'text-amber-600', 'rose' => 'text-rose-600'][$progressTone];
     $toneBg = ['emerald' => '#10b981', 'amber' => '#f59e0b', 'rose' => '#f43f5e'][$progressTone];
     $rupiah = fn($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
-
     $groupedPackages = $subActivity->packages->groupBy(fn($pkg) => $pkg->account?->id ?? 'none');
 @endphp
 
@@ -60,7 +61,7 @@
 
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="flex flex-wrap items-center gap-2">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-slate-700 bg-slate-100 border border-slate-200 rounded-lg">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-slate-700 bg-slate-100 border border-slate-200 rounded-lg font-mono">
                 <i data-lucide="hash" class="w-3.5 h-3.5 text-blue-500"></i>
                 {{ $subActivity->kode }}
             </span>
@@ -137,125 +138,85 @@
     <div class="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6 items-start">
         <div class="space-y-6 min-w-0">
             <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/60 flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <h2 class="text-base font-extrabold text-slate-800 flex items-center gap-2">
-                            <i data-lucide="list-tree" class="w-5 h-5 text-blue-500"></i>
-                            Kartu Kendali Rekening
-                        </h2>
-                        <p class="text-xs text-slate-500 mt-1">Ringkasan pagu, realisasi, dan serapan per rekening belanja.</p>
-                    </div>
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
-                        {{ $groupedPackages->count() }} rekening
-                    </span>
-                </div>
-
-                <div class="divide-y divide-slate-100">
-                    @forelse($groupedPackages as $accountId => $packages)
-                        @php
-                            $account = $packages->first()->account;
-                            $groupPagu = (float) $packages->sum('pagu');
-                            $groupRealisasi = $packages->sum(fn($pkg) => $packageRealisasi($pkg));
-                            $groupSisa = $groupPagu - $groupRealisasi;
-                            $groupPersen = $groupPagu > 0 ? min(100, $groupRealisasi / $groupPagu * 100) : 0;
-                        @endphp
-
-                        <div class="p-5">
-                            <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-                                <div class="min-w-0">
-                                    <p class="text-xs font-extrabold text-slate-500">{{ $account->kode ?? '-' }}</p>
-                                    <h3 class="text-sm font-bold text-slate-900 mt-1">{{ $account->nama ?? 'Tanpa Uraian Belanja' }}</h3>
-                                </div>
-                                <div class="grid grid-cols-3 gap-3 text-right shrink-0">
-                                    <div>
-                                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Pagu</p>
-                                        <p class="text-xs font-bold text-slate-800 mt-1">{{ $rupiah($groupPagu) }}</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Realisasi</p>
-                                        <p class="text-xs font-bold text-emerald-600 mt-1">{{ $rupiah($groupRealisasi) }}</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Sisa</p>
-                                        <p class="text-xs font-bold {{ $groupSisa < 0 ? 'text-rose-600' : 'text-slate-800' }} mt-1">{{ $rupiah($groupSisa) }}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mt-4">
-                                <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
-                                    <div class="h-full rounded-full bg-emerald-500" style="width: {{ $groupPersen }}%;"></div>
-                                </div>
-                                <div class="flex items-center justify-between mt-2 text-[11px] font-bold text-slate-500">
-                                    <span>{{ $packages->count() }} paket</span>
-                                    <span>{{ number_format($groupPersen, 1, ',', '.') }}% terserap</span>
-                                </div>
-                            </div>
-                        </div>
-                    @empty
-                        <div class="p-6">
-                            <x-ui.empty-state icon="package-x" title="Belum Ada Paket" description="Belum ada paket pekerjaan pada sub kegiatan ini." />
-                        </div>
-                    @endforelse
-                </div>
-            </section>
-
-            <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                 <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/60">
                     <h2 class="text-base font-extrabold text-slate-800 flex items-center gap-2">
-                        <i data-lucide="package-search" class="w-5 h-5 text-blue-500"></i>
-                        Paket Pekerjaan
+                        <i data-lucide="list-tree" class="w-5 h-5 text-blue-500"></i>
+                        Kartu Kendali Kegiatan
                     </h2>
                 </div>
 
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm">
+                    <table class="w-full text-sm text-left">
                         <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[10px] font-bold tracking-wider">
                             <tr>
-                                <th class="px-5 py-3 min-w-72">Paket</th>
-                                <th class="px-5 py-3">Jenis</th>
-                                <th class="px-5 py-3 text-right">Pagu</th>
-                                <th class="px-5 py-3 text-right">Realisasi</th>
-                                <th class="px-5 py-3 text-right">Sisa</th>
-                                <th class="px-5 py-3 text-right">Serapan</th>
+                                <th class="px-5 py-3 text-center w-12">No</th>
+                                <th class="px-5 py-3 text-center w-36">Kode Rekening</th>
+                                <th class="px-5 py-3 min-w-64">Uraian Belanja</th>
+                                <th class="px-5 py-3 text-right w-36">Pagu (Rp)</th>
+                                <th class="px-5 py-3 text-right w-36">Realisasi (Rp)</th>
+                                <th class="px-5 py-3 text-right w-36">Sisa (Rp)</th>
+                                <th class="px-5 py-3 text-center w-24">Serapan</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
-                            @forelse($subActivity->packages as $pkg)
+                            @php $no = 1; @endphp
+                            @forelse($groupedPackages as $accountId => $packages)
                                 @php
-                                    $pkgRealisasi = $packageRealisasi($pkg);
-                                    $pkgSisa = (float) $pkg->pagu - $pkgRealisasi;
-                                    $pkgPersen = $pkg->pagu > 0 ? min(100, $pkgRealisasi / (float) $pkg->pagu * 100) : 0;
-                                    $packageUrl = $pkg->procurementPackage
-                                        ? route('kabid.procurement-packages.show', $pkg)
-                                        : route('kabid.packages.show', $pkg);
+                                    $account = $packages->first()->account;
+                                    $groupPagu = (float) $packages->sum('pagu');
+                                    $groupRealisasi = $packages->sum(fn($pkg) => $packageRealisasi($pkg));
+                                    $groupSisa = $groupPagu - $groupRealisasi;
+                                    $groupPersen = $groupPagu > 0 ? min(100, $groupRealisasi / $groupPagu * 100) : 0;
                                 @endphp
-                                <tr class="hover:bg-slate-50 transition-colors cursor-pointer group"
-                                    onclick="window.location='{{ $packageUrl }}'"
-                                    role="link"
-                                    tabindex="0"
-                                    onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); window.location='{{ $packageUrl }}'; }">
-                                    <td class="px-5 py-4">
-                                        <a href="{{ $packageUrl }}" class="font-bold text-slate-900 group-hover:text-emerald-700 leading-snug">
-                                            {{ $pkg->nama_paket }}
-                                        </a>
-                                        <p class="text-xs text-slate-400 mt-1">{{ $pkg->account?->kode ?? '-' }} &bull; {{ $pkg->account?->nama ?? 'Tanpa rekening' }}</p>
-                                    </td>
-                                    <td class="px-5 py-4 whitespace-nowrap">
-                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
-                                            {{ $pkg->jenis_pengadaan ?? '-' }}
+
+                                {{-- Baris rekening belanja --}}
+                                <tr class="bg-slate-50/80 font-bold">
+                                    <td class="px-5 py-3.5 text-center text-slate-600">{{ $no++ }}</td>
+                                    <td class="px-5 py-3.5 text-center">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 font-mono">
+                                            {{ $account->kode ?? '-' }}
                                         </span>
                                     </td>
-                                    <td class="px-5 py-4 text-right font-bold text-slate-800 whitespace-nowrap">{{ $rupiah($pkg->pagu) }}</td>
-                                    <td class="px-5 py-4 text-right font-bold text-emerald-600 whitespace-nowrap">{{ $rupiah($pkgRealisasi) }}</td>
-                                    <td class="px-5 py-4 text-right font-bold {{ $pkgSisa < 0 ? 'text-rose-600' : 'text-slate-700' }} whitespace-nowrap">{{ $rupiah($pkgSisa) }}</td>
-                                    <td class="px-5 py-4 text-right whitespace-nowrap">
-                                        <span class="font-bold text-slate-700">{{ number_format($pkgPersen, 1, ',', '.') }}%</span>
-                                    </td>
+                                    <td class="px-5 py-3.5 text-slate-900">{{ $account->nama ?? 'Tanpa Uraian Belanja' }}</td>
+                                    <td class="px-5 py-3.5 text-right text-blue-600 whitespace-nowrap">{{ $rupiah($groupPagu) }}</td>
+                                    <td class="px-5 py-3.5 text-right"></td>
+                                    <td class="px-5 py-3.5 text-right text-rose-600 whitespace-nowrap">{{ $rupiah($groupSisa) }}</td>
+                                    <td class="px-5 py-3.5 text-center text-slate-700">{{ number_format($groupPersen, 1, ',', '.') }}%</td>
                                 </tr>
+
+                                {{-- Baris paket pengadaan --}}
+                                @foreach($packages as $pkg)
+                                    @php
+                                        $pkgRealisasi = $packageRealisasi($pkg);
+                                        $packageUrl = $pkg->procurementPackage
+                                            ? route('kabid.procurement-packages.show', $pkg)
+                                            : route('kabid.packages.show', $pkg);
+                                    @endphp
+                                    <tr class="hover:bg-slate-50/60 transition-colors">
+                                        <td class="px-5 py-3"></td>
+                                        <td class="px-5 py-3"></td>
+                                        <td class="px-5 py-3 pl-10">
+                                            <div class="flex items-start gap-2">
+                                                <i data-lucide="corner-down-right" class="w-3.5 h-3.5 text-slate-300 mt-0.5 shrink-0"></i>
+                                                <div class="min-w-0">
+                                                    <a href="{{ $packageUrl }}" class="font-semibold text-slate-800 hover:text-emerald-700 leading-snug">
+                                                        {{ $pkg->nama_paket }}
+                                                    </a>
+                                                    <span class="inline-flex items-center ml-2 px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                                                        {{ $pkg->jenis_pengadaan ?? '-' }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-5 py-3 text-right"></td>
+                                        <td class="px-5 py-3 text-right font-semibold text-emerald-600 whitespace-nowrap">{{ $rupiah($pkgRealisasi) }}</td>
+                                        <td class="px-5 py-3 text-right"></td>
+                                        <td class="px-5 py-3 text-center"></td>
+                                    </tr>
+                                @endforeach
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-6 py-10">
+                                    <td colspan="7" class="px-6 py-10">
                                         <x-ui.empty-state icon="package-x" title="Belum Ada Paket" description="Belum ada paket pekerjaan pada sub kegiatan ini." />
                                     </td>
                                 </tr>

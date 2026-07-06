@@ -1,172 +1,168 @@
-@extends('adminlte::page')
-
+@component('layouts.kdmp')
 @section('title', 'Paket Pekerjaan')
 
-@section('content_header')
-    <h1>
-        Paket Pekerjaan
-        <small class="text-muted">
-            ({{ $packages->total() }} Data)
-        </small>
-    </h1>
-@stop
+<x-ui.toast />
 
-@section('content')
-    @if(session('success'))
-        <div class="alert alert-success">
-            {{ session('success') }}
+<x-ui.workspace title="Paket Pekerjaan" description="Kelola paket pekerjaan / Rencana Umum Pengadaan (RUP).">
+    <x-slot:actions>
+        <div class="flex items-center gap-2 bg-slate-50 rounded-full px-4 py-1.5 text-sm text-slate-600 font-medium border border-slate-100 shadow-sm">
+            <i data-lucide="package" class="w-4 h-4 text-emerald-500"></i>
+            {{ $packages->total() }} Paket
         </div>
-    @endif
+        @can('create', App\Models\Package::class)
+            <x-ui.button variant="primary" size="md" href="{{ route('packages.create') }}">
+                <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambah Paket
+            </x-ui.button>
+        @endcan
+        @can('create', App\Models\ImportBatch::class)
+            <x-ui.button variant="success" size="md" href="{{ route('packages.import.index') }}">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4 mr-2"></i> Import Paket
+            </x-ui.button>
+        @endcan
+    </x-slot:actions>
 
-    @if(session('warning'))
-        <div class="alert alert-warning">
-            {{ session('warning') }}
-        </div>
-    @endif
-
-    <div class="card">
-        <div class="card-header pt-4 pb-4">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div class="d-flex">
-                    @can('create', App\Models\Package::class)
-                        <a href="{{ route('packages.create') }}" class="btn btn-primary" style="margin-right: 10px;">
-                            <i class="fas fa-plus"></i> Tambah Paket
-                        </a>
-                    @endcan
-                    @can('create', App\Models\ImportBatch::class)
-                        <a href="{{ route('packages.import.index') }}" class="btn btn-success">
-                            <i class="fas fa-file-excel"></i> Import Paket
-                        </a>
-                    @endcan
-                </div>
-            </div>
-
-            <form action="{{ route('packages.index') }}" method="GET" class="d-flex flex-wrap align-items-center bg-light p-3 rounded border">
-                <select name="fiscal_year_id" class="form-select form-control" style="width: auto; min-width: 180px; margin-right: 10px; margin-bottom: 10px;">
+    {{-- Filter --}}
+    <x-ui.card padding="none" class="mb-6">
+        <form method="GET" action="{{ route('packages.index') }}" class="p-4 space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <select name="fiscal_year_id" class="px-3 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
                     <option value="">Semua Tahun Anggaran</option>
                     @foreach($fiscalYears as $fiscalYear)
-                        <option value="{{ $fiscalYear->id }}" @selected((string) $fiscalYearId === (string) $fiscalYear->id)>
-                            {{ $fiscalYear->tahun }}
-                        </option>
+                        <option value="{{ $fiscalYear->id }}" @selected((string) $fiscalYearId === (string) $fiscalYear->id)>{{ $fiscalYear->tahun }}</option>
                     @endforeach
                 </select>
-
-                <select name="program_id" class="form-select form-control" style="width: auto; max-width: 200px; margin-right: 10px; margin-bottom: 10px;">
+                <select name="program_id" class="px-3 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
                     <option value="">Semua Program</option>
                     @foreach($programs as $program)
-                        <option value="{{ $program->id }}" @selected((string) $programId === (string) $program->id)>
-                            {{ \Illuminate\Support\Str::limit($program->nama, 30) }}
-                        </option>
+                        <option value="{{ $program->id }}" @selected((string) $programId === (string) $program->id)>{{ \Illuminate\Support\Str::limit($program->nama, 30) }}</option>
                     @endforeach
                 </select>
-
-                <select name="activity_id" class="form-select form-control" style="width: auto; max-width: 200px; margin-right: 10px; margin-bottom: 10px;">
+                <select name="activity_id" class="px-3 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
                     <option value="">Semua Kegiatan</option>
                     @foreach($activities as $activity)
-                        <option value="{{ $activity->id }}" @selected((string) $activityId === (string) $activity->id)>
-                            {{ \Illuminate\Support\Str::limit($activity->nama, 30) }}
-                        </option>
+                        <option value="{{ $activity->id }}" @selected((string) $activityId === (string) $activity->id)>{{ \Illuminate\Support\Str::limit($activity->nama, 30) }}</option>
                     @endforeach
                 </select>
-
-                <select name="sub_activity_id" class="form-select form-control" style="width: auto; max-width: 200px; margin-right: 10px; margin-bottom: 10px;">
+                <select name="sub_activity_id" class="px-3 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
                     <option value="">Semua Sub Kegiatan</option>
                     @foreach($subActivities as $subActivity)
-                        <option value="{{ $subActivity->id }}" @selected((string) $subActivityId === (string) $subActivity->id)>
-                            {{ \Illuminate\Support\Str::limit($subActivity->nama, 30) }}
-                        </option>
+                        <option value="{{ $subActivity->id }}" @selected((string) $subActivityId === (string) $subActivity->id)>{{ \Illuminate\Support\Str::limit($subActivity->nama, 30) }}</option>
                     @endforeach
                 </select>
-
-                <input type="text" name="q" class="form-control" style="width: 250px; margin-right: 10px; margin-bottom: 10px;" placeholder="Cari ID RUP / Nama Paket" value="{{ $search }}">
-
-                <select name="status" class="form-select form-control" style="width: auto; margin-right: 10px; margin-bottom: 10px;">
+            </div>
+            <div class="flex flex-col sm:flex-row gap-3">
+                <div class="relative flex-1">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none"><i data-lucide="search" class="w-4 h-4 text-slate-400"></i></div>
+                    <input type="text" name="q" value="{{ $search }}" placeholder="Cari ID RUP / Nama Paket..."
+                        class="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                </div>
+                <select name="status" class="px-3 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all sm:w-44">
                     <option value="">Semua Status</option>
                     <option value="needs_review" @selected($status === 'needs_review')>Needs Review</option>
                     <option value="draft" @selected($status === 'draft')>Draft</option>
                     <option value="approved" @selected($status === 'approved')>Approved</option>
                 </select>
-
-                <div class="d-flex ml-auto" style="margin-bottom: 10px;">
-                    <button class="btn btn-primary" type="submit" style="margin-right: 5px;">
-                        <i class="fas fa-search"></i> Filter
+                <div class="flex items-center gap-2">
+                    <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-200">
+                        <i data-lucide="search" class="w-4 h-4"></i> Filter
                     </button>
-                    <a href="{{ route('packages.index') }}" class="btn btn-secondary">
-                        <i class="fas fa-sync-alt"></i> Reset
+                    <a href="{{ route('packages.index') }}" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Reset
                     </a>
                 </div>
-            </form>
-        </div>
+            </div>
+        </form>
+    </x-ui.card>
 
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-bordered table-striped table-hover mb-0 align-middle">
-                    <thead class="table-light text-center">
-                        <tr>
-                            <th style="width: 10%;">ID RUP</th>
-                            <th>Nama Paket</th>
-                            <th class="text-end text-nowrap">Pagu</th>
-                            <th class="text-nowrap">Jenis Pengadaan</th>
-                            <th class="text-nowrap">Metode</th>
-                            <th class="text-center text-nowrap">Status</th>
-                            <th style="width: 90px;" class="text-center">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($packages as $package)
-                            <tr>
-                                <td class="text-center">{{ $package->id_rup ?? '-' }}</td>
-                                <td class="fw-bold text-wrap">{{ $package->nama_paket }}</td>
-                                <td class="text-end text-nowrap fw-bold text-success">
-                                    Rp {{ number_format((float) $package->pagu, 0, ',', '.') }}
-                                </td>
-                                <td class="text-nowrap">{{ $package->jenis_pengadaan ?? '-' }}</td>
-                                <td class="text-nowrap">{{ $package->metode_pengadaan ?? '-' }}</td>
-                                <td class="text-center">
-                                    @if($package->status === 'needs_review')
-                                        <span class="badge bg-danger">Needs Review</span>
-                                    @elseif($package->status === 'draft')
-                                        <span class="badge bg-warning text-dark">Draft</span>
-                                    @elseif($package->status === 'approved')
-                                        <span class="badge bg-success">Approved</span>
-                                    @else
-                                        <span class="badge bg-secondary">{{ $package->status }}</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <div class="d-flex justify-content-center align-items-center gap-1">
-                                        <a href="{{ route('packages.show', $package) }}"
-                                           class="btn btn-sm btn-info text-white" title="Detail">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        @can('delete', $package)
+    {{-- Tabel --}}
+    <x-ui.card padding="none">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+                <thead class="bg-slate-50 border-b border-slate-100">
+                    <tr>
+                        <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">ID RUP</th>
+                        <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Nama Paket</th>
+                        <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Pagu</th>
+                        <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Jenis</th>
+                        <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Metode</th>
+                        <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Status</th>
+                        <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider text-center w-24">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @forelse($packages as $package)
+                        <tr class="hover:bg-slate-50/80 transition-colors">
+                            <td class="px-6 py-4 font-mono text-xs text-slate-500">{{ $package->id_rup ?? '-' }}</td>
+                            <td class="px-6 py-4 font-semibold text-slate-900 leading-snug">{{ $package->nama_paket }}</td>
+                            <td class="px-6 py-4 text-right font-semibold text-emerald-700 tabular-nums whitespace-nowrap">Rp {{ number_format((float) $package->pagu, 0, ',', '.') }}</td>
+                            <td class="px-6 py-4 text-slate-600 whitespace-nowrap">{{ $package->jenis_pengadaan ?? '-' }}</td>
+                            <td class="px-6 py-4 text-slate-600 whitespace-nowrap">{{ $package->metode_pengadaan ?? '-' }}</td>
+                            <td class="px-6 py-4 text-center">
+                                @if($package->status === 'needs_review')
+                                    <x-ui.badge variant="danger">Needs Review</x-ui.badge>
+                                @elseif($package->status === 'draft')
+                                    <x-ui.badge variant="warning">Draft</x-ui.badge>
+                                @elseif($package->status === 'approved')
+                                    <x-ui.badge variant="success">Approved</x-ui.badge>
+                                @else
+                                    <x-ui.badge variant="draft">{{ $package->status }}</x-ui.badge>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center justify-center gap-1.5">
+                                    <a href="{{ route('packages.show', $package) }}"
+                                        class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-600 bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors" title="Detail">
+                                        <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                                    </a>
+                                    @can('delete', $package)
                                         <form action="{{ route('packages.destroy', $package) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus paket ini?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger" title="Hapus">
-                                                <i class="fas fa-trash"></i>
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-100 transition-colors" title="Hapus">
+                                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                                             </button>
                                         </form>
-                                        @endcan
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="8" class="text-center py-4">
-                                    Data paket pekerjaan belum tersedia.
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+                                    @endcan
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="px-6 py-10">
+                                <x-ui.empty-state icon="package" title="Belum Ada Paket" description="Data paket pekerjaan belum tersedia." />
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
 
         @if($packages->hasPages())
-            <div class="card-footer d-flex justify-content-center pt-4 pb-3">
-                {{ $packages->links() }}
+            <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <p class="text-sm text-slate-500">
+                    Menampilkan <span class="font-semibold text-slate-700">{{ $packages->firstItem() }}–{{ $packages->lastItem() }}</span>
+                    dari <span class="font-semibold text-slate-700">{{ $packages->total() }}</span> data
+                </p>
+                <div class="flex items-center gap-1">
+                    @if($packages->onFirstPage())
+                        <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg text-slate-300 bg-white border border-slate-200 cursor-not-allowed"><i data-lucide="chevron-left" class="w-4 h-4"></i></span>
+                    @else
+                        <a href="{{ $packages->previousPageUrl() }}" class="inline-flex items-center justify-center w-9 h-9 rounded-lg text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors"><i data-lucide="chevron-left" class="w-4 h-4"></i></a>
+                    @endif
+                    @foreach($packages->getUrlRange(max(1, $packages->currentPage() - 2), min($packages->lastPage(), $packages->currentPage() + 2)) as $page => $url)
+                        @if($page == $packages->currentPage())
+                            <span class="inline-flex items-center justify-center min-w-9 h-9 px-2 rounded-lg text-sm font-bold text-white bg-emerald-600 border border-emerald-600">{{ $page }}</span>
+                        @else
+                            <a href="{{ $url }}" class="inline-flex items-center justify-center min-w-9 h-9 px-2 rounded-lg text-sm font-medium text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors">{{ $page }}</a>
+                        @endif
+                    @endforeach
+                    @if($packages->hasMorePages())
+                        <a href="{{ $packages->nextPageUrl() }}" class="inline-flex items-center justify-center w-9 h-9 rounded-lg text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors"><i data-lucide="chevron-right" class="w-4 h-4"></i></a>
+                    @else
+                        <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg text-slate-300 bg-white border border-slate-200 cursor-not-allowed"><i data-lucide="chevron-right" class="w-4 h-4"></i></span>
+                    @endif
+                </div>
             </div>
         @endif
-    </div>
-@stop
+    </x-ui.card>
+</x-ui.workspace>
+@endcomponent

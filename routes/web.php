@@ -63,6 +63,7 @@ Route::middleware('auth')->group(function () {
         Route::post('packages/{package}/travel-orders/{travelOrder}/submit', [\App\Http\Controllers\Staff\TravelOrderController::class, 'submit'])->name('packages.travel-orders.submit');
         Route::post('packages/{package}/travel-orders/{travelOrder}/withdraw', [\App\Http\Controllers\Staff\TravelOrderController::class, 'withdraw'])->name('packages.travel-orders.withdraw');
         Route::get('packages/{package}/travel-orders/{travelOrder}/spj', [\App\Http\Controllers\Staff\TravelSpjController::class, 'show'])->name('packages.travel-orders.spj.show');
+        Route::get('packages/{package}/travel-orders/{travelOrder}/spj-partial', [\App\Http\Controllers\Staff\TravelSpjController::class, 'spjPartial'])->name('packages.travel-orders.spj-partial');
         Route::post('packages/{package}/travel-orders/{travelOrder}/spj', [\App\Http\Controllers\Staff\TravelSpjController::class, 'store'])->name('packages.travel-orders.spj.store');
         Route::post('packages/{package}/travel-orders/{travelOrder}/spj/submit', [\App\Http\Controllers\Staff\TravelSpjController::class, 'submit'])->name('packages.travel-orders.spj.submit');
         Route::post('packages/{package}/travel-orders/{travelOrder}/spj/withdraw', [\App\Http\Controllers\Staff\TravelSpjController::class, 'withdraw'])->name('packages.travel-orders.spj.withdraw');
@@ -75,6 +76,7 @@ Route::middleware('auth')->group(function () {
         Route::get('monev', [\App\Http\Controllers\Kabid\MonevController::class, 'index'])->name('monev.index');
         Route::get('monev/{subActivity}', [\App\Http\Controllers\Kabid\MonevController::class, 'show'])->name('monev.show');
         Route::get('sppd', [\App\Http\Controllers\Kabid\SppdController::class, 'index'])->name('sppd.index');
+        Route::get('buku-register', [BukuRegisterController::class, 'index'])->name('buku-register.index');
         // Lembur (Overtime) untuk Kabid
         Route::get('packages/{package}/overtimes/{month}', [\App\Http\Controllers\Kabid\OvertimeController::class, 'show'])->name('packages.overtimes.show');
         Route::put('packages/{package}/overtimes/{overtime}', [\App\Http\Controllers\Kabid\OvertimeController::class, 'update'])->name('packages.overtimes.update');
@@ -87,10 +89,7 @@ Route::middleware('auth')->group(function () {
         Route::post('packages/{package}/overtimes/{overtime}/details/{detail}/rates', [\App\Http\Controllers\Kabid\OvertimeController::class, 'updateRates'])->name('packages.overtimes.update_rates');
         Route::get('procurement-packages', [\App\Http\Controllers\Kabid\ProcurementPackageController::class, 'index'])->name('procurement-packages.index');
         Route::get('procurement-packages/{package}', [\App\Http\Controllers\Kabid\ProcurementPackageController::class, 'show'])->name('procurement-packages.show');
-        Route::get('packages/{package}/travel-orders/create', [\App\Http\Controllers\Kabid\TravelOrderController::class, 'create'])->name('packages.travel-orders.create');
-        Route::post('packages/{package}/travel-orders', [\App\Http\Controllers\Kabid\TravelOrderController::class, 'store'])->name('packages.travel-orders.store');
-        Route::get('packages/{package}/travel-orders/{travelOrder}/edit', [\App\Http\Controllers\Kabid\TravelOrderController::class, 'edit'])->name('packages.travel-orders.edit');
-        Route::put('packages/{package}/travel-orders/{travelOrder}', [\App\Http\Controllers\Kabid\TravelOrderController::class, 'update'])->name('packages.travel-orders.update');
+        // Kabid hanya meninjau SPPD — tidak boleh membuat/mengedit perjalanan dinas.
         Route::get('packages/{package}/travel-orders/{travelOrder}', [\App\Http\Controllers\Kabid\TravelOrderController::class, 'show'])->name('packages.travel-orders.show');
         // Review SPPD (Kabid)
         Route::post('packages/{package}/travel-orders/{travelOrder}/approve', [\App\Http\Controllers\Kabid\TravelOrderController::class, 'approve'])->name('packages.travel-orders.approve');
@@ -128,6 +127,9 @@ Route::middleware('auth')->group(function () {
         Route::post('procurement-packages/{package}/unlock-payment', [\App\Http\Controllers\Admin\ProcurementPackageController::class, 'unlockPayment'])->name('procurement-packages.unlock-payment');
         Route::get('procurement-packages/{package}/payment', [\App\Http\Controllers\Admin\ProcurementPackageController::class, 'payment'])->name('procurement-packages.payment');
 
+        // Buku Register
+        Route::get('buku-register', [BukuRegisterController::class, 'index'])->name('buku-register.index');
+
         // Manajemen User
         Route::get('users/{user}/reset-password', [\App\Http\Controllers\Admin\UserController::class, 'editPassword'])->name('users.reset-password');
         Route::put('users/{user}/reset-password', [\App\Http\Controllers\Admin\UserController::class, 'updatePassword'])->name('users.update-password');
@@ -136,7 +138,6 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::get('/schedules', [\App\Http\Controllers\ScheduleController::class, 'index'])->name('schedules.index');
-    Route::get('/buku-register', [BukuRegisterController::class, 'index'])->name('buku-register.index');
 
     // Resource Routes
     Route::resource('skpds', SkpdController::class);
