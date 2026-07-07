@@ -16,10 +16,7 @@ class UpdateUserRequest extends FormRequest
     {
         $user = $this->route('user');
 
-        // Role Super Admin dikelola via seeder & tidak boleh diubah dari form.
-        $roleRule = ($user && $user->isSuperAdmin())
-            ? ['nullable']
-            : ['required', 'string', Rule::in(['Admin', 'Kabid', 'Staff'])];
+        $roleRule = ['required', 'string', Rule::in(['Admin', 'Kabid', 'Staff'])];
 
         return [
             'name' => ['required', 'string', 'max:255'],

@@ -5,9 +5,7 @@
 
 @php
     $isSelf = auth()->id() === $user->id;
-    $isSuper = $user->hasRole('Super Admin');
     $roleBadge = fn($name) => match ($name) {
-        'Super Admin' => 'danger',
         'Admin' => 'info',
         'Kabid' => 'warning',
         'Staff' => 'draft',
@@ -78,7 +76,7 @@
                     <i data-lucide="key-round" class="w-4 h-4 mr-2"></i> Reset Password
                 </x-ui.button>
 
-                @if(!$isSelf && !$isSuper)
+                @if(!$isSelf)
                     <form action="{{ route('admin.users.toggle-status', $user) }}" method="POST"
                         onsubmit="return confirm('{{ $user->is_active ? 'Nonaktifkan' : 'Aktifkan' }} user {{ $user->name }}?');">
                         @csrf
@@ -105,7 +103,7 @@
                 @else
                     <span class="inline-flex items-center gap-2 text-sm text-slate-400">
                         <i data-lucide="shield" class="w-4 h-4"></i>
-                        {{ $isSelf ? 'Ini akun Anda sendiri — sebagian aksi dibatasi.' : 'Akun Super Admin terlindungi.' }}
+                        Ini akun Anda sendiri — sebagian aksi dibatasi.
                     </span>
                 @endif
             </div>

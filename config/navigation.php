@@ -2,12 +2,12 @@
 
 return [
 
-    // ─── DASHBOARD (Admin / Super Admin / Kabid) ──────────────────────────────
+    // ─── DASHBOARD (Admin / Kabid) ──────────────────────────────
     [
         'title' => 'Dashboard',
         'route' => 'dashboard.admin',
         'icon'  => 'layout-dashboard',
-        'roles' => ['Admin', 'Super Admin'],
+        'roles' => ['Admin'],
     ],
     [
         'title' => 'Dashboard',
@@ -89,49 +89,49 @@ return [
     [
         'title'  => 'PENGADAAN',
         'type'   => 'group',
-        'roles'  => ['Admin', 'Super Admin'],
+        'roles'  => ['Admin'],
         'children' => [
             [
                 'title' => 'Paket RUP',
                 'route' => 'packages.index',
                 'icon'  => 'briefcase',
-                'roles' => ['Admin', 'Super Admin'],
+                'roles' => ['Admin'],
             ],
             [
                 'title' => 'Paket Pengadaan',
                 'route' => 'procurement-packages.index',
                 'icon'  => 'package',
-                'roles' => ['Admin', 'Super Admin'],
+                'roles' => ['Admin'],
             ],
             [
                 'title' => 'Persiapan Pengadaan',
                 'route' => 'procurement-requests.index',
                 'icon'  => 'clipboard-list',
-                'roles' => ['Admin', 'Super Admin'],
+                'roles' => ['Admin'],
             ],
             [
                 'title' => 'Proses Pengadaan',
                 'route' => 'procurement-processes.index',
                 'icon'  => 'refresh-cw',
-                'roles' => ['Admin', 'Super Admin'],
+                'roles' => ['Admin'],
             ],
             [
                 'title' => 'Pelaksanaan',
                 'route' => 'activities.index',
                 'icon'  => 'play-circle',
-                'roles' => ['Admin', 'Super Admin'],
+                'roles' => ['Admin'],
             ],
             [
                 'title' => 'Pembayaran',
                 'route' => 'procurement-payments.index',
                 'icon'  => 'credit-card',
-                'roles' => ['Admin', 'Super Admin'],
+                'roles' => ['Admin'],
             ],
             [
                 'title' => 'Jadwal Pengadaan',
                 'route' => 'schedules.index',
                 'icon'  => 'calendar-clock',
-                'roles' => ['Admin', 'Super Admin'],
+                'roles' => ['Admin'],
             ],
         ],
     ],
@@ -169,78 +169,78 @@ return [
     [
         'title'  => 'MASTER',
         'type'   => 'group',
-        'roles'  => ['Admin', 'Super Admin'],
+        'roles'  => ['Admin'],
         'children' => [
             [
                 'title' => 'Program',
                 'route' => 'programs.index',
                 'icon'  => 'folder',
-                'roles' => ['Admin', 'Super Admin'],
+                'roles' => ['Admin'],
             ],
             [
                 'title' => 'Kegiatan',
                 'route' => 'activities.index',
                 'icon'  => 'briefcase',
-                'roles' => ['Admin', 'Super Admin'],
+                'roles' => ['Admin'],
             ],
             [
                 'title' => 'Sub Kegiatan',
                 'route' => 'sub-activities.index',
                 'icon'  => 'layers',
-                'roles' => ['Admin', 'Super Admin'],
+                'roles' => ['Admin'],
             ],
             [
                 'title' => 'Rekening',
                 'route' => 'accounts.index',
                 'icon'  => 'hash',
-                'roles' => ['Admin', 'Super Admin'],
+                'roles' => ['Admin'],
             ],
             [
                 'title' => 'SKPD',
                 'route' => 'skpds.index',
                 'icon'  => 'building-2',
-                'roles' => ['Admin', 'Super Admin'],
+                'roles' => ['Admin'],
             ],
             [
                 'title' => 'Pegawai',
                 'route' => 'employees.index',
                 'icon'  => 'id-card',
-                'roles' => ['Admin', 'Super Admin'],
+                'roles' => ['Admin'],
             ],
             [
                 'title' => 'Data SBU',
                 'icon'  => 'database',
-                'roles' => ['Admin', 'Super Admin'],
+                'roles' => ['Admin'],
                 'children' => [
                     [
                         'title' => 'SBU Uang Harian',
                         'route' => 'sbu-uang-harians.index',
                         'icon'  => 'banknote',
-                        'roles' => ['Admin', 'Super Admin'],
+                        'roles' => ['Admin'],
                     ],
                     [
                         'title' => 'SBU Penginapan',
                         'route' => 'sbu-penginapans.index',
                         'icon'  => 'bed',
-                        'roles' => ['Admin', 'Super Admin'],
+                        'roles' => ['Admin'],
                     ],
                     [
                         'title' => 'SBU Tiket Pesawat',
                         'route' => 'sbu-tiket-pesawats.index',
                         'icon'  => 'plane',
-                        'roles' => ['Admin', 'Super Admin'],
+                        'roles' => ['Admin'],
                     ],
                     [
                         'title' => 'SBU Transportasi',
                         'route' => 'sbu-transport-rates.index',
                         'icon'  => 'car',
-                        'roles' => ['Admin', 'Super Admin'],
+                        'roles' => ['Admin'],
                     ],
                     [
                         'title' => 'SBU Lembur',
                         'route' => 'sbu-lemburs.index',
                         'icon'  => 'clock',
-                        'roles' => ['Admin', 'Super Admin'],
+                        'roles' => ['Admin'],
                     ],
                 ],
             ],
@@ -251,19 +251,19 @@ return [
     [
         'title'  => 'LAPORAN',
         'type'   => 'group',
-        'roles'  => ['Admin', 'Super Admin'],
+        'roles'  => ['Admin'],
         'children' => [
             [
                 'title' => 'Monitoring',
                 'route' => 'monev.index',
                 'icon'  => 'pie-chart',
-                'roles' => ['Admin', 'Super Admin'],
+                'roles' => ['Admin'],
             ],
             [
                 'title' => 'Buku Register',
                 'route' => 'admin.buku-register.index',
                 'icon'  => 'book-marked',
-                'roles' => ['Admin', 'Super Admin'],
+                'roles' => ['Admin'],
             ],
         ],
     ],
@@ -291,19 +291,19 @@ return [
     [
         'title'  => 'PENGATURAN',
         'type'   => 'group',
-        'roles'  => ['Admin', 'Super Admin'],
+        'roles'  => ['Admin'],
         'children' => [
             [
                 'title' => 'Tahun Anggaran',
                 'route' => 'fiscal-years.index',
                 'icon'  => 'calendar',
-                'roles' => ['Admin', 'Super Admin'],
+                'roles' => ['Admin'],
             ],
             [
                 'title' => 'Manajemen User',
                 'route' => 'admin.users.index',
                 'icon'  => 'users',
-                'roles' => ['Admin', 'Super Admin'],
+                'roles' => ['Admin'],
             ],
         ],
     ],

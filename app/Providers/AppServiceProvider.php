@@ -24,7 +24,7 @@ class AppServiceProvider extends ServiceProvider
         Carbon::setLocale('id');
         Paginator::useBootstrapFive();
 
-        // Implicitly grant "Super Admin" role all permissions
+        // Implicitly grant "Admin" role all permissions
         \Illuminate\Support\Facades\Gate::before(function ($user, $ability) {
             return $user->hasRole('Admin') ? true : null;
         });

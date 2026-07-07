@@ -88,7 +88,7 @@ class ProcurementPackageController extends Controller
     public function store(Request $request, Package $package): RedirectResponse
     {
         abort_unless(
-            $request->user()->hasAnyRole(['Admin', 'Super Admin', 'Kabid']),
+            $request->user()->hasAnyRole(['Admin', 'Kabid']),
             403,
             'Hanya Admin atau Kabid yang dapat membuat ruang pengadaan.'
         );
@@ -140,43 +140,7 @@ class ProcurementPackageController extends Controller
         ]);
 
         // Auto-fill logic dari Master SKPD (bersifat snapshot)
-        $skpd = \App\Models\Skpd::first();
-        if ($skpd) {
-            $changed = false;
-            
-            if (empty($procurementPackage->nama_ppk) && !empty($skpd->nama_ppk)) {
-                $procurementPackage->nama_ppk = $skpd->nama_ppk;
-                $changed = true;
-            }
-            if (empty($procurementPackage->nip_ppk) && !empty($skpd->nip_ppk)) {
-                $procurementPackage->nip_ppk = $skpd->nip_ppk;
-                $changed = true;
-            }
-            if (empty($procurementPackage->pangkat_gol_ppk) && !empty($skpd->pangkat_ppk)) {
-                $procurementPackage->pangkat_gol_ppk = $skpd->pangkat_ppk;
-                $changed = true;
-            }
-            if (empty($procurementPackage->no_telp_ppk) && !empty($skpd->telepon_ppk)) {
-                $procurementPackage->no_telp_ppk = $skpd->telepon_ppk;
-                $changed = true;
-            }
-            if (empty($procurementPackage->email_ppk) && !empty($skpd->email_ppk)) {
-                $procurementPackage->email_ppk = $skpd->email_ppk;
-                $changed = true;
-            }
-            if (empty($procurementPackage->user_ppk) && !empty($skpd->username_ppk)) {
-                $procurementPackage->user_ppk = $skpd->username_ppk;
-                $changed = true;
-            }
-            if (empty($procurementPackage->npwp_instansi) && !empty($skpd->npwp_dinas)) {
-                $procurementPackage->npwp_instansi = $skpd->npwp_dinas;
-                $changed = true;
-            }
-
-            if ($changed) {
-                $procurementPackage->save();
-            }
-        }
+        $procurementPackage->syncPpkFromSkpd();
 
         $procurementPackage->loadCount('priceReferences');
 

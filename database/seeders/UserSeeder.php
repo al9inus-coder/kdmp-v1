@@ -11,15 +11,6 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         User::firstOrCreate(
-            ['email' => 'superadmin@kdmp.local'],
-            [
-                'name' => 'Super Administrator',
-                'password' => Hash::make('123PassKDMP!@#'),
-                'is_active' => true,
-            ]
-        )->assignRole('Super Admin');
-
-        User::firstOrCreate(
             ['email' => 'admin@kdmp.local'],
             [
                 'name' => 'Administrator',

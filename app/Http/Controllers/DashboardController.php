@@ -12,7 +12,7 @@ class DashboardController extends Controller
     public function index()
     {
         if (auth()->check()) {
-            if (auth()->user()->hasRole(['Admin', 'Super Admin'])) {
+            if (auth()->user()->hasRole('Admin')) {
                 return redirect()->route('dashboard.admin');
             } elseif (auth()->user()->hasRole('Kabid')) {
                 return redirect()->route('dashboard.kabid');
@@ -325,7 +325,7 @@ class DashboardController extends Controller
                         'title' => 'Impor RUP: '.$batch->file_name,
                         'desc'  => $batch->success_rows.' berhasil, '.$batch->failed_rows.' gagal',
                         'time'  => $batch->created_at,
-                        'url'   => route('staf.packages.import.show', $batch),
+                        'url'   => route('packages.import.show', $batch),
                     ])
             )
             ->concat(

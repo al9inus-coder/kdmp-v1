@@ -385,15 +385,7 @@ public function update(
         return view('packages.procurement', compact('package'));
     }
 
-    public function updateProcurement(Request $request, Package $package)
-    {
-        // Not used anymore. Kept for legacy routes or refactor it out if route is removed.
-        // The preparation steps are now managed via ProcurementProcessController
-        return back()->with(
-            'success',
-            'Data persiapan pengadaan berhasil disimpan.'
-        );
-    }
+
 
     public function destroy(Request $request, Package $package): RedirectResponse
     {

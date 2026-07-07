@@ -27,6 +27,14 @@ Route::get('/', function () {
 // Route dengan Middleware Auth
 Route::middleware('auth')->group(function () {
 
+    // Pencarian cepat paket (header)
+    Route::get('/search', [\App\Http\Controllers\SearchController::class, 'index'])->name('search');
+
+    // Profil user (info akun & ganti password sendiri)
+    Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password.update');
+
     // Dashboard (Redirector)
     Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
     
@@ -47,8 +55,6 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['role:Staff'])->prefix('staf')->name('staf.')->group(function () {
         Route::get('packages', [\App\Http\Controllers\Staff\PackageController::class, 'index'])->name('packages.index');
         Route::get('packages/create', [\App\Http\Controllers\Staff\PackageController::class, 'create'])->name('packages.create');
-        Route::get('packages/import', [\App\Http\Controllers\Staff\PackageController::class, 'import'])->name('packages.import');
-        Route::get('packages/import/{batch}', [\App\Http\Controllers\Staff\PackageController::class, 'importShow'])->name('packages.import.show');
         Route::get('packages/{package}', [\App\Http\Controllers\Staff\PackageController::class, 'show'])->name('packages.show');
         Route::get('packages/{package}/edit', [\App\Http\Controllers\Staff\PackageController::class, 'edit'])->name('packages.edit');
 
@@ -63,7 +69,6 @@ Route::middleware('auth')->group(function () {
         Route::post('packages/{package}/travel-orders/{travelOrder}/submit', [\App\Http\Controllers\Staff\TravelOrderController::class, 'submit'])->name('packages.travel-orders.submit');
         Route::post('packages/{package}/travel-orders/{travelOrder}/withdraw', [\App\Http\Controllers\Staff\TravelOrderController::class, 'withdraw'])->name('packages.travel-orders.withdraw');
         Route::get('packages/{package}/travel-orders/{travelOrder}/spj', [\App\Http\Controllers\Staff\TravelSpjController::class, 'show'])->name('packages.travel-orders.spj.show');
-        Route::get('packages/{package}/travel-orders/{travelOrder}/spj-partial', [\App\Http\Controllers\Staff\TravelSpjController::class, 'spjPartial'])->name('packages.travel-orders.spj-partial');
         Route::post('packages/{package}/travel-orders/{travelOrder}/spj', [\App\Http\Controllers\Staff\TravelSpjController::class, 'store'])->name('packages.travel-orders.spj.store');
         Route::post('packages/{package}/travel-orders/{travelOrder}/spj/submit', [\App\Http\Controllers\Staff\TravelSpjController::class, 'submit'])->name('packages.travel-orders.spj.submit');
         Route::post('packages/{package}/travel-orders/{travelOrder}/spj/withdraw', [\App\Http\Controllers\Staff\TravelSpjController::class, 'withdraw'])->name('packages.travel-orders.spj.withdraw');
@@ -106,6 +111,7 @@ Route::middleware('auth')->group(function () {
         Route::put('procurement-packages/{package}/specification', [\App\Http\Controllers\Kabid\ProcurementPackageController::class, 'updateSpecification'])->name('procurement-packages.specification.update');
         Route::post('procurement-packages/{package}/specification/generate', [\App\Http\Controllers\Kabid\ProcurementPackageController::class, 'generateSpecification'])->name('procurement-packages.specification.generate');
         Route::post('procurement-packages/{package}/specification/prompt', [\App\Http\Controllers\Kabid\ProcurementPackageController::class, 'updatePrompt'])->name('procurement-packages.specification.prompt');
+        Route::post('procurement-packages/{package}/price-references/fetch', [\App\Http\Controllers\Kabid\PriceReferenceController::class, 'fetchFromCatalog'])->name('procurement-packages.price-references.fetch');
         Route::post('procurement-packages/{package}/price-references', [\App\Http\Controllers\Kabid\PriceReferenceController::class, 'store'])->name('procurement-packages.price-references.store');
         Route::put('procurement-packages/{package}/price-references/{priceReference}', [\App\Http\Controllers\Kabid\PriceReferenceController::class, 'update'])->name('procurement-packages.price-references.update');
         Route::delete('procurement-packages/{package}/price-references/{priceReference}', [\App\Http\Controllers\Kabid\PriceReferenceController::class, 'destroy'])->name('procurement-packages.price-references.destroy');
@@ -143,13 +149,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/schedules', [\App\Http\Controllers\ScheduleController::class, 'index'])->name('schedules.index');
 
     // Resource Routes
-    Route::resource('skpds', SkpdController::class);
-    Route::resource('programs', ProgramController::class)->except('destroy');
-    Route::resource('activities', ActivityController::class)->except('destroy');
-    Route::resource('sub-activities', SubActivityController::class)->except('destroy');
-    Route::resource('accounts', AccountController::class)->except('destroy');
-    Route::resource('fiscal-years', FiscalYearController::class);
-    Route::resource('employees', \App\Http\Controllers\EmployeeController::class);
+    Route::resource('skpds', SkpdController::class)->except(['show']);
+    Route::resource('programs', ProgramController::class)->except(['show', 'destroy']);
+    Route::resource('activities', ActivityController::class)->except(['show', 'destroy']);
+    Route::resource('sub-activities', SubActivityController::class)->except(['show', 'destroy']);
+    Route::resource('accounts', AccountController::class)->except(['show', 'destroy']);
+    Route::resource('fiscal-years', FiscalYearController::class)->except(['show', 'edit', 'update', 'destroy']);
+    Route::resource('employees', \App\Http\Controllers\EmployeeController::class)->except(['show']);
 
     // Procurement Packages Routes
     Route::get('procurement-packages', [ProcurementPackageController::class, 'index'])
@@ -158,7 +164,6 @@ Route::middleware('auth')->group(function () {
     // Swakelola Routes
     Route::get('swakelola', [\App\Http\Controllers\SwakelolaController::class, 'index'])
         ->name('swakelola.index');
-    Route::resource('packages.travel-orders', \App\Http\Controllers\TravelOrderController::class)->except(['index']);
     
     Route::get('/procurement-packages/{package}/workspace', [ProcurementPackageController::class, 'workspace'])
         ->name('procurement-packages.workspace');
@@ -219,7 +224,6 @@ Route::middleware('auth')->group(function () {
     Route::get('packages/program-menu', [PackageController::class, 'programMenu'])->name('packages.program-menu');
     
     Route::get('packages/{package}/procurement', [PackageController::class, 'procurement'])->name('packages.procurement');
-    Route::put('packages/{package}/procurement', [PackageController::class, 'updateProcurement'])->name('packages.procurement.update');
 
     Route::get('control-cards/{activity}/print', [ControlCardController::class, 'print'])->name('control-cards.print');
 
@@ -233,7 +237,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('sbu-uang-harians', App\Http\Controllers\SbuUangHarianController::class)->except(['show']);
     Route::resource('sbu-penginapans', App\Http\Controllers\SbuPenginapanController::class)->except(['show']);
     Route::resource('sbu-tiket-pesawats', App\Http\Controllers\SbuTiketPesawatController::class)->except(['show']);
-    Route::resource('sbu-lemburs', App\Http\Controllers\SbuLemburController::class)->except(['show']);
+    Route::resource('sbu-lemburs', App\Http\Controllers\SbuLemburController::class)->except(['show', 'create', 'edit']);
     
     // Procurement Packages & sub-resources
     Route::resource('packages', PackageController::class);
@@ -278,12 +282,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/procurement-packages/{procurementPackage}/external-records/{externalRecord}/print', [\App\Http\Controllers\ProcurementExternalRecordController::class, 'print'])
         ->name('procurement-external-records.print');
 
-    Route::get('/technical-specifications/{technicalSpecification}/items/create', [TechnicalSpecificationItemController::class, 'create'])
-        ->name('technical-items.create');
-
-    Route::post('/technical-specifications/{technicalSpecification}/items', [TechnicalSpecificationItemController::class, 'store'])
-        ->name('technical-items.store');
-
     Route::get('/technical-specifications/{technicalSpecification}/edit', [TechnicalSpecificationController::class, 'editByTechnicalSpecification'])
         ->name('technical-specifications.edit');
 
@@ -291,15 +289,6 @@ Route::middleware('auth')->group(function () {
         ->name('technical-specifications.update');
 
     Route::get('/procurement-packages/{package}/technical-specifications', [TechnicalSpecificationController::class, 'show'])->name('procurement-packages.technical-specifications.show');
-
-    Route::get('/technical-items/{item}/edit', [TechnicalSpecificationItemController::class, 'edit'])
-        ->name('technical-items.edit');
-
-    Route::put('/technical-items/{item}', [TechnicalSpecificationItemController::class, 'update'])
-        ->name('technical-items.update');
-
-    Route::delete('/technical-items/{item}', [TechnicalSpecificationItemController::class, 'destroy'])
-        ->name('technical-items.destroy');
 
     // AI Generate Draft Route
     Route::post('/procurement-packages/{procurementPackage}/generate-draft', [ProcurementPackageController::class, 'generateDraft'])

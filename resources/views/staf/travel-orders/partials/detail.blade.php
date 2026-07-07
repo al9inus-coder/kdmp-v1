@@ -1,113 +1,6 @@
-{{-- Konten detail SPPD (di-swap dengan form SPJ). Variabel diwarisi dari show.blade.php --}}
-{{-- Banner status + aksi kontekstual --}}
-@if ($isRevision || $isRejected)
-    <div class="rounded-2xl border p-5 {{ $isRejected ? 'border-rose-200 bg-rose-50/60' : 'border-amber-200 bg-amber-50/60' }}">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div class="flex items-start gap-3">
-                <span class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 {{ $isRejected ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600' }}">
-                    <i data-lucide="{{ $isRejected ? 'x-circle' : 'file-warning' }}" class="w-5 h-5"></i>
-                </span>
-                <div>
-                    <p class="font-bold text-slate-800 text-sm">{{ $isRejected ? 'Pengajuan Ditolak' : 'Perlu Revisi' }}</p>
-                    <p class="text-sm text-slate-600 mt-0.5 leading-relaxed">{{ $travelOrder->catatan_review ?: 'Tidak ada catatan dari Pimpinan.' }}</p>
-                    @if ($travelOrder->reviewer || $travelOrder->reviewed_at)
-                        <p class="text-[11px] text-slate-400 mt-1.5">
-                            Ditinjau {{ $travelOrder->reviewer ? 'oleh ' . $travelOrder->reviewer->name : '' }}
-                            {{ $travelOrder->reviewed_at ? '· ' . $travelOrder->reviewed_at->locale('id')->diffForHumans() : '' }}
-                        </p>
-                    @endif
-                </div>
-            </div>
-            @if ($isRevision)
-                <div class="flex items-center gap-2 shrink-0">
-                    <a href="{{ route('staf.packages.travel-orders.edit', [$package, $travelOrder]) }}"
-                        class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-sm">
-                        <i data-lucide="pencil" class="w-4 h-4"></i> Perbaiki
-                    </a>
-                    <form method="POST" action="{{ route('staf.packages.travel-orders.submit', [$package, $travelOrder]) }}"
-                        onsubmit="return confirm('Ajukan ulang SPPD ini ke Pimpinan?');">
-                        @csrf
-                        <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm shadow-indigo-200 transition-colors">
-                            <i data-lucide="send" class="w-4 h-4"></i> Ajukan Ulang
-                        </button>
-                    </form>
-                </div>
-            @endif
-        </div>
-    </div>
-@elseif($isSubmitted)
-    <div class="rounded-2xl border border-blue-200 bg-blue-50/60 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div class="flex items-start gap-3">
-            <span class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                <span class="relative flex w-5 h-5 items-center justify-center">
-                    <span class="animate-ping absolute inline-flex h-4 w-4 rounded-full bg-blue-400 opacity-60"></span>
-                    <i data-lucide="send" class="relative w-4 h-4"></i>
-                </span>
-            </span>
-            <div>
-                <p class="font-bold text-slate-800 text-sm">Menunggu Persetujuan Pimpinan</p>
-                <p class="text-xs text-slate-500 mt-0.5">
-                    Diajukan {{ $travelOrder->submitted_at?->locale('id')->diffForHumans() }}. Anda dapat menariknya kembali selama belum ditinjau.
-                </p>
-            </div>
-        </div>
-        <form method="POST" action="{{ route('staf.packages.travel-orders.withdraw', [$package, $travelOrder]) }}"
-            onsubmit="return confirm('Tarik kembali pengajuan ini ke Draf?');" class="shrink-0">
-            @csrf
-            <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-sm transition-colors">
-                <i data-lucide="undo-2" class="w-4 h-4"></i> Tarik Pengajuan
-            </button>
-        </form>
-    </div>
-@elseif($isApproved)
-    <div class="rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50/80 to-teal-50/50 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div class="flex items-start gap-3">
-            <span class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-                <i data-lucide="check-circle-2" class="w-5 h-5"></i>
-            </span>
-            <div>
-                <p class="font-bold text-slate-800 text-sm">SPPD Disetujui</p>
-                <p class="text-xs text-slate-500 mt-0.5">
-                    {{ $travelOrder->reviewer ? 'Disetujui oleh ' . $travelOrder->reviewer->name : 'Disetujui' }}
-                    {{ $travelOrder->reviewed_at ? '· ' . $travelOrder->reviewed_at->locale('id')->translatedFormat('d F Y') : '' }}.
-                    Dokumen siap dicetak.
-                </p>
-            </div>
-        </div>
-        <span class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-emerald-700 bg-white border border-emerald-200 rounded-xl shadow-sm shrink-0">
-            <i data-lucide="file-check-2" class="w-4 h-4"></i>
-            Dokumen siap diunduh
-        </span>
-    </div>
-@else
-    {{-- Draft --}}
-    <div class="rounded-2xl border border-slate-200 bg-slate-50/60 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div class="flex items-start gap-3">
-            <span class="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
-                <i data-lucide="file-pen" class="w-5 h-5"></i>
-            </span>
-            <div>
-                <p class="font-bold text-slate-800 text-sm">Draf &mdash; belum diajukan</p>
-                <p class="text-xs text-slate-500 mt-0.5">Periksa kembali data lalu ajukan ke Pimpinan untuk disetujui.</p>
-            </div>
-        </div>
-        <div class="flex items-center gap-2 shrink-0">
-            <a href="{{ route('staf.packages.travel-orders.edit', [$package, $travelOrder]) }}"
-                class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-sm">
-                <i data-lucide="pencil" class="w-4 h-4"></i> Edit
-            </a>
-            <form method="POST" action="{{ route('staf.packages.travel-orders.submit', [$package, $travelOrder]) }}"
-                onsubmit="return confirm('Ajukan SPPD ini ke Pimpinan untuk disetujui?');">
-                @csrf
-                <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm shadow-indigo-200 transition-colors">
-                    <i data-lucide="send" class="w-4 h-4"></i> Ajukan SPPD
-                </button>
-            </form>
-        </div>
-    </div>
-@endif
+{{-- Konten detail SPPD. Variabel diwarisi dari show.blade.php --}}
 
-<div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start mt-6">
+<div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start">
     <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
         <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/60">
             <h1 class="text-lg font-black text-slate-900 flex items-center gap-2">
@@ -172,7 +65,7 @@
         </div>
     </section>
 
-    <aside class="space-y-4 xl:sticky xl:top-20">
+    <aside class="space-y-4 lg:sticky lg:top-20">
         <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
             <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/60">
                 <h2 class="text-sm font-black text-slate-900 flex items-center gap-2">
@@ -225,24 +118,87 @@
             </div>
         </section>
 
-        <section class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
-            @if ($isApproved)
-                <button type="button" id="btn-buat-spj"
-                    data-url="{{ route('staf.packages.travel-orders.spj-partial', [$package, $travelOrder]) }}"
+        {{-- Kartu aksi: status SPPD + tombol yang berubah sesuai tahap --}}
+        <section class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 space-y-4">
+            @if ($isSubmitted)
+                <div class="flex items-start gap-3">
+                    <span class="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0"><i data-lucide="send" class="w-4 h-4"></i></span>
+                    <div>
+                        <p class="font-bold text-slate-800 text-sm">Menunggu persetujuan</p>
+                        <p class="text-xs text-slate-500 mt-0.5">Diajukan {{ $travelOrder->submitted_at?->locale('id')->diffForHumans() }}. Bisa ditarik selama belum ditinjau.</p>
+                    </div>
+                </div>
+                <form method="POST" action="{{ route('staf.packages.travel-orders.withdraw', [$package, $travelOrder]) }}"
+                    onsubmit="return confirm('Tarik kembali pengajuan ini ke Draf?');">
+                    @csrf
+                    <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-sm transition-colors">
+                        <i data-lucide="undo-2" class="w-4 h-4"></i> Tarik Pengajuan
+                    </button>
+                </form>
+            @elseif ($isApproved)
+                @php $spjStarted = $travelOrder->spjStatus() !== \App\Models\TravelOrder::SPJ_DRAFT; @endphp
+                <div class="flex items-start gap-3">
+                    <span class="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0"><i data-lucide="check-circle-2" class="w-4 h-4"></i></span>
+                    <div>
+                        <p class="font-bold text-slate-800 text-sm">SPPD disetujui</p>
+                        <p class="text-xs text-slate-500 mt-0.5">Lanjutkan ke pertanggungjawaban biaya (SPJ).</p>
+                    </div>
+                </div>
+                <a href="{{ route('staf.packages.travel-orders.spj.show', [$package, $travelOrder]) }}"
                     class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-black text-white bg-slate-900 rounded-xl hover:bg-black shadow-sm">
-                    <i data-lucide="receipt-text" class="w-4 h-4"></i>
-                    Buat SPJ
-                </button>
+                    <i data-lucide="receipt-text" class="w-4 h-4"></i> {{ $spjStarted ? 'Buka SPJ' : 'Buat SPJ' }}
+                </a>
+            @elseif ($isRevision)
+                <div class="flex items-start gap-3">
+                    <span class="w-9 h-9 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center shrink-0"><i data-lucide="file-warning" class="w-4 h-4"></i></span>
+                    <div>
+                        <p class="font-bold text-slate-800 text-sm">Perlu revisi</p>
+                        <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">{{ $travelOrder->catatan_review ?: 'Perbaiki data lalu ajukan ulang.' }}</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <a href="{{ route('staf.packages.travel-orders.edit', [$package, $travelOrder]) }}"
+                        class="inline-flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-bold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-sm">
+                        <i data-lucide="pencil" class="w-4 h-4"></i> Perbaiki
+                    </a>
+                    <form method="POST" action="{{ route('staf.packages.travel-orders.submit', [$package, $travelOrder]) }}"
+                        onsubmit="return confirm('Ajukan ulang SPPD ini ke Pimpinan?');">
+                        @csrf
+                        <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm shadow-indigo-200 transition-colors">
+                            <i data-lucide="send" class="w-4 h-4"></i> Ajukan Ulang
+                        </button>
+                    </form>
+                </div>
+            @elseif ($isRejected)
+                <div class="flex items-start gap-3">
+                    <span class="w-9 h-9 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center shrink-0"><i data-lucide="x-circle" class="w-4 h-4"></i></span>
+                    <div>
+                        <p class="font-bold text-slate-800 text-sm">Pengajuan ditolak</p>
+                        <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">{{ $travelOrder->catatan_review ?: 'Tidak ada catatan dari Pimpinan.' }}</p>
+                    </div>
+                </div>
             @else
-                <button type="button" disabled
-                    class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-black text-white bg-slate-300 rounded-xl cursor-not-allowed">
-                    <i data-lucide="receipt-text" class="w-4 h-4"></i>
-                    Buat SPJ
-                </button>
+                <div class="flex items-start gap-3">
+                    <span class="w-9 h-9 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0"><i data-lucide="file-pen" class="w-4 h-4"></i></span>
+                    <div>
+                        <p class="font-bold text-slate-800 text-sm">Draf — belum diajukan</p>
+                        <p class="text-xs text-slate-500 mt-0.5">Periksa data lalu ajukan ke Pimpinan untuk disetujui.</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <a href="{{ route('staf.packages.travel-orders.edit', [$package, $travelOrder]) }}"
+                        class="inline-flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-bold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-sm">
+                        <i data-lucide="pencil" class="w-4 h-4"></i> Edit
+                    </a>
+                    <form method="POST" action="{{ route('staf.packages.travel-orders.submit', [$package, $travelOrder]) }}"
+                        onsubmit="return confirm('Ajukan SPPD ini ke Pimpinan untuk disetujui?');">
+                        @csrf
+                        <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm shadow-indigo-200 transition-colors">
+                            <i data-lucide="send" class="w-4 h-4"></i> Ajukan SPPD
+                        </button>
+                    </form>
+                </div>
             @endif
-            <p class="mt-2 text-xs text-slate-500 text-center">
-                {{ $isApproved ? 'Input biaya rampung dan bukti pertanggungjawaban SPD.' : 'SPJ dapat dibuat setelah SPPD disetujui.' }}
-            </p>
         </section>
     </aside>
 </div>

@@ -32,6 +32,8 @@
         storeUrl: '{{ route('kabid.procurement-packages.price-references.store', $package) }}',
         updateBase: '{{ url('kabid/procurement-packages/' . $package->getRouteKey() . '/price-references') }}',
         printUrl: '{{ route('procurement-packages.price-references.print', $package) }}?embed=1',
+        fetchUrl: '{{ route('kabid.procurement-packages.price-references.fetch', $package) }}',
+        csrf: '{{ csrf_token() }}',
     })">
 
     {{-- Toolbar: tab --}}
@@ -286,6 +288,29 @@
                             @endforeach
                         </select>
                     </div>
+                    {{-- Isi otomatis dari link katalog --}}
+                    <div class="rounded-lg border border-dashed border-indigo-300 bg-indigo-50/50 p-3">
+                        <label class="flex items-center gap-1.5 text-xs font-bold text-indigo-800 mb-1.5">
+                            <i data-lucide="wand-2" class="w-3.5 h-3.5"></i> Isi Otomatis dari Katalog
+                        </label>
+                        <div class="flex gap-2">
+                            <input type="url" x-model="importUrl" @keydown.enter.prevent="fetchFromLink()"
+                                placeholder="Tempel link katalog.inaproc.id..."
+                                class="flex-1 min-w-0 rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                            <button type="button" @click="fetchFromLink()" :disabled="importing"
+                                class="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm disabled:opacity-60 disabled:cursor-not-allowed transition-colors shrink-0">
+                                <i data-lucide="download" class="w-4 h-4" x-show="!importing"></i>
+                                <svg x-show="importing" style="display:none;" class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"></circle>
+                                    <path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="4" stroke-linecap="round" class="opacity-90"></path>
+                                </svg>
+                                <span x-text="importing ? 'Mengambil...' : 'Ambil'"></span>
+                            </button>
+                        </div>
+                        <p x-show="importError" x-cloak x-text="importError" class="text-[11px] text-rose-600 font-semibold mt-1.5"></p>
+                        <p x-show="importNotice" x-cloak x-text="importNotice" class="text-[11px] text-emerald-600 font-semibold mt-1.5"></p>
+                    </div>
+
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1.5">Nama Produk di Etalase</label>
@@ -341,10 +366,23 @@
             formAction: config.storeUrl,
             form: { item_id: '', etalase: '', pelaku: '', harga: null, link: '' },
 
+            importUrl: '',
+            importing: false,
+            importError: '',
+            importNotice: '',
+
+            resetImport() {
+                this.importUrl = '';
+                this.importError = '';
+                this.importNotice = '';
+                this.importing = false;
+            },
+
             openCreate(itemId) {
                 this.mode = 'create';
                 this.formAction = config.storeUrl;
                 this.form = { item_id: String(itemId), etalase: '', pelaku: '', harga: null, link: '' };
+                this.resetImport();
                 this.modalOpen = true;
             },
 
@@ -358,7 +396,43 @@
                     harga: ref.harga,
                     link: ref.link || '',
                 };
+                this.resetImport();
+                this.importUrl = ref.link || '';
                 this.modalOpen = true;
+            },
+
+            async fetchFromLink() {
+                const url = this.importUrl.trim();
+                this.importError = '';
+                this.importNotice = '';
+                if (!url) { this.importError = 'Tempel link katalog terlebih dahulu.'; return; }
+
+                this.importing = true;
+                try {
+                    const res = await fetch(config.fetchUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': config.csrf,
+                        },
+                        body: JSON.stringify({ url }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) {
+                        this.importError = data.message || 'Gagal mengambil data dari link.';
+                        return;
+                    }
+                    if (data.nama_produk_etalase) this.form.etalase = data.nama_produk_etalase;
+                    if (data.nama_pelaku_usaha) this.form.pelaku = data.nama_pelaku_usaha;
+                    if (data.harga_satuan !== null && data.harga_satuan !== undefined) this.form.harga = data.harga_satuan;
+                    this.form.link = data.link_produk || url;
+                    this.importNotice = 'Data terisi otomatis. Silakan periksa & sesuaikan bila perlu.';
+                } catch (e) {
+                    this.importError = 'Terjadi kesalahan jaringan. Coba lagi.';
+                } finally {
+                    this.importing = false;
+                }
             },
 
             openPreview() {

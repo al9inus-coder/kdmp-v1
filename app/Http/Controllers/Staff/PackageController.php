@@ -59,23 +59,6 @@ class PackageController extends Controller
         return view('staf.packages.create', compact('fiscalYears', 'subActivities', 'accounts'));
     }
 
-    public function import()
-    {
-        $fiscalYears = \App\Models\FiscalYear::orderBy('tahun', 'desc')->get();
-        $activeFiscalYearId = \App\Models\FiscalYear::where('is_active', true)->value('id');
-
-        return view('staf.packages.import', compact('fiscalYears', 'activeFiscalYearId'));
-    }
-
-    public function importShow(ImportBatch $batch)
-    {
-        Gate::authorize('view', $batch);
-
-        $batch->load(['fiscalYear', 'creator', 'errors']);
-
-        return view('staf.packages.import-show', compact('batch'));
-    }
-
     public function show(\App\Models\Package $package)
     {
         $package->load([

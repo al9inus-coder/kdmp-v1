@@ -97,12 +97,10 @@ class UserController extends Controller
         $user->update([
             'name' => $data['name'],
             'email' => $data['email'],
-            // Status Super Admin dijaga tetap aktif.
-            'is_active' => $user->isSuperAdmin() ? true : (bool) $data['is_active'],
+            'is_active' => (bool) $data['is_active'],
         ]);
 
-        // Role Super Admin tidak boleh diubah dari form.
-        if (! $user->isSuperAdmin() && ! empty($data['role'])) {
+        if (! empty($data['role'])) {
             $user->syncRoles([$data['role']]);
         }
 
@@ -116,10 +114,6 @@ class UserController extends Controller
     {
         if ($user->is($request->user())) {
             return back()->with('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
-        }
-
-        if ($user->isSuperAdmin()) {
-            return back()->with('error', 'Akun Super Admin tidak dapat dihapus.');
         }
 
         $name = $user->name;
@@ -152,10 +146,6 @@ class UserController extends Controller
     {
         if ($user->is($request->user())) {
             return back()->with('error', 'Anda tidak dapat mengubah status akun Anda sendiri.');
-        }
-
-        if ($user->isSuperAdmin()) {
-            return back()->with('error', 'Status Super Admin tidak dapat diubah.');
         }
 
         $user->update(['is_active' => ! $user->is_active]);

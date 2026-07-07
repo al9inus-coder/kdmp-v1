@@ -137,7 +137,7 @@
             </section>
 
             {{-- Keamanan data --}}
-            @if(in_array($userRole, ['Admin', 'Super Admin', 'Kabid']))
+            @if(in_array($userRole, ['Admin', 'Kabid']))
                 <section class="bg-white border {{ $overtime->is_locked ? 'border-rose-200' : 'border-amber-200' }} rounded-2xl shadow-sm overflow-hidden">
                     <div class="px-5 py-3 border-b border-slate-100 bg-slate-50/50">
                         <h3 class="text-xs font-black text-slate-700 flex items-center gap-2 uppercase tracking-wide">
@@ -152,7 +152,7 @@
                                     <i data-lucide="lock" class="w-4 h-4"></i>Kunci Data SPJ
                                 </button>
                             </form>
-                        @elseif(in_array($userRole, ['Admin', 'Super Admin']))
+                        @elseif($userRole === 'Admin')
                             <form action="{{ route('packages.overtimes.unlock', [$package, $month]) }}" method="POST" onsubmit="return confirm('Buka kunci data? Data bisa diedit lagi.')">
                                 @csrf
                                 <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-bold text-amber-700 bg-white border border-amber-200 hover:bg-amber-50 rounded-lg transition-colors">

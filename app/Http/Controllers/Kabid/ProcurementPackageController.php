@@ -160,6 +160,9 @@ class ProcurementPackageController extends Controller
 
         $procurementPackage->loadCount('priceReferences');
 
+        // Pastikan data PPK terisi (snapshot dari SKPD) jika masih kosong
+        $procurementPackage->syncPpkFromSkpd();
+
         $aiPrompt = AiPrompt::where('code', 'technical_specification')
             ->where('is_active', true)
             ->first();

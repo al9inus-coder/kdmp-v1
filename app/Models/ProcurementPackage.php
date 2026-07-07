@@ -48,7 +48,6 @@ class ProcurementPackage extends Model
     'garansi_nilai',
     'garansi_satuan',
     'layanan_purna_jual',
-    'workflow_status',
     'dikecualikan_type',
     'tanggal_barang_diterima',
     ];
@@ -107,5 +106,38 @@ class ProcurementPackage extends Model
 
         // Jika metode E-Purchasing atau lainnya yang menggunakan procurementProcess
         return $this->procurementProcess ? $this->procurementProcess->nilai_kontrak : 0;
+    }
+
+    /**
+     * Auto-fill PPK dari Master SKPD (bersifat snapshot).
+     * Jika field PPK di ProcurementPackage masih kosong, ambil dari SKPD.
+     */
+    public function syncPpkFromSkpd(): void
+    {
+        $skpd = Skpd::first();
+        if (!$skpd) return;
+
+        $changed = false;
+
+        $fields = [
+            'nama_ppk' => 'nama_ppk',
+            'nip_ppk' => 'nip_ppk',
+            'pangkat_gol_ppk' => 'pangkat_ppk',
+            'no_telp_ppk' => 'telepon_ppk',
+            'email_ppk' => 'email_ppk',
+            'user_ppk' => 'username_ppk',
+            'npwp_instansi' => 'npwp_dinas',
+        ];
+
+        foreach ($fields as $procField => $skpdField) {
+            if (empty($this->{$procField}) && !empty($skpd->{$skpdField})) {
+                $this->{$procField} = $skpd->{$skpdField};
+                $changed = true;
+            }
+        }
+
+        if ($changed) {
+            $this->save();
+        }
     }
 }

@@ -283,11 +283,9 @@ class ImportBatchController extends Controller
             ->with('success', 'Import RUP selesai. Berhasil: '.$successRows.', gagal: '.$failedRows.'.');
     }
 
-    private function redirectBack(bool $isStaf): RedirectResponse
+    private function redirectBack(bool $isStaf): \Illuminate\Http\RedirectResponse
     {
-        return $isStaf
-            ? redirect()->route('staf.packages.import')
-            : redirect()->route('packages.import.index');
+        return redirect()->route('packages.import.index');
     }
 
     /**
