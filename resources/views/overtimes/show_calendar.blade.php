@@ -214,7 +214,7 @@
                     $processedDetails[] = compact('detail','emp','valLembur','valMakan','totalJam','uangLembur','uangMakan','pph','totalDiterima');
                 }
             @endphp
-            <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+            <section id="rekapSection" class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                 <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                     <h2 class="text-sm font-black text-slate-900 flex items-center gap-2">
                         <i data-lucide="calculator" class="w-4 h-4 text-emerald-500"></i>Estimasi Rekapitulasi Bulan Ini
@@ -436,7 +436,7 @@
                 saveEventAjax(employeeId, dateStr, defaultHours, false, 'update').then(res => {
                     if (res.success) {
                         event.setProp('id', targetId); event.setExtendedProp('day', day); event.setExtendedProp('hours', defaultHours);
-                        event.setProp('title', employeeName + ' (' + defaultHours + ' Jam)'); Toast.fire({ icon: 'success', title: 'Disimpan' });
+                        event.setProp('title', employeeName + ' (' + defaultHours + ' Jam)'); Toast.fire({ icon: 'success', title: 'Disimpan' }); refreshRekap();
                     } else { event.remove(); Swal.fire('Error', res.message || 'Gagal menyimpan', 'error'); }
                 });
             },
@@ -473,7 +473,7 @@
                         let title = window.currentEditEvent.extendedProps.employee_name + ' (' + hours + ' Jam)'; if (useUangMakan) title += ' 🍽️';
                         window.currentEditEvent.setProp('title', title); window.currentEditEvent.setExtendedProp('hours', hours); window.currentEditEvent.setExtendedProp('use_uang_makan', useUangMakan);
                     }
-                    $('#eventModal').modal('hide'); Toast.fire({ icon: 'success', title: 'Data diperbarui' });
+                    $('#eventModal').modal('hide'); Toast.fire({ icon: 'success', title: 'Data diperbarui' }); refreshRekap();
                 } else Swal.fire('Error', res.message || 'Gagal menyimpan', 'error');
             });
         });
@@ -481,7 +481,7 @@
         $('#btnDeleteEvent').click(function () {
             Swal.fire({ title: 'Hapus data lembur?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, hapus!' }).then((r) => {
                 if (r.isConfirmed) saveEventAjax($('#modalEmployeeId').val(), $('#modalEventDate').val(), 0, false, 'delete').then(res => {
-                    if (res.success) { if (window.currentEditEvent) window.currentEditEvent.remove(); $('#eventModal').modal('hide'); Toast.fire({ icon: 'success', title: 'Data dihapus' }); }
+                    if (res.success) { if (window.currentEditEvent) window.currentEditEvent.remove(); $('#eventModal').modal('hide'); Toast.fire({ icon: 'success', title: 'Data dihapus' }); refreshRekap(); }
                 });
             });
         });
@@ -517,6 +517,22 @@
 
         function saveEventAjax(employeeId, dateStr, hours, useUangMakan, action) {
             return fetch(UPDATE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json' }, body: JSON.stringify({ employee_id: employeeId, date: dateStr, hours: hours, use_uang_makan: useUangMakan, action: action }) }).then(res => res.json());
+        }
+
+        // Muat ulang tabel Estimasi Rekapitulasi tanpa refresh halaman penuh.
+        // Perhitungan tarif/pajak tetap di server; di sini hanya menukar HTML section-nya.
+        function refreshRekap() {
+            fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(res => res.text())
+                .then(html => {
+                    const fresh = new DOMParser().parseFromString(html, 'text/html').getElementById('rekapSection');
+                    const current = document.getElementById('rekapSection');
+                    if (fresh && current) {
+                        current.innerHTML = fresh.innerHTML;
+                        if (typeof lucide !== 'undefined') lucide.createIcons();
+                    }
+                })
+                .catch(() => {});
         }
     });
 </script>

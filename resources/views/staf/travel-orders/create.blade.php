@@ -82,18 +82,36 @@
 
         <div class="space-y-6 min-w-0">
             <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/60">
-                    <p class="text-xs font-bold uppercase tracking-wide text-slate-400">{{ $pageTitle }}</p>
-                    <h1 class="mt-2 text-2xl font-bold text-slate-900 leading-tight">{{ $package->nama_paket }}</h1>
-                    <p class="mt-2 text-sm text-slate-500">{{ $package->account?->kode ?? '-' }} {{ $package->account?->nama ?? '' }}</p>
+                <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/60 flex flex-col md:flex-row md:items-start justify-between gap-4">
+                    <div class="flex-1">
+                        <p class="text-xs font-bold uppercase tracking-wide text-slate-400">{{ $pageTitle }}</p>
+                        @if(isset($eligiblePackages) && $eligiblePackages->isNotEmpty())
+                            <div class="mt-3">
+                                <label for="package_id" class="block text-sm font-bold text-slate-700 mb-1.5">
+                                    Sub Kegiatan & Paket Perjalanan Dinas <span class="text-rose-500">*</span>
+                                </label>
+                                <select id="package_id" name="package_id" class="w-full max-w-2xl rounded-lg border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    @foreach($eligiblePackages as $pkg)
+                                        <option value="{{ $pkg->id }}" {{ $pkg->id == $package->id ? 'selected' : '' }}>
+                                            [{{ $pkg->subActivity?->kode }}] {{ Str::limit($pkg->subActivity?->nama, 60) }} — Paket: {{ $pkg->nama_paket }} ({{ $pkg->id_rup ?? '-' }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <p class="mt-1 text-xs text-slate-500">Pilih sub kegiatan dan paket belanja yang akan digunakan.</p>
+                            </div>
+                        @else
+                            <h1 class="mt-2 text-2xl font-bold text-slate-900 leading-tight">{{ $package->nama_paket }}</h1>
+                            <p class="mt-2 text-sm text-slate-500">{{ $package->account?->kode ?? '-' }} {{ $package->account?->nama ?? '' }}</p>
+                        @endif
+                    </div>
                 </div>
 
                 <div class="p-5 lg:p-6 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_380px] gap-5 items-start">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 min-w-0">
                         <div>
                             <label for="tipe_perjalanan" class="block text-sm font-bold text-slate-700 mb-1.5">Tipe Perjalanan <span class="text-rose-500">*</span></label>
-                            <select id="tipe_perjalanan" name="tipe_perjalanan" x-model="tipe" @change="kategori = ''; syncTujuan()"
-                                class="w-full rounded-lg border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500">
+                            <select id="tipe_perjalanan" name="tipe_perjalanan" x-model="tipe" @change="kategori = ''; syncTujuan(true)"
+                                class="w-full rounded-lg border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
                                 <option value="Dalam Daerah">Dalam Daerah</option>
                                 <option value="Luar Daerah">Luar Daerah</option>
                             </select>
@@ -102,8 +120,8 @@
 
                         <div x-show="tipe === 'Luar Daerah'" style="display: none;">
                             <label for="kategori_tujuan" class="block text-sm font-bold text-slate-700 mb-1.5">Kategori Tujuan</label>
-                            <select id="kategori_tujuan" name="kategori_tujuan" x-model="kategori" @change="syncTujuan()"
-                                class="w-full rounded-lg border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500">
+                            <select id="kategori_tujuan" name="kategori_tujuan" x-model="kategori" @change="syncTujuan(true)"
+                                class="w-full rounded-lg border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
                                 <option value="">Pilih kategori</option>
                                 <option value="Dalam Provinsi">Dalam Provinsi Kalbar</option>
                                 <option value="Luar Provinsi">Luar Provinsi</option>
@@ -112,8 +130,11 @@
 
                         <div :class="tipe === 'Luar Daerah' ? 'md:col-span-2' : 'md:col-span-1'">
                             <label for="tempat_tujuan" class="block text-sm font-bold text-slate-700 mb-1.5">Tempat Tujuan <span class="text-rose-500">*</span></label>
+                            {{-- x-effect: terapkan ulang nilai tersimpan setelah x-for selesai merender <option>,
+                                 karena x-model gagal memilih opsi yang belum ada di DOM saat inisialisasi --}}
                             <select id="tempat_tujuan" name="tempat_tujuan" x-model="tujuan"
-                                class="w-full rounded-lg border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500">
+                                x-effect="tujuanOptions; $nextTick(() => { if (tujuan) $el.value = tujuan })"
+                                class="w-full rounded-lg border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
                                 <template x-for="option in tujuanOptions" :key="option">
                                     <option :value="option" x-text="option"></option>
                                 </template>
@@ -472,13 +493,21 @@
                 const date = fromIso(iso);
                 return `${date.getDate()} ${monthNames[date.getMonth()].slice(0, 3)} ${date.getFullYear()}`;
             },
-            syncTujuan() {
-                if (this.tipe === 'Dalam Daerah') this.tujuanOptions = this.dalamDaerah;
-                else if (this.kategori === 'Dalam Provinsi') this.tujuanOptions = this.luarDaerahKalbar;
-                else if (this.kategori === 'Luar Provinsi') this.tujuanOptions = this.luarDaerahLuarProvinsi;
-                else this.tujuanOptions = [];
+            syncTujuan(isUserChange = false) {
+                let opts = [];
+                if (this.tipe === 'Dalam Daerah') opts = this.dalamDaerah;
+                else if (this.kategori === 'Dalam Provinsi') opts = this.luarDaerahKalbar;
+                else if (this.kategori === 'Luar Provinsi') opts = this.luarDaerahLuarProvinsi;
+                
+                this.tujuanOptions = Array.isArray(opts) ? opts : Object.values(opts || {});
 
-                if (!this.tujuanOptions.includes(this.tujuan)) this.tujuan = this.tujuanOptions[0] || '';
+                if (isUserChange) {
+                    this.tujuan = this.tujuanOptions.length > 0 ? this.tujuanOptions[0] : '';
+                } else {
+                    if (this.tujuan && !this.tujuanOptions.includes(this.tujuan)) {
+                        this.tujuanOptions.unshift(this.tujuan);
+                    }
+                }
             },
             dragEmployee(id, event) {
                 this.draggedId = id;

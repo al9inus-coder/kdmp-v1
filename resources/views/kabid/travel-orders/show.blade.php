@@ -5,7 +5,15 @@
     $money = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
     $isLuarDaerah = in_array(strtolower($travelOrder->tipe_perjalanan), ['luar daerah', 'luar_daerah'], true);
     $days = $travelOrder->tanggal_berangkat->diffInDays($travelOrder->tanggal_kembali) + 1;
+    // Ambil jumlah malam dari salah satu estimasi pegawai (karena malam bisa diubah jadi 0 untuk tujuan tertentu misal Bengkayang)
     $nights = max(0, $days - 1);
+    if (!empty($estimates)) {
+        $firstEst = reset($estimates);
+        if (isset($firstEst['nights'])) {
+            $nights = $firstEst['nights'];
+        }
+    }
+    
     $totalPerkiraan = 0;
     $totalRampung = 0;
 
@@ -79,7 +87,7 @@
             <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>{{ $travelOrder->tempat_tujuan }}
         </span>
         <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg">
-            <i data-lucide="calendar-days" class="w-3.5 h-3.5"></i>{{ $days }} hari {{ $nights }} malam
+            <i data-lucide="calendar-days" class="w-3.5 h-3.5"></i>{{ $days }} hari {{ $nights > 0 ? $nights . ' malam' : '' }}
         </span>
         @if($isSppdSubmission)
             <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border {{ $meta['badge'] }}">
@@ -194,7 +202,7 @@
                     </div>
                 @endif
 
-                <a href="{{ route('kabid.procurement-packages.show', $package) }}"
+                <a href="{{ route('kabid.sppd.index') }}"
                     class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-sm transition-colors">
                     <i data-lucide="arrow-left" class="w-4 h-4"></i> Kembali
                 </a>

@@ -2,38 +2,64 @@
 @section('title', 'Paket Pengadaan')
 
 @php
-    $formatM = fn($num) => 'Rp ' . number_format(((float) $num) / 1000000, 2, ',', '.') . ' M';
+    $formatM = fn($num) => rupiahSingkat($num);
+    $money = fn ($v) => 'Rp ' . number_format((float) $v, 0, ',', '.');
 
-    $typeTabs = [
-        'penyedia' => ['label' => 'Penyedia', 'icon' => 'briefcase-business'],
-        'swakelola' => ['label' => 'Swakelola', 'icon' => 'users-round'],
-        'dikecualikan' => ['label' => 'Dikecualikan', 'icon' => 'shield-alert'],
+    $kategoriCards = [
+        'all' => [
+            'label' => 'Semua Paket', 'desc' => 'Seluruh kategori pengadaan',
+            'icon' => 'package', 'iconBg' => 'bg-slate-100 text-slate-500',
+            'bar' => 'bg-slate-400', 'ring' => 'ring-slate-300',
+        ],
+        'penyedia' => [
+            'label' => 'Penyedia', 'desc' => 'Mengikuti tahapan workflow',
+            'icon' => 'briefcase-business', 'iconBg' => 'bg-sky-50 text-sky-500',
+            'bar' => 'bg-sky-500', 'ring' => 'ring-sky-300',
+        ],
+        'swakelola' => [
+            'label' => 'Swakelola', 'desc' => 'Ruang eksekusi mandiri',
+            'icon' => 'handshake', 'iconBg' => 'bg-teal-50 text-teal-500',
+            'bar' => 'bg-teal-500', 'ring' => 'ring-teal-300',
+        ],
+        'dikecualikan' => [
+            'label' => 'Dikecualikan', 'desc' => 'Tanpa tahapan, berbasis dokumen',
+            'icon' => 'file-warning', 'iconBg' => 'bg-violet-50 text-violet-500',
+            'bar' => 'bg-violet-500', 'ring' => 'ring-violet-300',
+        ],
+    ];
+
+    $kategoriBadges = [
+        'penyedia'     => 'bg-sky-50 text-sky-700 border-sky-200',
+        'swakelola'    => 'bg-teal-50 text-teal-700 border-teal-200',
+        'dikecualikan' => 'bg-violet-50 text-violet-700 border-violet-200',
     ];
 
     $statusTabs = [
         '' => ['label' => 'Semua', 'count' => array_sum(array_column($stats, 'count'))],
         'draft' => ['label' => 'Draft', 'count' => $stats['draft']['count']],
-        'persiapan' => ['label' => 'Persiapan', 'count' => $stats['persiapan']['count']],
+        'persiapan' => ['label' => 'Pemilihan', 'count' => $stats['persiapan']['count']],
         'diproses' => ['label' => 'Diproses', 'count' => $stats['diproses']['count']],
         'selesai' => ['label' => 'Selesai', 'count' => $stats['selesai']['count']],
     ];
 
     $tabUrl = fn($status) => route('kabid.procurement-packages.index', array_filter([
-        'type' => request('type', 'penyedia'),
+        'type' => $type !== 'all' ? $type : null,
         'status' => $status,
         'program_id' => request('program_id'),
         'search' => request('search'),
     ], fn($value) => $value !== null && $value !== ''));
 
     $typeUrl = fn($value) => route('kabid.procurement-packages.index', array_filter([
-        'type' => $value,
+        'type' => $value !== 'all' ? $value : null,
         'status' => request('status'),
         'program_id' => request('program_id'),
         'search' => request('search'),
     ], fn($item) => $item !== null && $item !== ''));
 @endphp
 
-<x-ui.workspace title="Paket Pengadaan" description="Pantau dan lanjutkan proses paket pengadaan sesuai tahapan kerja Kabid.">
+<x-ui.toast />
+
+<x-ui.workspace title="Paket Pengadaan" description="Ikhtisar seluruh paket pengadaan — penyedia, swakelola, dan dikecualikan. Klik kartu kategori untuk memfilter.">
     <x-slot:actions>
         <div class="flex items-center gap-2 bg-slate-50 rounded-full px-4 py-1.5 text-sm text-slate-600 font-medium border border-slate-100 shadow-sm">
             <i data-lucide="package-check" class="w-4 h-4 text-emerald-500"></i>
@@ -44,99 +70,45 @@
         </x-ui.button>
     </x-slot:actions>
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <x-ui.card padding="md" class="relative hover:-translate-y-1 transition-transform duration-300">
-            <div class="flex justify-between items-start mb-4">
-                <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center">
-                    <i data-lucide="file-text" class="w-5 h-5"></i>
-                </div>
-                <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
-                    <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> Draft
-                </div>
-            </div>
-            <div class="flex items-baseline gap-2">
-                <h2 class="text-4xl font-bold text-slate-900">{{ $stats['draft']['count'] }}</h2>
-                <span class="text-sm text-slate-500 font-medium">paket</span>
-            </div>
-            <div class="mt-3 pt-3 border-t border-slate-100 text-xs">
-                <span class="font-bold text-slate-900">{{ $formatM($stats['draft']['total']) }}</span>
-                <span class="text-slate-500">total anggaran</span>
-            </div>
-        </x-ui.card>
+    {{-- Kartu kategori (sekaligus filter) --}}
+    <div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+        @foreach($kategoriCards as $key => $card)
+            @php $isActive = $type === $key; @endphp
+            <a href="{{ $typeUrl($key) }}"
+                class="group relative bg-white rounded-2xl border shadow-sm p-5 transition-all hover:-translate-y-0.5 hover:shadow-md
+                    {{ $isActive ? 'border-transparent ring-2 '.$card['ring'] : 'border-slate-200' }}">
+                <div class="absolute top-0 left-5 right-5 h-1 rounded-b-full {{ $card['bar'] }} {{ $isActive ? 'opacity-100' : 'opacity-30 group-hover:opacity-70' }} transition-opacity"></div>
 
-        <x-ui.card padding="md" class="relative hover:-translate-y-1 transition-transform duration-300">
-            <div class="flex justify-between items-start mb-4">
-                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center">
-                    <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+                <div class="flex items-start justify-between">
+                    <div class="w-10 h-10 rounded-xl {{ $card['iconBg'] }} flex items-center justify-center">
+                        <i data-lucide="{{ $card['icon'] }}" class="w-5 h-5"></i>
+                    </div>
+                    @if($isActive)
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-white">
+                            <i data-lucide="filter" class="w-2.5 h-2.5"></i> Aktif
+                        </span>
+                    @endif
                 </div>
-                <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-semibold">
-                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Persiapan
-                </div>
-            </div>
-            <div class="flex items-baseline gap-2">
-                <h2 class="text-4xl font-bold text-slate-900">{{ $stats['persiapan']['count'] }}</h2>
-                <span class="text-sm text-slate-500 font-medium">paket</span>
-            </div>
-            <div class="mt-3 pt-3 border-t border-slate-100 text-xs">
-                <span class="font-bold text-blue-600">{{ $formatM($stats['persiapan']['total']) }}</span>
-                <span class="text-slate-500">total anggaran</span>
-            </div>
-        </x-ui.card>
 
-        <x-ui.card padding="md" class="relative hover:-translate-y-1 transition-transform duration-300">
-            <div class="flex justify-between items-start mb-4">
-                <div class="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center">
-                    <i data-lucide="sliders" class="w-5 h-5"></i>
+                <div class="flex items-baseline gap-2 mt-3">
+                    <span class="text-3xl font-black text-slate-900">{{ $kategoriStats[$key]['count'] }}</span>
+                    <span class="text-xs font-bold text-slate-600">{{ $card['label'] }}</span>
                 </div>
-                <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 text-orange-600 text-xs font-semibold">
-                    <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span> Diproses
+                <p class="text-[11px] text-slate-400 mt-0.5">{{ $card['desc'] }}</p>
+                <div class="mt-3 pt-3 border-t border-slate-100 text-xs">
+                    <span class="font-bold text-slate-800">{{ $formatM($kategoriStats[$key]['total']) }}</span>
+                    <span class="text-slate-400">anggaran</span>
                 </div>
-            </div>
-            <div class="flex items-baseline gap-2">
-                <h2 class="text-4xl font-bold text-slate-900">{{ $stats['diproses']['count'] }}</h2>
-                <span class="text-sm text-slate-500 font-medium">paket</span>
-            </div>
-            <div class="mt-3 pt-3 border-t border-slate-100 text-xs">
-                <span class="font-bold text-orange-600">{{ $formatM($stats['diproses']['total']) }}</span>
-                <span class="text-slate-500">total anggaran</span>
-            </div>
-        </x-ui.card>
-
-        <x-ui.card padding="md" class="relative hover:-translate-y-1 transition-transform duration-300">
-            <div class="flex justify-between items-start mb-4">
-                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center">
-                    <i data-lucide="check-circle" class="w-5 h-5"></i>
-                </div>
-                <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-semibold">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Selesai
-                </div>
-            </div>
-            <div class="flex items-baseline gap-2">
-                <h2 class="text-4xl font-bold text-slate-900">{{ $stats['selesai']['count'] }}</h2>
-                <span class="text-sm text-slate-500 font-medium">paket</span>
-            </div>
-            <div class="mt-3 pt-3 border-t border-slate-100 text-xs">
-                <span class="font-bold text-emerald-600">{{ $formatM($stats['selesai']['total']) }}</span>
-                <span class="text-slate-500">total anggaran</span>
-            </div>
-        </x-ui.card>
+            </a>
+        @endforeach
     </div>
 
     <x-ui.card padding="none">
         <div class="px-6 py-4 border-b border-slate-100 space-y-4">
-            <div class="flex flex-wrap items-center gap-2">
-                @foreach($typeTabs as $value => $tab)
-                    <a href="{{ $typeUrl($value) }}"
-                        class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl border transition-colors
-                            {{ $type === $value ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700' }}">
-                        <i data-lucide="{{ $tab['icon'] }}" class="w-3.5 h-3.5"></i>
-                        {{ $tab['label'] }}
-                    </a>
-                @endforeach
-            </div>
-
-            <form action="{{ route('kabid.procurement-packages.index') }}" method="GET" class="w-full">
-                <input type="hidden" name="type" value="{{ $type }}">
+            <form action="{{ route('kabid.procurement-packages.index') }}" method="GET" class="w-full space-y-4">
+                @if($type !== 'all')
+                    <input type="hidden" name="type" value="{{ $type }}">
+                @endif
                 @if(request('status'))
                     <input type="hidden" name="status" value="{{ request('status') }}">
                 @endif
@@ -150,6 +122,7 @@
                             <span class="{{ request('status', '') === $value ? 'bg-white/20' : 'bg-slate-200' }} text-current px-1.5 py-0.5 rounded-md">{{ $tab['count'] }}</span>
                         </a>
                     @endforeach
+                    <span class="ml-1 text-[10px] text-slate-400 whitespace-nowrap hidden lg:block">Tahapan berlaku untuk kategori Penyedia</span>
                 </div>
 
                 <x-ui.toolbar search="true" searchPlaceholder="Cari nama paket atau ID RUP...">
@@ -165,7 +138,7 @@
                         </select>
                     </x-slot:filters>
 
-                    @if(request()->hasAny(['search', 'status', 'program_id']) || $type !== 'penyedia')
+                    @if(request()->hasAny(['search', 'status', 'program_id']) || $type !== 'all')
                         <x-ui.button variant="ghost" size="sm" href="{{ route('kabid.procurement-packages.index') }}">
                             <i data-lucide="rotate-ccw" class="w-4 h-4 mr-2"></i> Reset
                         </x-ui.button>
@@ -181,70 +154,61 @@
                         <th class="px-6 py-4 w-24">ID RUP</th>
                         <th class="px-6 py-4 min-w-72">Nama Paket Pengadaan</th>
                         <th class="px-6 py-4">Pagu</th>
-                        <th class="px-6 py-4">Jenis</th>
+                        <th class="px-6 py-4">Kategori</th>
                         <th class="px-6 py-4">Metode</th>
-                        <th class="px-6 py-4">Status</th>
-                        <th class="px-6 py-4">Progres Tahapan</th>
+                        <th class="px-6 py-4 min-w-56">Status / Keterangan</th>
                         <th class="px-6 py-4 text-right">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     @forelse($procurementPackages as $p)
                         @php
-                            $st = $p->workflow_status;
                             $package = $p->package;
+                            $st = $p->workflow_status;
 
-                            $badgeLabel = 'Draft';
-                            $badgeDot = 'bg-slate-400';
-                            $badgeColorClass = 'bg-slate-100 text-slate-700';
-                            $progressLabel = 'Persiapan Pengadaan';
-                            $actionLabel = 'Lanjutkan Persiapan';
-                            $actionIcon = 'arrow-right';
+                            $kategori = $p->dikecualikan_type
+                                ? 'dikecualikan'
+                                : (str_contains(strtolower($package?->jenis_pengadaan ?? ''), 'swakelola') ? 'swakelola' : 'penyedia');
+
+                            $actionLabel = 'Lihat Paket';
+                            $actionIcon = 'eye';
                             $actionUrl = $package ? route('kabid.procurement-packages.show', $package) : '#';
-                            $s1 = 1; $s2 = 0; $s3 = 0; $s4 = 0;
 
-                            if($st === \App\Models\ProcurementPackage::WORKFLOW_PROVIDER_SELECTION) {
-                                $badgeLabel = 'Pemilihan';
-                                $badgeDot = 'bg-blue-500';
-                                $badgeColorClass = 'bg-blue-50 text-blue-700';
-                                $progressLabel = 'Pemilihan Penyedia';
-                                $actionLabel = 'Buka Pemilihan';
-                                $actionUrl = $package ? route('kabid.procurement-packages.procurement-process.show', $package) : '#';
-                                $s1 = 2; $s2 = 1;
-                            } elseif($st === \App\Models\ProcurementPackage::WORKFLOW_EXECUTION) {
-                                $badgeLabel = 'Pelaksanaan';
-                                $badgeDot = 'bg-orange-500';
-                                $badgeColorClass = 'bg-orange-50 text-orange-700';
-                                $progressLabel = 'Pelaksanaan Kontrak';
-                                $actionLabel = 'Buka Pelaksanaan';
-                                $actionUrl = $package ? route('kabid.procurement-packages.execution.show', $package) : '#';
-                                $s1 = 2; $s2 = 2; $s3 = 1;
-                            } elseif($st === \App\Models\ProcurementPackage::WORKFLOW_PAYMENT_PROCESS) {
-                                $badgeLabel = 'Pembayaran';
-                                $badgeDot = 'bg-amber-500';
-                                $badgeColorClass = 'bg-amber-50 text-amber-700';
-                                $progressLabel = 'Pembayaran';
-                                $actionLabel = 'Buka Pembayaran';
-                                $actionUrl = $package ? route('kabid.procurement-packages.payment.show', $package) : '#';
-                                $s1 = 2; $s2 = 2; $s3 = 2; $s4 = 1;
-                            } elseif($st === \App\Models\ProcurementPackage::WORKFLOW_COMPLETED) {
-                                $badgeLabel = 'Selesai';
-                                $badgeDot = 'bg-emerald-500';
-                                $badgeColorClass = 'bg-emerald-50 text-emerald-700';
-                                $progressLabel = 'Selesai';
-                                $actionLabel = 'Lihat Dokumen';
-                                $actionIcon = 'eye';
-                                $actionUrl = $package ? route('kabid.procurement-packages.payment.show', $package) : '#';
-                                $s1 = 2; $s2 = 2; $s3 = 2; $s4 = 2;
+                            if ($kategori === 'penyedia') {
+                                $stages = [
+                                    \App\Models\ProcurementPackage::WORKFLOW_DRAFT => ['Draft', 'bg-slate-400', 'bg-slate-100 text-slate-700', 'Persiapan Pengadaan'],
+                                    \App\Models\ProcurementPackage::WORKFLOW_PROVIDER_SELECTION => ['Pemilihan', 'bg-blue-500', 'bg-blue-50 text-blue-700', 'Pemilihan Penyedia'],
+                                    \App\Models\ProcurementPackage::WORKFLOW_EXECUTION => ['Pelaksanaan', 'bg-orange-500', 'bg-orange-50 text-orange-700', 'Pelaksanaan Kontrak'],
+                                    \App\Models\ProcurementPackage::WORKFLOW_PAYMENT_PROCESS => ['Pembayaran', 'bg-amber-500', 'bg-amber-50 text-amber-700', 'Pembayaran'],
+                                    \App\Models\ProcurementPackage::WORKFLOW_COMPLETED => ['Selesai', 'bg-emerald-500', 'bg-emerald-50 text-emerald-700', 'Selesai'],
+                                ];
+                                [$badgeLabel, $badgeDot, $badgeColorClass, $progressLabel] = $stages[$st] ?? $stages[\App\Models\ProcurementPackage::WORKFLOW_DRAFT];
+
+                                if ($st === \App\Models\ProcurementPackage::WORKFLOW_PROVIDER_SELECTION) {
+                                    $actionLabel = 'Buka Pemilihan'; $actionIcon = 'arrow-right';
+                                    $actionUrl = $package ? route('kabid.procurement-packages.procurement-process.show', $package) : '#';
+                                } elseif ($st === \App\Models\ProcurementPackage::WORKFLOW_EXECUTION) {
+                                    $actionLabel = 'Buka Pelaksanaan'; $actionIcon = 'arrow-right';
+                                    $actionUrl = $package ? route('kabid.procurement-packages.execution.show', $package) : '#';
+                                } elseif ($st === \App\Models\ProcurementPackage::WORKFLOW_PAYMENT_PROCESS) {
+                                    $actionLabel = 'Buka Pembayaran'; $actionIcon = 'arrow-right';
+                                    $actionUrl = $package ? route('kabid.procurement-packages.payment.show', $package) : '#';
+                                } elseif ($st === \App\Models\ProcurementPackage::WORKFLOW_COMPLETED) {
+                                    $actionLabel = 'Lihat Dokumen';
+                                    $actionUrl = $package ? route('kabid.procurement-packages.payment.show', $package) : '#';
+                                } else {
+                                    $actionLabel = 'Lanjutkan Persiapan'; $actionIcon = 'arrow-right';
+                                }
+                            } elseif ($kategori === 'swakelola') {
+                                $accountName = strtolower($package?->account?->nama ?? '');
+                                $ruangLabel = 'Ruang Swakelola';
+                                if (str_contains($accountName, 'perjalanan dinas')) $ruangLabel = 'Ruang Perjalanan Dinas';
+                                elseif (str_contains($accountName, 'lembur')) $ruangLabel = 'Ruang Lembur';
+                                $actionLabel = 'Masuk Ruang'; $actionIcon = 'arrow-right';
+                            } else {
+                                $jenisDikecualikan = $p->dikecualikan_type === 'di_dalam_sistem' ? 'Di Dalam Sistem' : 'Di Luar Sistem';
+                                $realisasi = (float) ($p->realisasi_sum ?? 0);
                             }
-
-                            if ($p->dikecualikan_type) {
-                                $actionLabel = 'Lihat Paket';
-                                $actionIcon = 'eye';
-                                $actionUrl = $package ? route('kabid.procurement-packages.show', $package) : '#';
-                            }
-
-                            $dotClass = fn($state) => $state === 2 ? 'bg-emerald-500' : ($state === 1 ? 'bg-blue-500 ring-2 ring-blue-400/50 animate-pulse' : 'bg-slate-200');
                         @endphp
 
                         <tr class="hover:bg-slate-50 transition-colors group cursor-pointer" onclick="window.location='{{ $actionUrl }}'">
@@ -265,29 +229,50 @@
                             <td class="px-6 py-4 font-bold text-slate-900 whitespace-nowrap">
                                 Rp {{ number_format($package?->pagu ?? 0, 0, ',', '.') }}
                             </td>
-                            <td class="px-6 py-4 text-slate-500 font-medium whitespace-nowrap">
-                                {{ $package?->jenis_pengadaan ?? '-' }}
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border {{ $kategoriBadges[$kategori] }}">
+                                    <i data-lucide="{{ $kategoriCards[$kategori]['icon'] }}" class="w-3 h-3"></i>
+                                    {{ $kategoriCards[$kategori]['label'] }}
+                                </span>
                             </td>
                             <td class="px-6 py-4 text-slate-500 font-medium whitespace-nowrap">
                                 {{ $package?->metode_pengadaan ?? '-' }}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold tracking-wide {{ $badgeColorClass }}">
-                                    <span class="w-1.5 h-1.5 rounded-full {{ $badgeDot }}"></span>
-                                    {{ $badgeLabel }}
-                                </span>
-                            </td>
                             <td class="px-6 py-4">
-                                <div class="flex items-center w-56 mb-2">
-                                    <div class="w-1.5 h-1.5 rounded-full {{ $dotClass($s1) }}"></div>
-                                    <div class="flex-1 h-[1.5px] {{ $s1 === 2 ? 'bg-emerald-500/50' : 'bg-slate-200' }}"></div>
-                                    <div class="w-1.5 h-1.5 rounded-full {{ $dotClass($s2) }}"></div>
-                                    <div class="flex-1 h-[1.5px] {{ $s2 === 2 ? 'bg-emerald-500/50' : 'bg-slate-200' }}"></div>
-                                    <div class="w-1.5 h-1.5 rounded-full {{ $dotClass($s3) }}"></div>
-                                    <div class="flex-1 h-[1.5px] {{ $s3 === 2 ? 'bg-emerald-500/50' : 'bg-slate-200' }}"></div>
-                                    <div class="w-1.5 h-1.5 rounded-full {{ $dotClass($s4) }}"></div>
-                                </div>
-                                <div class="text-xs font-semibold text-slate-500">{{ $progressLabel }}</div>
+                                @if($kategori === 'penyedia')
+                                    {{-- Penyedia: tahapan workflow --}}
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide {{ $badgeColorClass }}">
+                                        <span class="w-1.5 h-1.5 rounded-full {{ $badgeDot }}"></span>
+                                        {{ $badgeLabel }}
+                                    </span>
+                                    <p class="text-[11px] text-slate-400 mt-1.5">Tahapan: {{ $progressLabel }}</p>
+                                @elseif($kategori === 'swakelola')
+                                    {{-- Swakelola: jenis ruang eksekusi --}}
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200">
+                                        <i data-lucide="door-open" class="w-3 h-3"></i>
+                                        {{ $ruangLabel }}
+                                    </span>
+                                    <p class="text-[11px] text-slate-400 mt-1.5">Eksekusi mandiri, tanpa tahapan workflow</p>
+                                @else
+                                    {{-- Dikecualikan: jenis + dokumen + realisasi --}}
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-violet-50 text-violet-700 border border-violet-200">
+                                            {{ $jenisDikecualikan }}
+                                        </span>
+                                        @if(($p->external_records_count ?? 0) > 0)
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                <i data-lucide="file-check-2" class="w-3 h-3"></i> {{ $p->external_records_count }} dokumen
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+                                                <i data-lucide="file-x" class="w-3 h-3"></i> Belum ada dokumen
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <p class="text-[11px] {{ $realisasi > 0 ? 'text-emerald-600 font-semibold' : 'text-slate-400' }} mt-1.5">
+                                        Realisasi: {{ $money($realisasi) }}
+                                    </p>
+                                @endif
                             </td>
                             <td class="px-6 py-4 text-right whitespace-nowrap">
                                 <a href="{{ $actionUrl }}" onclick="event.stopPropagation()"
@@ -299,7 +284,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-6 py-10">
+                            <td colspan="7" class="px-6 py-10">
                                 <x-ui.empty-state icon="package-x" title="Tidak Ada Paket" description="Belum ada paket pengadaan yang sesuai dengan filter saat ini." />
                             </td>
                         </tr>

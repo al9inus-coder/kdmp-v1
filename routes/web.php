@@ -9,7 +9,7 @@ use App\Http\Controllers\TechnicalSpecificationItemController;
 use App\Http\Controllers\PriceReferenceController;
 use App\Http\Controllers\ProcurementPackageController;
 use App\Http\Controllers\ProcurementRequestController;
-use App\Http\Controllers\ProfileController;
+
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\SkpdController;
 use App\Http\Controllers\SubActivityController;
@@ -76,6 +76,9 @@ Route::middleware('auth')->group(function () {
         Route::get('monev', [\App\Http\Controllers\Kabid\MonevController::class, 'index'])->name('monev.index');
         Route::get('monev/{subActivity}', [\App\Http\Controllers\Kabid\MonevController::class, 'show'])->name('monev.show');
         Route::get('sppd', [\App\Http\Controllers\Kabid\SppdController::class, 'index'])->name('sppd.index');
+        Route::get('swakelola', [\App\Http\Controllers\Kabid\SwakelolaController::class, 'index'])->name('swakelola.index');
+        Route::get('dikecualikan', [\App\Http\Controllers\Kabid\DikecualikanController::class, 'index'])->name('dikecualikan.index');
+        Route::get('penyedia', [\App\Http\Controllers\Kabid\PenyediaController::class, 'index'])->name('penyedia.index');
         Route::get('buku-register', [BukuRegisterController::class, 'index'])->name('buku-register.index');
         // Lembur (Overtime) untuk Kabid
         Route::get('packages/{package}/overtimes/{month}', [\App\Http\Controllers\Kabid\OvertimeController::class, 'show'])->name('packages.overtimes.show');
@@ -254,10 +257,7 @@ Route::middleware('auth')->group(function () {
     
     Route::post('fiscal-years/{fiscalYear}/activate', [FiscalYearController::class, 'activate'])->name('fiscal-years.activate');
     
-    // Profile Routes
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
 
     // Procurement Package Meta & Items Routes (Dipindahkan ke dalam grup auth agar aman)
     Route::patch('/procurement-packages/{procurementPackage}/meta', [ProcurementPackageController::class, 'updateMeta'])

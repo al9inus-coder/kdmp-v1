@@ -32,6 +32,16 @@
     if (isset($item['permission']) && Auth::check() && !Auth::user()->can($item['permission'])) {
         return; // Don't render if unauthorized
     }
+
+    // Badge angka "butuh tindakan" — kunci badge didefinisikan di config/navigation.php
+    $badgeCount = null;
+    if (isset($item['badge'])) {
+        $badgeCount = match ($item['badge']) {
+            'kabid_paket_pending' => \App\Models\Package::where('status', 'submitted')->count(),
+            'kabid_sppd_pending'  => \App\Models\TravelOrder::where('status', \App\Models\TravelOrder::STATUS_SUBMITTED)->count(),
+            default => null,
+        };
+    }
 @endphp
 
 @if($hasChildren)
@@ -64,11 +74,16 @@
     </div>
 @else
     <!-- Single Menu Item -->
-    <a href="{{ $href }}" 
+    <a href="{{ $href }}"
        class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-md transition-colors mb-1 {{ $isActive ? 'text-emerald-700 bg-emerald-50' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50' }}">
         @if(isset($item['icon']))
             <i data-lucide="{{ $item['icon'] }}" class="w-5 h-5"></i>
         @endif
         <span>{{ $item['title'] }}</span>
+        @if(($badgeCount ?? 0) > 0)
+            <span class="ml-auto inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full text-[10px] font-bold bg-rose-500 text-white shadow-sm">
+                {{ $badgeCount > 99 ? '99+' : $badgeCount }}
+            </span>
+        @endif
     </a>
 @endif

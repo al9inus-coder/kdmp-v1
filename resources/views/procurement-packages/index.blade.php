@@ -49,9 +49,7 @@
         }
     }
     
-    $formatM = function($num) {
-        return 'Rp ' . number_format($num / 1000000, 2, ',', '.') . ' M';
-    };
+    $formatM = fn($num) => rupiahSingkat($num);
 @endphp
 
 <x-ui.workspace title="Paket Pengadaan" description="Kelola dan pantau seluruh paket pengadaan dalam satu tampilan terpadu.">

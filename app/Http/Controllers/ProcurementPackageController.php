@@ -85,8 +85,19 @@ class ProcurementPackageController extends Controller
         return view('procurement-packages.index', compact('procurementPackages', 'programs', 'statuses', 'type'));
     }
 
-    public function store(Package $package): RedirectResponse
+    public function store(Request $request, Package $package): RedirectResponse
     {
+        abort_unless(
+            $request->user()->hasAnyRole(['Admin', 'Super Admin', 'Kabid']),
+            403,
+            'Hanya Admin atau Kabid yang dapat membuat ruang pengadaan.'
+        );
+
+        // Kabid diarahkan kembali ke area kabid setelah ruang pengadaan dibuat
+        $showRoute = $request->input('source') === 'kabid'
+            ? 'kabid.procurement-packages.show'
+            : 'procurement-packages.show';
+
         if (!$package->isComplete()) {
             return back()->with('error', 'Hanya package yang sudah lengkap datanya yang dapat dieksekusi.');
         }
@@ -95,7 +106,7 @@ class ProcurementPackageController extends Controller
 
         if ($existing) {
             return redirect()
-                ->route('procurement-packages.show', $package)
+                ->route($showRoute, $package)
                 ->with('warning', 'Paket Pengadaan untuk package ini sudah ada.');
         }
 
@@ -107,7 +118,7 @@ class ProcurementPackageController extends Controller
         ]);
 
         return redirect()
-            ->route('procurement-packages.show', $package)
+            ->route($showRoute, $package)
             ->with('success', 'Paket Pengadaan berhasil dibuat.');
     }
 

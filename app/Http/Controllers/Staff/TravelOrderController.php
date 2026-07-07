@@ -39,12 +39,17 @@ class TravelOrderController extends KabidTravelOrderController
             'luarDaerahLuarProvinsiDestinations' => $luarDaerahLuarProvinsiDestinations,
         ] = $this->travelOrderFormData();
 
+        $eligiblePackages = Package::with(['subActivity', 'account'])
+            ->whereHas('account', fn ($q) => $q->where('nama', 'like', '%perjalanan dinas%'))
+            ->get();
+
         return view($this->rolePrefix . '.travel-orders.create', compact(
             'package',
             'employees',
             'dalamDaerahDestinations',
             'luarDaerahKalbarDestinations',
-            'luarDaerahLuarProvinsiDestinations'
+            'luarDaerahLuarProvinsiDestinations',
+            'eligiblePackages'
         ));
     }
 
@@ -71,13 +76,18 @@ class TravelOrderController extends KabidTravelOrderController
             'luarDaerahLuarProvinsiDestinations' => $luarDaerahLuarProvinsiDestinations,
         ] = $this->travelOrderFormData();
 
+        $eligiblePackages = Package::with(['subActivity', 'account'])
+            ->whereHas('account', fn ($q) => $q->where('nama', 'like', '%perjalanan dinas%'))
+            ->get();
+
         return view($this->rolePrefix . '.travel-orders.create', compact(
             'package',
             'travelOrder',
             'employees',
             'dalamDaerahDestinations',
             'luarDaerahKalbarDestinations',
-            'luarDaerahLuarProvinsiDestinations'
+            'luarDaerahLuarProvinsiDestinations',
+            'eligiblePackages'
         ));
     }
 
@@ -98,6 +108,7 @@ class TravelOrderController extends KabidTravelOrderController
             'employees.*' => 'exists:employees,id',
             'kendaraan' => 'nullable|array',
             'kendaraan.*' => 'in:mobil,motor,pesawat,pengikut',
+            'package_id' => 'nullable|exists:packages,id',
         ], [
             'employees.required' => 'Pilih minimal satu pegawai pelaksana perjalanan dinas.',
             'employees.min' => 'Pilih minimal satu pegawai pelaksana perjalanan dinas.',
@@ -105,13 +116,16 @@ class TravelOrderController extends KabidTravelOrderController
 
         $submissionFlow = $this->submissionFlow;
 
-        $travelOrder = DB::transaction(function () use ($package, $validated, $submissionFlow) {
+        $newPackageId = $request->input('package_id', $package->id);
+        $targetPackage = $newPackageId != $package->id ? \App\Models\Package::findOrFail($newPackageId) : $package;
+
+        $travelOrder = DB::transaction(function () use ($targetPackage, $validated, $submissionFlow) {
             $extra = $submissionFlow
                 ? ['status' => TravelOrder::STATUS_DRAFT, 'created_by' => Auth::id()]
                 : [];
 
-            $travelOrder = $package->travelOrders()->create(
-                array_merge(Arr::except($validated, ['employees', 'kendaraan', 'kategori_tujuan']), $extra)
+            $travelOrder = $targetPackage->travelOrders()->create(
+                array_merge(Arr::except($validated, ['employees', 'kendaraan', 'kategori_tujuan', 'package_id']), $extra)
             );
 
             $days = Carbon::parse($travelOrder->tanggal_berangkat)
@@ -138,7 +152,7 @@ class TravelOrderController extends KabidTravelOrderController
         });
 
         return redirect()
-            ->route($this->rolePrefix . '.packages.travel-orders.show', [$package, $travelOrder])
+            ->route($this->rolePrefix . '.packages.travel-orders.show', [$targetPackage, $travelOrder])
             ->with('success', 'Perjalanan dinas berhasil ditambahkan.');
     }
 
@@ -156,9 +170,20 @@ class TravelOrderController extends KabidTravelOrderController
 
         $validated = $this->validateTravelOrder($request);
 
-        DB::transaction(function () use ($travelOrder, $validated) {
+        $request->validate([
+            'package_id' => 'nullable|exists:packages,id'
+        ]);
+
+        $newPackageId = $request->input('package_id', $package->id);
+        $packageChanged = (int) $newPackageId !== (int) $package->id;
+        $newPackage = $packageChanged ? Package::findOrFail($newPackageId) : $package;
+
+        DB::transaction(function () use ($travelOrder, $validated, $newPackageId) {
             $travelOrder->update(
-                Arr::except($validated, ['employees', 'kendaraan', 'kategori_tujuan'])
+                array_merge(
+                    Arr::except($validated, ['employees', 'kendaraan', 'kategori_tujuan']),
+                    ['package_id' => $newPackageId]
+                )
             );
 
             $days = Carbon::parse($travelOrder->tanggal_berangkat)
@@ -191,7 +216,7 @@ class TravelOrderController extends KabidTravelOrderController
         });
 
         return redirect()
-            ->route($this->rolePrefix . '.packages.travel-orders.show', [$package, $travelOrder])
+            ->route($this->rolePrefix . '.packages.travel-orders.show', [$newPackage, $travelOrder])
             ->with('success', 'Perjalanan dinas berhasil diperbarui.');
     }
 

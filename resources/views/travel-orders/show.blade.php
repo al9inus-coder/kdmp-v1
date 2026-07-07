@@ -45,6 +45,12 @@
                             @php
                                 $days = \Carbon\Carbon::parse($travelOrder->tanggal_berangkat)->diffInDays(\Carbon\Carbon::parse($travelOrder->tanggal_kembali)) + 1;
                                 $nights = max(0, $days - 1);
+                                if (!empty($estimates)) {
+                                    $firstEst = reset($estimates);
+                                    if (isset($firstEst['nights'])) {
+                                        $nights = $firstEst['nights'];
+                                    }
+                                }
                             @endphp
                             {{ $days }} Hari {{ $nights > 0 ? $nights . ' Malam' : '' }}
                         </td>

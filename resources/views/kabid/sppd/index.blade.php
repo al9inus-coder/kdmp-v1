@@ -68,14 +68,13 @@
     {{-- List --}}
     <div class="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full min-w-[1180px] table-fixed text-sm text-left text-slate-600">
+            <table class="w-full min-w-[1040px] table-fixed text-sm text-left text-slate-600">
                 <colgroup>
-                    <col class="w-[18%]">
-                    <col class="w-[28%]">
-                    <col class="w-[18%]">
+                    <col class="w-[22%]">
+                    <col class="w-[30%]">
+                    <col class="w-[16%]">
                     <col class="w-[20%]">
-                    <col class="w-[9%]">
-                    <col class="w-[7%]">
+                    <col class="w-[12%]">
                 </colgroup>
                 <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
                     <tr>
@@ -84,7 +83,6 @@
                         <th class="px-6 py-4 font-semibold">Tanggal Perjalanan</th>
                         <th class="px-6 py-4 font-semibold">Sub Kegiatan</th>
                         <th class="px-6 py-4 font-semibold text-center">Status</th>
-                        <th class="px-6 py-4 font-semibold text-center">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -146,17 +144,10 @@
                                     <i data-lucide="{{ $meta['icon'] }}" class="w-3.5 h-3.5"></i> {{ $meta['label'] }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 text-center whitespace-nowrap">
-                                <a href="{{ route('kabid.packages.travel-orders.show', [$to->package, $to]) }}"
-                                    onclick="event.stopPropagation()"
-                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-                                    <i data-lucide="eye" class="w-3.5 h-3.5"></i> Detail
-                                </a>
-                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-16 text-center text-slate-500">
+                            <td colspan="5" class="px-6 py-16 text-center text-slate-500">
                                 <div class="flex flex-col items-center justify-center">
                                     <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
                                         <i data-lucide="inbox" class="w-8 h-8 text-slate-400"></i>

@@ -19,91 +19,108 @@ class ProcurementPackageController extends Controller
     {
         Gate::authorize('viewAny', Package::class);
 
-        $type = $request->input('type', 'penyedia');
+        // Halaman ini adalah ikhtisar SEMUA kategori (penyedia, swakelola, dikecualikan).
+        $type = $request->input('type', 'all');
 
-        $baseQuery = ProcurementPackage::query()
-            ->with([
-                'package.program',
-                'package.fiscalYear',
-                'creator',
-            ]);
+        $kategoriOf = function (ProcurementPackage $pp): string {
+            if ($pp->dikecualikan_type) {
+                return 'dikecualikan';
+            }
+            return str_contains(strtolower($pp->package?->jenis_pengadaan ?? ''), 'swakelola')
+                ? 'swakelola'
+                : 'penyedia';
+        };
 
-        $applyTypeFilter = function ($query) use ($type) {
+        $applyTypeFilter = function ($query, string $type) {
             if ($type === 'dikecualikan') {
                 $query->whereNotNull('dikecualikan_type');
             } elseif ($type === 'swakelola') {
                 $query->whereNull('dikecualikan_type')
-                    ->whereHas('package', function ($q) {
-                        $q->where('jenis_pengadaan', 'like', '%swakelola%');
-                    });
-            } else {
+                    ->whereHas('package', fn ($q) => $q->where('jenis_pengadaan', 'like', '%swakelola%'));
+            } elseif ($type === 'penyedia') {
                 $query->whereNull('dikecualikan_type')
-                    ->whereHas('package', function ($q) {
-                        $q->where('jenis_pengadaan', 'not like', '%swakelola%');
-                    });
+                    ->whereHas('package', fn ($q) => $q->where('jenis_pengadaan', 'not like', '%swakelola%'));
             }
+            // 'all' → tanpa filter kategori
         };
 
-        $applyTypeFilter($baseQuery);
-
-        if ($request->filled('program_id')) {
-            $baseQuery->whereHas('package', function ($q) use ($request) {
-                $q->where('program_id', $request->program_id);
+        $filtered = ProcurementPackage::query()
+            ->when($request->filled('program_id'), fn ($q) => $q
+                ->whereHas('package', fn ($p) => $p->where('program_id', $request->program_id)))
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $search = $request->search;
+                $q->whereHas('package', fn ($p) => $p
+                    ->where('nama_paket', 'like', "%{$search}%")
+                    ->orWhere('id_rup', 'like', "%{$search}%"));
             });
-        }
+
+        // Statistik per kategori & per tahapan (mengikuti pencarian/program).
+        $kategoriStats = [
+            'all'          => ['count' => 0, 'total' => 0],
+            'penyedia'     => ['count' => 0, 'total' => 0],
+            'swakelola'    => ['count' => 0, 'total' => 0],
+            'dikecualikan' => ['count' => 0, 'total' => 0],
+        ];
+        $stats = [
+            'draft'     => ['count' => 0, 'total' => 0],
+            'persiapan' => ['count' => 0, 'total' => 0],
+            'diproses'  => ['count' => 0, 'total' => 0],
+            'selesai'   => ['count' => 0, 'total' => 0],
+        ];
+
+        (clone $filtered)
+            ->with('package:id,pagu,jenis_pengadaan')
+            ->get()
+            ->each(function (ProcurementPackage $pp) use (&$kategoriStats, &$stats, $kategoriOf, $type) {
+                $budget = (float) ($pp->package?->pagu ?? 0);
+                $kategori = $kategoriOf($pp);
+
+                $kategoriStats['all']['count']++;
+                $kategoriStats['all']['total'] += $budget;
+                $kategoriStats[$kategori]['count']++;
+                $kategoriStats[$kategori]['total'] += $budget;
+
+                // Statistik tahapan mengikuti kategori yang sedang aktif
+                if ($type !== 'all' && $kategori !== $type) {
+                    return;
+                }
+
+                $key = match ($pp->workflow_status) {
+                    ProcurementPackage::WORKFLOW_PROVIDER_SELECTION => 'persiapan',
+                    ProcurementPackage::WORKFLOW_EXECUTION,
+                    ProcurementPackage::WORKFLOW_PAYMENT_PROCESS    => 'diproses',
+                    ProcurementPackage::WORKFLOW_COMPLETED          => 'selesai',
+                    default                                         => 'draft',
+                };
+                $stats[$key]['count']++;
+                $stats[$key]['total'] += $budget;
+            });
+
+        $listQuery = clone $filtered;
+        $applyTypeFilter($listQuery, $type);
 
         if ($request->filled('status')) {
             match ($request->status) {
-                'draft' => $baseQuery->where('workflow_status', ProcurementPackage::WORKFLOW_DRAFT),
-                'persiapan' => $baseQuery->where('workflow_status', ProcurementPackage::WORKFLOW_PROVIDER_SELECTION),
-                'diproses' => $baseQuery->whereIn('workflow_status', [
+                'draft' => $listQuery->where('workflow_status', ProcurementPackage::WORKFLOW_DRAFT),
+                'persiapan' => $listQuery->where('workflow_status', ProcurementPackage::WORKFLOW_PROVIDER_SELECTION),
+                'diproses' => $listQuery->whereIn('workflow_status', [
                     ProcurementPackage::WORKFLOW_EXECUTION,
                     ProcurementPackage::WORKFLOW_PAYMENT_PROCESS,
                 ]),
-                'selesai' => $baseQuery->where('workflow_status', ProcurementPackage::WORKFLOW_COMPLETED),
+                'selesai' => $listQuery->where('workflow_status', ProcurementPackage::WORKFLOW_COMPLETED),
                 default => null,
             };
         }
 
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $baseQuery->whereHas('package', function ($q) use ($search) {
-                $q->where('nama_paket', 'like', "%{$search}%")
-                    ->orWhere('id_rup', 'like', "%{$search}%");
-            });
-        }
-
-        $statsQuery = ProcurementPackage::query()->with('package');
-        $applyTypeFilter($statsQuery);
-
-        $stats = [
-            'draft' => ['count' => 0, 'total' => 0],
-            'persiapan' => ['count' => 0, 'total' => 0],
-            'diproses' => ['count' => 0, 'total' => 0],
-            'selesai' => ['count' => 0, 'total' => 0],
-        ];
-
-        $statsQuery->get()->each(function (ProcurementPackage $procurementPackage) use (&$stats) {
-            $budget = (float) ($procurementPackage->package?->pagu ?? 0);
-
-            if ($procurementPackage->workflow_status === ProcurementPackage::WORKFLOW_PROVIDER_SELECTION) {
-                $key = 'persiapan';
-            } elseif (in_array($procurementPackage->workflow_status, [
-                ProcurementPackage::WORKFLOW_EXECUTION,
-                ProcurementPackage::WORKFLOW_PAYMENT_PROCESS,
-            ], true)) {
-                $key = 'diproses';
-            } elseif ($procurementPackage->workflow_status === ProcurementPackage::WORKFLOW_COMPLETED) {
-                $key = 'selesai';
-            } else {
-                $key = 'draft';
-            }
-
-            $stats[$key]['count']++;
-            $stats[$key]['total'] += $budget;
-        });
-
-        $procurementPackages = $baseQuery
+        $procurementPackages = $listQuery
+            ->with([
+                'package.program',
+                'package.fiscalYear',
+                'package.account',
+                'creator',
+            ])
+            ->withCount('externalRecords')
+            ->withSum('externalRecords as realisasi_sum', 'nilai_kontrak')
             ->orderByDesc('id')
             ->paginate(15)
             ->withQueryString();
@@ -114,6 +131,7 @@ class ProcurementPackageController extends Controller
             'procurementPackages',
             'programs',
             'stats',
+            'kategoriStats',
             'type'
         ));
     }

@@ -208,7 +208,7 @@
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Penginapan</label>
                             <input type="number" min="0" name="personnels[{{ $personnel->id }}][biaya_penginapan]" x-model.number="rows[{{ $personnel->id }}].biaya_penginapan"
                                 class="w-full rounded-lg border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500 disabled:bg-slate-50 disabled:text-slate-500">
-                            <p class="text-[11px] text-slate-400 mt-1">Perkiraan: {{ $money($est['biaya_penginapan'] ?? 0) }} &bull; {{ $nights }} malam</p>
+                            <p class="text-[11px] text-slate-400 mt-1">Perkiraan: {{ $money($est['biaya_penginapan'] ?? 0) }} &bull; {{ $est['nights'] ?? $nights }} malam</p>
                         </div>
                         <div class="{{ $isLuarDaerah ? 'sm:col-span-2 lg:col-span-1' : '' }}">
                             <label class="block text-xs font-semibold text-slate-600 mb-1">

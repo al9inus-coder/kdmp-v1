@@ -214,12 +214,42 @@
                 </table>
             </div>
 
-            @if($package->procurementPackage)
-                <a href="{{ route('procurement-packages.show', $package) }}"
-                    class="flex items-center justify-center gap-2 w-full py-3 text-sm font-bold text-white bg-emerald-600 rounded-2xl hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-200">
-                    <i data-lucide="briefcase" class="w-4 h-4"></i>
-                    {{ $package->jenis_pengadaan === 'Swakelola' ? 'Masuk Ruang Swakelola' : 'Masuk Paket Pengadaan' }}
-                </a>
+            @if($package->status === 'approved')
+                @if($package->procurementPackage)
+                    <a href="{{ route('kabid.procurement-packages.show', $package) }}"
+                        class="flex items-center justify-center gap-2 w-full py-3 text-sm font-bold text-white bg-emerald-600 rounded-2xl hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-200">
+                        <i data-lucide="briefcase" class="w-4 h-4"></i>
+                        {{ $package->jenis_pengadaan === 'Swakelola' ? 'Masuk Ruang Swakelola' : 'Masuk Paket Pengadaan' }}
+                    </a>
+                @elseif($package->isComplete())
+                    @php
+                        $createLabel = 'Buat Ruang Pengadaan';
+                        if ($package->jenis_pengadaan === 'Swakelola') {
+                            $accountName = strtolower($package->account?->nama ?? '');
+                            $createLabel = 'Buat Ruang Swakelola';
+                            if (str_contains($accountName, 'perjalanan dinas')) {
+                                $createLabel = 'Buat Ruang Eksekusi Perjalanan Dinas';
+                            } elseif (str_contains($accountName, 'lembur')) {
+                                $createLabel = 'Buat Ruang Eksekusi Lembur';
+                            }
+                        }
+                    @endphp
+                    <form action="{{ route('packages.procurement-packages.store', $package) }}" method="POST"
+                        onsubmit="return confirm('Buat ruang pengadaan untuk paket ini?');">
+                        @csrf
+                        <input type="hidden" name="source" value="kabid">
+                        <button type="submit"
+                            class="flex items-center justify-center gap-2 w-full py-3 text-sm font-bold text-white bg-emerald-600 rounded-2xl hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-200">
+                            <i data-lucide="folder-plus" class="w-4 h-4"></i>
+                            {{ $createLabel }}
+                        </button>
+                    </form>
+                @else
+                    <div class="flex items-center gap-3 w-full p-4 text-sm text-slate-500 bg-slate-50 border border-dashed border-slate-300 rounded-2xl">
+                        <i data-lucide="briefcase" class="w-4 h-4 shrink-0 text-slate-400"></i>
+                        Data paket belum lengkap — ruang pengadaan belum dapat dibuat.
+                    </div>
+                @endif
             @endif
         </div>
     </div>

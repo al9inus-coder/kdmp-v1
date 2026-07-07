@@ -13,11 +13,23 @@
                 </h1>
                 <p class="text-sm text-slate-500 mt-1">Ajukan dan pantau status persetujuan SPPD Anda.</p>
             </div>
-            <button type="button" @click="showPicker = true"
-                class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200 shrink-0">
-                <i data-lucide="plus" class="w-4 h-4"></i>
-                Ajukan SPPD
-            </button>
+            @php
+                $firstEligiblePackage = $eligibleSubActivities->first()?->packages->first();
+            @endphp
+            @if($firstEligiblePackage)
+                <a href="{{ route('staf.packages.travel-orders.create', $firstEligiblePackage) }}"
+                    class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200 shrink-0">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    Ajukan SPPD
+                </a>
+            @else
+                <button type="button" disabled
+                    class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-400 bg-slate-100 rounded-xl cursor-not-allowed shrink-0"
+                    title="Tidak ada sub kegiatan dengan paket perjalanan dinas">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    Ajukan SPPD
+                </button>
+            @endif
         </div>
 
         {{-- Filter panel --}}
@@ -105,14 +117,13 @@
         {{-- List --}}
         <div class="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
             <div class="overflow-x-auto">
-                <table class="w-full min-w-[1180px] table-fixed text-sm text-left text-slate-600">
+                <table class="w-full min-w-[1040px] table-fixed text-sm text-left text-slate-600">
                     <colgroup>
-                        <col class="w-[18%]">
-                        <col class="w-[28%]">
-                        <col class="w-[18%]">
+                        <col class="w-[22%]">
+                        <col class="w-[30%]">
+                        <col class="w-[16%]">
                         <col class="w-[20%]">
-                        <col class="w-[9%]">
-                        <col class="w-[7%]">
+                        <col class="w-[12%]">
                     </colgroup>
                     <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
                         <tr>
@@ -121,7 +132,6 @@
                             <th class="px-6 py-4 font-semibold">Tanggal Perjalanan</th>
                             <th class="px-6 py-4 font-semibold">Sub Kegiatan</th>
                             <th class="px-6 py-4 font-semibold text-center">Status</th>
-                            <th class="px-6 py-4 font-semibold text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -186,17 +196,10 @@
                                         <i data-lucide="{{ $meta['icon'] }}" class="w-3.5 h-3.5"></i> {{ $meta['label'] }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 text-center whitespace-nowrap">
-                                    <a href="{{ route('staf.packages.travel-orders.show', [$to->package, $to]) }}"
-                                        onclick="event.stopPropagation()"
-                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-                                        <i data-lucide="eye" class="w-3.5 h-3.5"></i> Detail
-                                    </a>
-                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-6 py-16 text-center text-slate-500">
+                                <td colspan="5" class="px-6 py-16 text-center text-slate-500">
                                     <div class="flex flex-col items-center justify-center">
                                         <div
                                             class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
@@ -219,67 +222,5 @@
             @endif
         </div>
 
-        {{-- Modal pilih sub kegiatan untuk Ajukan SPPD --}}
-        <div x-show="showPicker" style="display: none;" class="fixed inset-0 z-[70] flex items-center justify-center p-4"
-            x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0"
-            x-transition:enter-end="opacity-100" @keydown.escape.window="showPicker = false">
-            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showPicker = false"></div>
-            <div class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
-                x-transition:enter="transition ease-out duration-200 delay-75"
-                x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
-                <div class="px-5 py-4 border-b border-slate-100 bg-indigo-50/60 flex items-center justify-between">
-                    <h3 class="font-bold text-slate-800 flex items-center gap-2">
-                        <span
-                            class="w-7 h-7 rounded-lg bg-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-500">
-                            <i data-lucide="plane" class="w-4 h-4"></i>
-                        </span>
-                        Ajukan SPPD Baru
-                    </h3>
-                    <button type="button" @click="showPicker = false"
-                        class="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
-                        <i data-lucide="x" class="w-4 h-4"></i>
-                    </button>
-                </div>
-                <div class="p-5 space-y-3">
-                    @if ($eligibleSubActivities->isEmpty())
-                        <div
-                            class="rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3 text-sm text-amber-700 font-semibold flex items-start gap-2">
-                            <i data-lucide="alert-triangle" class="w-4 h-4 shrink-0 mt-0.5"></i>
-                            Belum ada sub kegiatan yang memiliki belanja perjalanan dinas. Buat/impor paketnya terlebih dahulu.
-                        </div>
-                    @else
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1.5">Pilih Sub Kegiatan</label>
-                            <select x-model="pickedPackage"
-                                class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-                                <option value="">-- Pilih sub kegiatan --</option>
-                                @foreach ($eligibleSubActivities as $subActivity)
-                                    @php
-                                        $travelPackage = $subActivity->packages->first();
-                                    @endphp
-                                    @if($travelPackage)
-                                        <option value="{{ route('staf.packages.travel-orders.create', $travelPackage) }}">
-                                            {{ $subActivity->kode ? $subActivity->kode . ' — ' : '' }}{{ Str::limit($subActivity->nama, 72) }}
-                                        </option>
-                                    @endif
-                                @endforeach
-                            </select>
-                            <p class="text-[11px] text-slate-400 mt-1.5">Hanya sub kegiatan yang memiliki paket belanja perjalanan dinas yang ditampilkan.</p>
-                        </div>
-                    @endif
-                </div>
-                <div class="px-5 py-4 bg-slate-50/70 border-t border-slate-100 flex items-stretch justify-end gap-2">
-                    <button type="button" @click="showPicker = false"
-                        class="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors whitespace-nowrap">
-                        Batal
-                    </button>
-                    <button type="button" @click="if (pickedPackage) window.location.href = pickedPackage"
-                        :disabled="!pickedPackage"
-                        class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm shadow-indigo-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
-                        <i data-lucide="arrow-right" class="w-4 h-4"></i> Lanjutkan
-                    </button>
-                </div>
-            </div>
-        </div>
     </div>
 @endcomponent

@@ -16,6 +16,7 @@ class SppdController extends Controller
 
         $base = TravelOrder::query()
             ->whereNotNull('created_by')
+            ->where('status', '!=', 'draft')
             ->with(['package.subActivity', 'personnels.employee', 'creator', 'reviewer']);
 
         $statusCounts = (clone $base)

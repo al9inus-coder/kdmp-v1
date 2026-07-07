@@ -100,26 +100,35 @@ class TravelPersonnel extends Model
         }
 
         if (strtolower($travelOrder->tipe_perjalanan) === 'dalam daerah' || strtolower($travelOrder->tipe_perjalanan) === 'dalam_daerah') {
-            if ($category === 'Eselon II') {
-                    $estimates['base_penginapan'] = 500000;
-                    $estimates['biaya_penginapan'] = 500000 * $nights;
+            $sbuDalam = \App\Models\SbuPenginapanDalamDaerah::where('tempat_tujuan', $travelOrder->tempat_tujuan)->first();
+            $basePenginapan = 0;
+
+            if ($sbuDalam) {
+                if ($category === 'Eselon II') {
+                    $basePenginapan = $sbuDalam->eselon_ii;
                 } elseif ($category === 'Eselon III, Gol. IV dan Jafung Madya') {
-                    $estimates['base_penginapan'] = 450000;
-                    $estimates['biaya_penginapan'] = 450000 * $nights;
+                    $basePenginapan = $sbuDalam->eselon_iii;
                 } else {
                     $jab = strtolower($employee->jabatan ?? '');
                     $gol = strtolower($employee->golongan ?? '');
-                    // Eselon IV / Gol III gets 400.000, others 350.000
                     $isEselon4 = str_contains($jab, 'eselon iv') || str_contains($jab, 'kasi') || str_contains($jab, 'kasubbag') || str_contains($gol, 'iii');
                     
                     if ($isEselon4) {
-                        $estimates['base_penginapan'] = 400000;
-                        $estimates['biaya_penginapan'] = 400000 * $nights;
+                        $basePenginapan = $sbuDalam->eselon_iv;
                     } else {
-                        $estimates['base_penginapan'] = 350000;
-                        $estimates['biaya_penginapan'] = 350000 * $nights;
+                        $basePenginapan = $sbuDalam->golongan_i_ii;
                     }
                 }
+            }
+            
+            // Khusus tujuan yang rate penginapannya 0 (seperti Bengkayang), jumlah malam dianggap 0.
+            if ($basePenginapan == 0) {
+                $nights = 0;
+                $estimates['nights'] = 0;
+            }
+
+            $estimates['base_penginapan'] = $basePenginapan;
+            $estimates['biaya_penginapan'] = $basePenginapan * $nights;
         } else {
             $transportLuarDaerah = \App\Models\SbuTransportRate::where('kategori', 'luar_daerah')
                 ->where('tempat_tujuan', $travelOrder->tempat_tujuan)->first();

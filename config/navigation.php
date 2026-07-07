@@ -64,7 +64,7 @@ return [
 
     // ─── KABID MENU ──────────────────────────────────────────────────────────
     [
-        'title'  => 'PERSETUJUAN',
+        'title'  => 'PERENCANAAN',
         'type'   => 'group',
         'roles'  => ['Kabid'],
         'children' => [
@@ -72,12 +72,14 @@ return [
                 'title' => 'Paket RUP',
                 'route' => 'kabid.packages.index',
                 'icon'  => 'file-search',
+                'badge' => 'kabid_paket_pending',
                 'roles' => ['Kabid'],
             ],
             [
                 'title' => 'Pengajuan SPPD',
                 'route' => 'kabid.sppd.index',
                 'icon'  => 'plane',
+                'badge' => 'kabid_sppd_pending',
                 'roles' => ['Kabid'],
             ],
         ],
@@ -135,65 +137,29 @@ return [
     ],
 
     // ─── KABID PENGADAAN MENU ────────────────────────────────────────────────
+    // Tahapan (persiapan/pemilihan/pelaksanaan/selesai) diakses lewat kartu
+    // pipeline di halaman Penyedia — bukan lewat sidebar.
     [
         'title'  => 'PENGADAAN',
         'type'   => 'group',
         'roles'  => ['Kabid'],
         'children' => [
             [
-                'title' => 'Semua Paket',
-                'route' => 'kabid.procurement-packages.index',
-                'exact_query' => true,
-                'icon'  => 'package',
-                'roles' => ['Kabid'],
-            ],
-            [
                 'title' => 'Penyedia',
-                'route' => 'kabid.procurement-packages.index',
-                'params' => ['type' => 'penyedia'],
+                'route' => 'kabid.penyedia.index',
                 'icon'  => 'briefcase-business',
                 'roles' => ['Kabid'],
             ],
             [
                 'title' => 'Swakelola',
-                'route' => 'kabid.procurement-packages.index',
-                'params' => ['type' => 'swakelola'],
+                'route' => 'kabid.swakelola.index',
                 'icon'  => 'handshake',
                 'roles' => ['Kabid'],
             ],
             [
                 'title' => 'Dikecualikan',
-                'route' => 'kabid.procurement-packages.index',
-                'params' => ['type' => 'dikecualikan'],
+                'route' => 'kabid.dikecualikan.index',
                 'icon'  => 'file-warning',
-                'roles' => ['Kabid'],
-            ],
-            [
-                'title' => 'Persiapan',
-                'route' => 'kabid.procurement-packages.index',
-                'params' => ['status' => 'draft'],
-                'icon'  => 'clipboard-list',
-                'roles' => ['Kabid'],
-            ],
-            [
-                'title' => 'Pemilihan',
-                'route' => 'kabid.procurement-packages.index',
-                'params' => ['status' => 'persiapan'],
-                'icon'  => 'refresh-cw',
-                'roles' => ['Kabid'],
-            ],
-            [
-                'title' => 'Pelaksanaan',
-                'route' => 'kabid.procurement-packages.index',
-                'params' => ['status' => 'diproses'],
-                'icon'  => 'play-circle',
-                'roles' => ['Kabid'],
-            ],
-            [
-                'title' => 'Selesai',
-                'route' => 'kabid.procurement-packages.index',
-                'params' => ['status' => 'selesai'],
-                'icon'  => 'check-circle',
                 'roles' => ['Kabid'],
             ],
         ],
@@ -302,7 +268,7 @@ return [
         ],
     ],
     [
-        'title'  => 'LAPORAN',
+        'title'  => 'PELAPORAN',
         'type'   => 'group',
         'roles'  => ['Kabid'],
         'children' => [
