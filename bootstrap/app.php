@@ -11,6 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Percayai reverse proxy internal (Cloudflare tunnel) agar Laravel
+        // membaca X-Forwarded-Proto/For dengan benar (https & IP asli klien).
+        $middleware->trustProxies(at: '10.0.0.0/8');
+
         $middleware->alias([
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,

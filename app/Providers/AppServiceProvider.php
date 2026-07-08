@@ -24,6 +24,13 @@ class AppServiceProvider extends ServiceProvider
         Carbon::setLocale('id');
         Paginator::useBootstrapFive();
 
+        // TLS berhenti di proxy depan (Cloudflare), nginx menerima HTTP polos —
+        // paksa semua URL yang di-generate memakai https agar tidak kena blokir
+        // mixed content di browser (mis. fetch() Isi Otomatis dari Katalog).
+        if (str_starts_with((string) config('app.url'), 'https://')) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
         // Implicitly grant "Admin" role all permissions
         \Illuminate\Support\Facades\Gate::before(function ($user, $ability) {
             return $user->hasRole('Admin') ? true : null;
