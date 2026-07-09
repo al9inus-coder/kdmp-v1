@@ -149,7 +149,29 @@ class TravelOrderDocumentController extends Controller
     {
         $travelOrder->load('personnels.employee');
         $personnel->load('employee');
-        
+
         return view('travel-orders.print.kuitansi', compact('package', 'travelOrder', 'personnel'));
+    }
+
+    /**
+     * Print Kuitansi for all personnel of a travel order (one page each)
+     */
+    public function printKuitansiAll(Package $package, TravelOrder $travelOrder)
+    {
+        $travelOrder->load('personnels.employee');
+        $personnels = $travelOrder->personnels;
+
+        return view('travel-orders.print.kuitansi', compact('package', 'travelOrder', 'personnels'));
+    }
+
+    /**
+     * Print Daftar Pengeluaran Riil for all personnel of a travel order (one page each)
+     */
+    public function printPengeluaranRiil(Package $package, TravelOrder $travelOrder)
+    {
+        $travelOrder->load('personnels.employee');
+        $personnels = $travelOrder->personnels;
+
+        return view('travel-orders.print.pengeluaran-riil', compact('package', 'travelOrder', 'personnels'));
     }
 }

@@ -13,10 +13,19 @@ class TravelPersonnel extends Model
         'nomor_sppd',
         'uang_harian',
         'biaya_transport',
+        'transport_riil',
         'biaya_taksi',
+        'taksi_riil',
         'biaya_penginapan',
+        'penginapan_riil',
         'biaya_representasi',
         'jenis_kendaraan',
+    ];
+
+    protected $casts = [
+        'transport_riil' => 'boolean',
+        'taksi_riil' => 'boolean',
+        'penginapan_riil' => 'boolean',
     ];
 
     public function travelOrder()

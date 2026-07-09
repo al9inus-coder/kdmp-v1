@@ -29,6 +29,13 @@
             'approved'  => ['label' => 'Disetujui',    'dot' => 'bg-emerald-500', 'active' => 'text-emerald-700 border-emerald-500 bg-emerald-50/60'],
             'rejected'  => ['label' => 'Ditolak',      'dot' => 'bg-rose-500',    'active' => 'text-rose-700 border-rose-500 bg-rose-50/60'],
         ];
+
+        // Tab status SPJ (subset SPPD yang sudah disetujui).
+        $spjTabs = [
+            'spj_submitted' => ['label' => 'SPJ Diajukan',     'dot' => 'bg-blue-500',    'active' => 'text-blue-700 border-blue-500 bg-blue-50/60'],
+            'spj_revision'  => ['label' => 'SPJ Perlu Revisi', 'dot' => 'bg-amber-500',   'active' => 'text-amber-700 border-amber-500 bg-amber-50/60'],
+            'spj_approved'  => ['label' => 'SPJ Disetujui',    'dot' => 'bg-emerald-500', 'active' => 'text-emerald-700 border-emerald-500 bg-emerald-50/60'],
+        ];
     @endphp
 
     <div class="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
@@ -38,6 +45,24 @@
                     $count = $value === '' ? $statusCounts->sum() : ($statusCounts[$value] ?? 0);
                     $isActive = ($status ?? '') === $value;
                     $tabUrl = route('kabid.sppd.index', array_filter(array_merge(request()->except(['status', 'page']), $value !== '' ? ['status' => $value] : [])));
+                @endphp
+                <a href="{{ $tabUrl }}"
+                    class="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold whitespace-nowrap rounded-t-xl border-b-2 transition-colors
+                        {{ $isActive ? $tab['active'] : 'text-slate-500 border-transparent hover:text-slate-700 hover:bg-slate-50' }}">
+                    <span class="w-1.5 h-1.5 rounded-full {{ $tab['dot'] }}"></span>
+                    {{ $tab['label'] }}
+                    <span class="px-1.5 py-0.5 text-[10px] font-bold rounded-full {{ $isActive ? 'bg-white/80 text-slate-700' : 'bg-slate-100 text-slate-500' }}">{{ $count }}</span>
+                </a>
+            @endforeach
+
+            {{-- Pemisah tab SPPD | SPJ --}}
+            <span class="w-px h-5 bg-slate-200 self-center mx-1 shrink-0"></span>
+
+            @foreach($spjTabs as $value => $tab)
+                @php
+                    $count = $spjCounts[substr($value, 4)] ?? 0;
+                    $isActive = ($status ?? '') === $value;
+                    $tabUrl = route('kabid.sppd.index', array_filter(array_merge(request()->except(['status', 'page']), ['status' => $value])));
                 @endphp
                 <a href="{{ $tabUrl }}"
                     class="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold whitespace-nowrap rounded-t-xl border-b-2 transition-colors
@@ -140,9 +165,17 @@
                                 <p class="text-[11px] text-slate-400 mt-1">{{ $to->package?->subActivity?->kode ?? ($to->package?->nama_paket ?? '-') }}</p>
                             </td>
                             <td class="px-6 py-4 text-center whitespace-nowrap">
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border {{ $meta['badge'] }}">
-                                    <i data-lucide="{{ $meta['icon'] }}" class="w-3.5 h-3.5"></i> {{ $meta['label'] }}
-                                </span>
+                                <div class="flex flex-col items-center gap-1.5">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border {{ $meta['badge'] }}">
+                                        <i data-lucide="{{ $meta['icon'] }}" class="w-3.5 h-3.5"></i> {{ $meta['label'] }}
+                                    </span>
+                                    @if($to->status === \App\Models\TravelOrder::STATUS_APPROVED)
+                                        @php $spjMeta = $to->spjStatusMeta(); @endphp
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold border {{ $spjMeta['badge'] }}">
+                                            <i data-lucide="{{ $spjMeta['icon'] }}" class="w-3 h-3"></i> SPJ: {{ $spjMeta['label'] }}
+                                        </span>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty

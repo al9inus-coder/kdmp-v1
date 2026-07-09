@@ -38,6 +38,13 @@
         .signature-table { width: 100%; margin-top: 50px; text-align: left; }
         .signature-table td { vertical-align: top; width: 33%; padding-right: 10px; }
         
+        /* Jendela popup langsung memunculkan dialog print lalu menutup sendiri,
+           jadi scrollbar halaman di belakang dialog disembunyikan agar tidak
+           tampak dobel dengan scrollbar panel preview. */
+        @media screen {
+            html, body { overflow: hidden; }
+        }
+
         @media print {
             .page {
                 margin: 0;
@@ -46,6 +53,10 @@
                 min-height: initial;
                 box-shadow: initial;
                 background: initial;
+            }
+            /* Break hanya di antara halaman, bukan setelah yang terakhir,
+               supaya tidak muncul halaman kosong ekstra. */
+            .page:not(:last-child) {
                 page-break-after: always;
             }
             @page {
@@ -57,6 +68,8 @@
 </head>
 <body onload="window.print()" onafterprint="window.close()">
     @php
+        $personnels = $personnels ?? collect([$personnel]);
+
         function terbilang($angka) {
             $angka = abs($angka);
             $baca = array("", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas");
@@ -86,7 +99,10 @@
         $nipPA = $skpd->nip_kepala ?? '...............................................';
         $namaBendahara = $skpd->nama_bendahara ?? '.......................................................';
         $nipBendahara = $skpd->nip_bendahara ?? '...............................................';
+    @endphp
 
+    @foreach($personnels as $personnel)
+    @php
         $isEselon2 = ($personnel->employee->kategori_biaya === 'Eselon II') || (stripos($personnel->employee->jabatan ?? '', 'kepala dinas') !== false);
         $isLuarDaerah = ($travelOrder->tipe_perjalanan === 'luar_daerah');
 
@@ -213,5 +229,6 @@
             </tr>
         </table>
     </div>
+    @endforeach
 </body>
 </html>

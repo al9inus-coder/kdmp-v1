@@ -20,6 +20,9 @@ class StoreTravelSpjRequest extends FormRequest
             'personnels.*.biaya_taksi' => ['required', 'numeric', 'min:0'],
             'personnels.*.biaya_penginapan' => ['required', 'numeric', 'min:0'],
             'personnels.*.biaya_representasi' => ['required', 'numeric', 'min:0'],
+            'personnels.*.transport_riil' => ['nullable', 'boolean'],
+            'personnels.*.taksi_riil' => ['nullable', 'boolean'],
+            'personnels.*.penginapan_riil' => ['nullable', 'boolean'],
         ];
     }
 

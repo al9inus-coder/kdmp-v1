@@ -7,35 +7,16 @@ use App\Http\Requests\StoreTravelSpjRequest;
 use App\Models\Package;
 use App\Models\TravelOrder;
 use App\Models\TravelPersonnel;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
+/**
+ * Aksi SPJ SPD (simpan biaya rampung, ajukan, tarik).
+ * Tampilannya menyatu di halaman detail SPPD (tab Laporan & Biaya).
+ */
 class TravelSpjController extends Controller
 {
-    /**
-     * Halaman hub SPJ SPD: generate laporan (AI), input biaya rampung, ajukan, cetak kwitansi.
-     */
-    public function show(Package $package, TravelOrder $travelOrder): View|RedirectResponse
-    {
-        Gate::authorize('view', $package);
-        abort_if((int) $travelOrder->package_id !== (int) $package->id, 404);
-
-        if ($travelOrder->status !== TravelOrder::STATUS_APPROVED) {
-            return redirect()
-                ->route('staf.packages.travel-orders.show', [$package, $travelOrder])
-                ->with('error', 'SPJ SPD hanya tersedia setelah SPPD disetujui.');
-        }
-
-        $package->load('account', 'program', 'activity', 'subActivity', 'fiscalYear');
-        $travelOrder->load('personnels.employee', 'spjReviewer');
-
-        $estimates = $this->buildEstimates($travelOrder);
-
-        return view('staf.travel-spj.show', compact('package', 'travelOrder', 'estimates'));
-    }
-
     public function store(StoreTravelSpjRequest $request, Package $package, TravelOrder $travelOrder): RedirectResponse
     {
         Gate::authorize('view', $package);
@@ -49,7 +30,7 @@ class TravelSpjController extends Controller
 
         if (!$travelOrder->isSpjEditable()) {
             return redirect()
-                ->route('staf.packages.travel-orders.spj.show', [$package, $travelOrder])
+                ->route('staf.packages.travel-orders.show', [$package, $travelOrder])
                 ->with('error', 'SPJ yang sudah diajukan tidak dapat diubah.');
         }
 
@@ -67,6 +48,10 @@ class TravelSpjController extends Controller
                     'biaya_taksi' => $values['biaya_taksi'],
                     'biaya_penginapan' => $values['biaya_penginapan'],
                     'biaya_representasi' => $values['biaya_representasi'],
+                    // Penanda pengeluaran riil (tanpa bukti / tidak menginap 30% SBU).
+                    'transport_riil' => (bool) ($values['transport_riil'] ?? false),
+                    'taksi_riil' => (bool) ($values['taksi_riil'] ?? false),
+                    'penginapan_riil' => (bool) ($values['penginapan_riil'] ?? false),
                 ]);
             }
 
@@ -91,7 +76,7 @@ class TravelSpjController extends Controller
         }
 
         return redirect()
-            ->route('staf.packages.travel-orders.spj.show', [$package, $travelOrder])
+            ->route('staf.packages.travel-orders.show', [$package, $travelOrder])
             ->with('success', $message);
     }
 
@@ -117,7 +102,7 @@ class TravelSpjController extends Controller
         ]);
 
         return redirect()
-            ->route('staf.packages.travel-orders.spj.show', [$package, $travelOrder])
+            ->route('staf.packages.travel-orders.show', [$package, $travelOrder])
             ->with('success', 'SPJ SPD berhasil diajukan dan menunggu persetujuan.');
     }
 
@@ -136,18 +121,7 @@ class TravelSpjController extends Controller
         ]);
 
         return redirect()
-            ->route('staf.packages.travel-orders.spj.show', [$package, $travelOrder])
+            ->route('staf.packages.travel-orders.show', [$package, $travelOrder])
             ->with('success', 'Pengajuan SPJ ditarik kembali ke Draf.');
-    }
-
-    private function buildEstimates(TravelOrder $travelOrder): array
-    {
-        $estimates = [];
-
-        foreach ($travelOrder->personnels as $personnel) {
-            $estimates[$personnel->id] = $personnel->getEstimatedCosts();
-        }
-
-        return $estimates;
     }
 }

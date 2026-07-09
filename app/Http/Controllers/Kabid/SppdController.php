@@ -14,6 +14,9 @@ class SppdController extends Controller
         $status = $request->input('status');
         $search = $request->input('search');
 
+        // Filter virtual "spj_*" = SPPD approved + status SPJ tertentu.
+        $spjFilter = $status && str_starts_with($status, 'spj_') ? substr($status, 4) : null;
+
         $base = TravelOrder::query()
             ->whereNotNull('created_by')
             ->where('status', '!=', 'draft')
@@ -24,8 +27,20 @@ class SppdController extends Controller
             ->groupBy('status')
             ->pluck('total', 'status');
 
+        // Hitungan status SPJ (hanya relevan untuk SPPD yang sudah disetujui; null = draf).
+        $spjCounts = (clone $base)
+            ->where('status', TravelOrder::STATUS_APPROVED)
+            ->selectRaw("COALESCE(NULLIF(spj_status, ''), 'draft') as spj, COUNT(*) as total")
+            ->groupBy('spj')
+            ->pluck('total', 'spj');
+
         $travelOrders = (clone $base)
-            ->when($status, fn ($q) => $q->where('status', $status))
+            ->when($spjFilter, fn ($q) => $q
+                ->where('status', TravelOrder::STATUS_APPROVED)
+                ->when($spjFilter === TravelOrder::SPJ_DRAFT,
+                    fn ($qq) => $qq->where(fn ($w) => $w->whereNull('spj_status')->orWhere('spj_status', TravelOrder::SPJ_DRAFT)),
+                    fn ($qq) => $qq->where('spj_status', $spjFilter)))
+            ->when($status && !$spjFilter, fn ($q) => $q->where('status', $status))
             ->when($search, fn ($q) => $q->where(fn ($sub) => $sub
                 ->where('tempat_tujuan', 'like', "%{$search}%")
                 ->orWhere('maksud_perjalanan', 'like', "%{$search}%")
@@ -42,6 +57,6 @@ class SppdController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        return view('kabid.sppd.index', compact('travelOrders', 'statusCounts', 'status', 'search'));
+        return view('kabid.sppd.index', compact('travelOrders', 'statusCounts', 'spjCounts', 'status', 'search'));
     }
 }

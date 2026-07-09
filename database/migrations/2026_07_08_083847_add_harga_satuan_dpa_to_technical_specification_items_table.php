@@ -9,16 +9,20 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('technical_specification_items', function (Blueprint $table) {
-            $table->decimal('harga_satuan_dpa', 15, 2)
-                ->nullable()
-                ->after('satuan');
+            if (!Schema::hasColumn('technical_specification_items', 'harga_satuan_dpa')) {
+                $table->decimal('harga_satuan_dpa', 15, 2)
+                    ->nullable()
+                    ->after('satuan');
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('technical_specification_items', function (Blueprint $table) {
-            $table->dropColumn('harga_satuan_dpa');
+            if (Schema::hasColumn('technical_specification_items', 'harga_satuan_dpa')) {
+                $table->dropColumn('harga_satuan_dpa');
+            }
         });
     }
 };

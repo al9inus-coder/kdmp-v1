@@ -68,7 +68,6 @@ Route::middleware('auth')->group(function () {
         Route::put('packages/{package}/travel-orders/{travelOrder}', [\App\Http\Controllers\Staff\TravelOrderController::class, 'update'])->name('packages.travel-orders.update');
         Route::post('packages/{package}/travel-orders/{travelOrder}/submit', [\App\Http\Controllers\Staff\TravelOrderController::class, 'submit'])->name('packages.travel-orders.submit');
         Route::post('packages/{package}/travel-orders/{travelOrder}/withdraw', [\App\Http\Controllers\Staff\TravelOrderController::class, 'withdraw'])->name('packages.travel-orders.withdraw');
-        Route::get('packages/{package}/travel-orders/{travelOrder}/spj', [\App\Http\Controllers\Staff\TravelSpjController::class, 'show'])->name('packages.travel-orders.spj.show');
         Route::post('packages/{package}/travel-orders/{travelOrder}/spj', [\App\Http\Controllers\Staff\TravelSpjController::class, 'store'])->name('packages.travel-orders.spj.store');
         Route::post('packages/{package}/travel-orders/{travelOrder}/spj/submit', [\App\Http\Controllers\Staff\TravelSpjController::class, 'submit'])->name('packages.travel-orders.spj.submit');
         Route::post('packages/{package}/travel-orders/{travelOrder}/spj/withdraw', [\App\Http\Controllers\Staff\TravelSpjController::class, 'withdraw'])->name('packages.travel-orders.spj.withdraw');
@@ -335,6 +334,8 @@ Route::middleware('auth')->group(function () {
     
     Route::put('/packages/{package}/travel-orders/{travelOrder}/personnels/{personnel}/update-biaya', [App\Http\Controllers\TravelOrderController::class, 'updateBiaya'])->name('packages.travel-orders.personnels.update-biaya');
     Route::get('/packages/{package}/travel-orders/{travelOrder}/personnels/{personnel}/print-kuitansi', [App\Http\Controllers\TravelOrderDocumentController::class, 'printKuitansi'])->name('packages.travel-orders.personnels.print-kuitansi');
+    Route::get('/packages/{package}/travel-orders/{travelOrder}/print-kuitansi', [App\Http\Controllers\TravelOrderDocumentController::class, 'printKuitansiAll'])->name('packages.travel-orders.print-kuitansi');
+    Route::get('/packages/{package}/travel-orders/{travelOrder}/print-pengeluaran-riil', [App\Http\Controllers\TravelOrderDocumentController::class, 'printPengeluaranRiil'])->name('packages.travel-orders.print-pengeluaran-riil');
 
 });
 
