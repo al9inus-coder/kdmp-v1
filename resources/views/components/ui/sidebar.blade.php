@@ -8,10 +8,13 @@
        :class="{'translate-x-0': sidebarOpen, '-translate-x-full': !sidebarOpen, 'md:translate-x-0': true, 'w-[260px]': !sidebarCollapsed, 'w-[72px]': sidebarCollapsed}">
 
     <!-- Logo Area -->
-    <div class="flex items-center justify-center h-[64px] border-b border-slate-100 px-4 shrink-0">
+    <div class="flex items-center justify-between md:justify-center h-[64px] border-b border-slate-100 px-4 shrink-0">
         <a href="/" class="flex items-center justify-center">
             <img src="{{ asset('images/logo_kdmp.png') }}" alt="KDMP - Kendali Digital Manajemen Pengadaan" class="w-auto object-contain transition-all duration-300" :class="sidebarCollapsed ? 'h-8' : 'h-12'">
         </a>
+        <button type="button" @click="sidebarOpen = false" class="p-1 rounded-md text-slate-400 hover:bg-slate-100 md:hidden transition-colors">
+            <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
     </div>
 
 

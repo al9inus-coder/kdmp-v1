@@ -20,6 +20,13 @@
 <body class="font-sans antialiased text-slate-900 bg-slate-50"
       x-data="{ sidebarOpen: false, sidebarCollapsed: false }"
       x-init="sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true'; $watch('sidebarCollapsed', val => localStorage.setItem('sidebarCollapsed', val))">
+    <!-- Backdrop untuk Mobile -->
+    <div x-show="sidebarOpen" 
+         x-transition.opacity
+         @click="sidebarOpen = false" 
+         class="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm md:hidden"
+         style="display: none;">
+    </div>
     
     <x-ui.sidebar />
 
