@@ -1,14 +1,14 @@
 @component('layouts.kdmp')
     @section('title', 'Kalender Kegiatan')
 
-    <div class="space-y-6" x-data="kabidKalender({
+    <div class="space-y-6" x-data="stafKalender({
             tahun: {{ $tahun }},
             bulanAwal: {{ $bulanAwal }},
             todayIso: '{{ now()->format('Y-m-d') }}',
             selected: '{{ $tahun === now()->year ? now()->format('Y-m-d') : sprintf('%d-01-01', $tahun) }}',
             travels: @js($travels),
-            contracts: @js($contracts),
             holidays: @js($holidays),
+            eligiblePackages: @js($eligiblePackages),
         })" x-init="refreshIcons()">
         <x-ui.toast />
 
@@ -19,17 +19,17 @@
                     <i data-lucide="calendar-days" class="w-6 h-6 text-emerald-600"></i>
                     Kalender <span class="text-emerald-600">Kegiatan</span>
                 </h1>
-                <p class="text-sm text-slate-500 mt-1">Perjalanan dinas, masa kontrak, dan hari libur dalam satu tampilan.</p>
+                <p class="text-sm text-slate-500 mt-1">Jadwal perjalanan dinas dan hari libur. Klik ganda tanggal untuk membuat SPPD baru.</p>
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
                 {{-- Navigasi tahun --}}
                 <div class="inline-flex items-center bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-                    <a href="{{ route('kabid.kalender.index', ['tahun' => $tahun - 1]) }}" class="px-2.5 py-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors">
+                    <a href="{{ route('staf.kalender.index', ['tahun' => $tahun - 1]) }}" class="px-2.5 py-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors">
                         <i data-lucide="chevron-left" class="w-4 h-4"></i>
                     </a>
                     <span class="px-2 text-sm font-extrabold text-slate-800">{{ $tahun }}</span>
-                    <a href="{{ route('kabid.kalender.index', ['tahun' => $tahun + 1]) }}" class="px-2.5 py-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors">
+                    <a href="{{ route('staf.kalender.index', ['tahun' => $tahun + 1]) }}" class="px-2.5 py-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors">
                         <i data-lucide="chevron-right" class="w-4 h-4"></i>
                     </a>
                 </div>
@@ -52,11 +52,6 @@
                 class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border border-emerald-200 bg-emerald-50 text-emerald-700 transition-opacity"
                 :class="f.travel ? '' : 'opacity-40'">
                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Perjalanan Dinas
-            </button>
-            <button type="button" @click="toggle('contract')"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border border-indigo-200 bg-indigo-50 text-indigo-700 transition-opacity"
-                :class="f.contract ? '' : 'opacity-40'">
-                <span class="w-2 h-2 rounded-full bg-indigo-500"></span> Kontrak
             </button>
             <button type="button" @click="toggle('holiday')"
                 class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border border-rose-200 bg-rose-50 text-rose-700 transition-opacity"
@@ -87,7 +82,7 @@
                 <div class="grid grid-cols-7 gap-px bg-slate-200 border border-slate-200 rounded-xl overflow-hidden">
                     <template x-for="(cell, idx) in cells" :key="idx">
                         <div class="bg-white" :class="cell.iso === todayIso ? 'bg-amber-50/10' : ''">
-                            <button type="button" x-show="cell.d" @click="pick(cell.iso)"
+                            <button type="button" x-show="cell.d" @click="pick(cell.iso)" @dblclick="openCreateModal(cell.iso)"
                                 class="w-full min-h-[90px] sm:min-h-[110px] p-1.5 sm:p-2 transition-all flex flex-col items-stretch text-left group"
                                 :class="cell.iso === selected ? 'ring-2 ring-inset ring-indigo-500 bg-indigo-50/30' : 'hover:bg-slate-50'">
                                 
@@ -101,24 +96,15 @@
                                         <span x-show="holidayOf(cell.iso)" style="display:none" :title="holidayOf(cell.iso)">
                                             <i data-lucide="sun" class="w-3.5 h-3.5 text-rose-500"></i>
                                         </span>
-                                        <span x-show="deadlinesOn(cell.iso).length" style="display:none" title="Batas akhir kontrak">
-                                            <i data-lucide="flag" class="w-3.5 h-3.5 text-indigo-600"></i>
-                                        </span>
                                     </div>
                                 </div>
 
                                 {{-- Stacked Bars --}}
-                                <div class="space-y-1 flex-1 overflow-hidden">
+                                <div class="space-y-1 flex-1 overflow-hidden pointer-events-none">
                                     <template x-for="(e, i) in travelsOn(cell.iso)" :key="'t'+i">
-                                        <div class="h-5 bg-emerald-100 border border-emerald-200 text-emerald-800 text-[10px] px-1.5 rounded flex items-center font-semibold truncate shadow-sm cursor-help"
+                                        <div class="h-5 bg-emerald-100 border border-emerald-200 text-emerald-800 text-[10px] px-1.5 rounded flex items-center font-semibold truncate shadow-sm cursor-help pointer-events-auto"
                                             :title="e.sub + ' (' + e.label.replace('SPPD — ', '') + ')'">
                                             <span class="truncate" x-text="e.sub"></span>
-                                        </div>
-                                    </template>
-                                    <template x-for="(e, i) in contractsOn(cell.iso)" :key="'c'+i">
-                                        <div class="h-5 bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] px-1.5 rounded flex items-center font-semibold truncate shadow-sm cursor-help"
-                                            :title="e.label">
-                                            <span class="truncate" x-text="e.label"></span>
                                         </div>
                                     </template>
                                 </div>
@@ -130,8 +116,6 @@
                 <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mt-5 pt-4 border-t border-dashed border-slate-200">
                     <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500"><span class="w-3 h-3 rounded-full ring-2 ring-inset ring-amber-400 bg-amber-50"></span> Hari ini</span>
                     <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500"><span class="w-4 h-3 rounded bg-emerald-100 border border-emerald-200"></span> Perjalanan dinas</span>
-                    <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500"><span class="w-4 h-3 rounded bg-indigo-50 border border-indigo-200"></span> Kontrak</span>
-                    <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500"><i data-lucide="flag" class="w-3.5 h-3.5 text-indigo-600"></i> Batas akhir</span>
                     <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500"><i data-lucide="sun" class="w-3.5 h-3.5 text-rose-500"></i> Libur</span>
                 </div>
             </div>
@@ -154,7 +138,6 @@
                                 <span class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                                     :class="{
                                         'bg-emerald-100 text-emerald-600': item.tone === 'emerald',
-                                        'bg-indigo-100 text-indigo-600': item.tone === 'indigo',
                                         'bg-rose-100 text-rose-600': item.tone === 'rose',
                                     }">
                                     <i :data-lucide="item.icon" class="w-4 h-4"></i>
@@ -165,26 +148,9 @@
                                 </span>
                             </a>
                         </template>
-                    </div>
-                </section>
-
-                {{-- Tenggat terdekat --}}
-                <section class="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden" x-show="tenggat.length">
-                    <div class="px-5 py-3.5 border-b border-slate-100 bg-slate-50/50">
-                        <h2 class="text-xs font-black text-slate-500 uppercase tracking-widest">Tenggat Terdekat</h2>
-                    </div>
-                    <div class="p-4 divide-y divide-slate-50">
-                        <template x-for="(e, i) in tenggat" :key="i">
-                            <a :href="e.url" class="flex items-center justify-between gap-2 py-2 group">
-                                <span class="inline-flex items-center gap-2 min-w-0 text-sm text-slate-700 group-hover:text-indigo-700">
-                                    <i data-lucide="flag" class="w-3.5 h-3.5 text-indigo-500 shrink-0"></i>
-                                    <span class="truncate font-semibold" x-text="e.label"></span>
-                                </span>
-                                <span class="text-[11px] font-bold rounded-full px-2 py-0.5 shrink-0"
-                                    :class="e.sisa <= 3 ? 'bg-rose-50 text-rose-700' : (e.sisa <= 7 ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700')"
-                                    x-text="e.sisa === 0 ? 'Hari ini' : 'Sisa ' + e.sisa + ' hari'"></span>
-                            </a>
-                        </template>
+                        <button type="button" @click="openCreateModal(selected)" class="mt-4 w-full px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-sm font-bold border border-indigo-200 rounded-lg transition-colors flex items-center justify-center gap-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Buat SPPD
+                        </button>
                     </div>
                 </section>
             </aside>
@@ -197,7 +163,7 @@
             <div class="bg-white border border-slate-200 shadow-sm rounded-2xl p-5">
                 <div class="flex items-center justify-between mb-4">
                     <p class="text-sm font-extrabold text-slate-800">Kalender {{ $tahun }}</p>
-                    <p class="text-[11px] font-semibold text-slate-400">Klik tanggal untuk membuka agendanya &middot; arahkan kursor untuk detail</p>
+                    <p class="text-[11px] font-semibold text-slate-400">Klik ganda tanggal untuk membuat SPPD &middot; arahkan kursor untuk detail</p>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                     <template x-for="m in 12" :key="m">
@@ -213,7 +179,7 @@
                             </div>
                             <div class="grid grid-cols-7 gap-[2px]">
                                 <template x-for="(cell, ci) in buildCells(m - 1)" :key="ci">
-                                    <button type="button" @click="openDate(cell.iso)"
+                                    <button type="button" @click="openDate(cell.iso)" @dblclick="openCreateModal(cell.iso)"
                                         class="h-8 w-full rounded-md text-[11px] font-semibold flex items-center justify-center transition-colors"
                                         :class="cell.iso ? yearCellClass(cell.iso) : 'invisible'"
                                         :title="cell.iso ? tipOf(cell.iso) : ''"
@@ -224,39 +190,48 @@
                     </template>
                 </div>
             </div>
+        </div>
 
-            {{-- Linimasa kontrak --}}
-            <div class="bg-white border border-slate-200 shadow-sm rounded-2xl p-5" x-show="ganttContracts.length">
-                <p class="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">Linimasa Kontrak {{ $tahun }}</p>
-                <div class="space-y-2.5">
-                    <template x-for="(e, i) in ganttContracts" :key="i">
-                        <a :href="e.url" class="flex items-center gap-3 group">
-                            <span class="w-40 shrink-0 text-xs font-semibold text-slate-700 truncate group-hover:text-indigo-700" :title="e.label" x-text="e.label"></span>
-                            <span class="flex-1 relative h-4 rounded-full bg-slate-100">
-                                <span class="absolute top-0.5 bottom-0.5 rounded-full"
-                                    :class="e.finished ? 'bg-emerald-300' : 'bg-indigo-300'"
-                                    :style="barStyle(e)"></span>
-                                <i data-lucide="flag" class="w-3.5 h-3.5 text-indigo-600 absolute -top-0.5" :style="flagStyle(e)"></i>
-                            </span>
-                        </a>
-                    </template>
+        {{-- Modal Pembuatan SPPD --}}
+        <div x-show="modalOpen" x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div x-show="modalOpen" x-transition.opacity class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"></div>
+            <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+                <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                    <div x-show="modalOpen" @click.away="modalOpen = false" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                        <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                            <div class="sm:flex sm:items-start">
+                                <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100 sm:mx-0 sm:h-10 sm:w-10">
+                                    <i data-lucide="plane" class="h-5 w-5 text-emerald-600"></i>
+                                </div>
+                                <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left flex-1">
+                                    <h3 class="text-base font-semibold leading-6 text-slate-900" id="modal-title">Buat Perjalanan Dinas</h3>
+                                    <div class="mt-2">
+                                        <p class="text-sm text-slate-500 mb-4">Pilih paket pengadaan untuk perjalanan dinas yang akan dimulai pada tanggal <strong class="text-slate-700" x-text="formatDateStr(modalDate)"></strong>.</p>
+                                        
+                                        <label for="modal-package" class="block text-sm font-medium leading-6 text-slate-900">Paket Pengadaan</label>
+                                        <select id="modal-package" x-model="modalPackage" class="mt-1 block w-full rounded-md border-0 py-2 pl-3 pr-10 text-slate-900 ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-emerald-600 sm:text-sm sm:leading-6">
+                                            <option value="" disabled selected>-- Pilih Paket --</option>
+                                            <template x-for="p in eligiblePackages" :key="p.id">
+                                                <option :value="p.id" x-text="p.nama_paket + (p.account ? ' (Sisa: ' + p.account.sisa_pagu_formatted + ')' : '')"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-slate-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                            <button type="button" @click="submitModal" :disabled="!modalPackage" class="inline-flex w-full justify-center rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed sm:ml-3 sm:w-auto">Buat SPPD</button>
+                            <button type="button" @click="modalOpen = false" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto">Batal</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="flex justify-between text-[10px] font-bold text-slate-300 uppercase mt-3 pl-[172px]">
-                    <template x-for="b in ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']">
-                        <span x-text="b"></span>
-                    </template>
-                </div>
-                <p class="text-[11px] text-slate-400 mt-3 flex items-center gap-3">
-                    <span class="inline-flex items-center gap-1.5"><span class="w-3 h-2 rounded-full bg-indigo-300 inline-block"></span> Berjalan</span>
-                    <span class="inline-flex items-center gap-1.5"><span class="w-3 h-2 rounded-full bg-emerald-300 inline-block"></span> Selesai</span>
-                    <span class="inline-flex items-center gap-1.5"><i data-lucide="flag" class="w-3 h-3 text-indigo-600"></i> Batas akhir</span>
-                </p>
             </div>
         </div>
+
     </div>
 
     <script>
-        function kabidKalender(cfg) {
+        function stafKalender(cfg) {
             const bulanNama = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
             const pad = n => String(n).padStart(2, '0');
             const toIso = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
@@ -267,11 +242,32 @@
                 viewMonth: cfg.bulanAwal,
                 selected: cfg.selected,
                 todayIso: cfg.todayIso,
-                f: { travel: true, contract: true, holiday: true },
+                f: { travel: true, holiday: true },
                 travels: cfg.travels || [],
-                contracts: cfg.contracts || [],
                 holidays: cfg.holidays || {},
+                eligiblePackages: cfg.eligiblePackages || [],
                 bulanNama,
+
+                // Modal state
+                modalOpen: false,
+                modalDate: '',
+                modalPackage: '',
+
+                openCreateModal(iso) {
+                    if (!iso) return;
+                    this.modalDate = iso;
+                    this.modalPackage = '';
+                    this.modalOpen = true;
+                },
+                submitModal() {
+                    if (!this.modalPackage || !this.modalDate) return;
+                    window.location.href = `/staf/packages/${this.modalPackage}/travel-orders/create?date=${this.modalDate}`;
+                },
+                formatDateStr(iso) {
+                    if (!iso) return '';
+                    const [y, m, d] = iso.split('-').map(Number);
+                    return d + ' ' + this.bulanNama[m - 1] + ' ' + y;
+                },
 
                 get monthLabel() { return bulanNama[this.viewMonth] + ' ' + this.tahun; },
                 buildCells(m) {
@@ -286,17 +282,12 @@
 
                 inRange(iso, e) { return iso >= e.start && iso <= e.end; },
                 travelsOn(iso) { return this.f.travel ? this.travels.filter(e => this.inRange(iso, e)) : []; },
-                contractsOn(iso) { return this.f.contract ? this.contracts.filter(e => this.inRange(iso, e)) : []; },
-                deadlinesOn(iso) { return this.f.contract ? this.contracts.filter(e => e.end === iso) : []; },
                 holidayOf(iso) { return this.f.holiday ? (this.holidays[iso] || null) : null; },
 
-                // Prioritas warna: batas kontrak > libur > perjalanan dinas > masa kontrak.
                 dayType(iso) {
                     if (!iso) return '';
-                    if (this.deadlinesOn(iso).length) return 'deadline';
                     if (this.holidayOf(iso)) return 'holiday';
                     if (this.travelsOn(iso).length) return 'travel';
-                    if (this.contractsOn(iso).length) return 'contract';
                     return '';
                 },
                 shiftIso(iso, n) {
@@ -308,34 +299,16 @@
                     const r = this.dayType(this.shiftIso(iso, 1)) !== type;
                     return l && r ? 'rounded-xl' : (l ? 'rounded-l-xl' : (r ? 'rounded-r-xl' : 'rounded-none'));
                 },
-                cellClass(iso) {
-                    if (!iso) return '';
-                    const t = this.dayType(iso);
-                    const minggu = new Date(iso + 'T00:00:00').getDay() === 0;
-                    let c = '';
-                    if (t === 'deadline') c = 'bg-indigo-600 text-white font-bold rounded-xl shadow-sm';
-                    else if (t === 'holiday') c = 'bg-rose-100 text-rose-700 font-bold rounded-xl';
-                    else if (t === 'travel') c = 'bg-emerald-100 text-emerald-900 font-semibold ' + this.bandClass(iso, 'travel');
-                    else if (t === 'contract') c = 'bg-indigo-50 text-indigo-700 font-semibold ' + this.bandClass(iso, 'contract');
-                    else c = (minggu ? 'text-rose-400' : 'text-slate-600') + ' hover:bg-slate-100 rounded-xl';
-                    if (iso === this.todayIso) c += ' ring-2 ring-amber-400';
-                    if (iso === this.selected) c += ' shadow-[inset_0_0_0_2px_#6366f1]';
-                    return c;
-                },
-                // Sel kalender tahun: warna sama dengan mode bulan, ukuran kecil.
                 yearCellClass(iso) {
                     const t = this.dayType(iso);
                     const minggu = new Date(iso + 'T00:00:00').getDay() === 0;
                     let c = '';
-                    if (t === 'deadline') c = 'bg-indigo-600 text-white font-bold';
-                    else if (t === 'holiday') c = 'bg-rose-100 text-rose-700 font-bold';
+                    if (t === 'holiday') c = 'bg-rose-100 text-rose-700 font-bold';
                     else if (t === 'travel') c = 'bg-emerald-100 text-emerald-800';
-                    else if (t === 'contract') c = 'bg-indigo-50 text-indigo-700';
                     else c = (minggu ? 'text-rose-400' : 'text-slate-500') + ' hover:bg-slate-100';
                     if (iso === this.todayIso) c += ' ring-2 ring-amber-400';
                     return c;
                 },
-                // Klik tanggal di kalender tahun: buka mode bulan pada tanggal itu.
                 openDate(iso) {
                     if (!iso) return;
                     this.selected = iso;
@@ -343,25 +316,22 @@
                     this.mode = 'bulan';
                     this.refreshIcons();
                 },
-                // Tooltip: tanggal + ringkasan kejadian hari itu.
                 tipOf(iso) {
                     const [y, m, d] = iso.split('-').map(Number);
                     const parts = [];
                     const hol = this.holidayOf(iso);
                     if (hol) parts.push('Libur: ' + hol);
-                    this.deadlinesOn(iso).forEach(e => parts.push('Batas akhir: ' + e.label));
                     this.travelsOn(iso).forEach(e => parts.push('SPPD ' + e.sub));
-                    if (!parts.length && this.contractsOn(iso).length) parts.push(this.contractsOn(iso).length + ' kontrak berjalan');
                     return d + ' ' + bulanNama[m - 1] + (parts.length ? ' — ' + parts.join(' · ') : '');
                 },
 
                 pick(iso) { if (!iso) return; this.selected = iso; this.refreshIcons(); },
                 prevMonth() {
-                    if (this.viewMonth === 0) { window.location = '{{ route('kabid.kalender.index') }}?tahun=' + (this.tahun - 1) + '&bulan=11'; return; }
+                    if (this.viewMonth === 0) { window.location = '{{ route('staf.kalender.index') }}?tahun=' + (this.tahun - 1) + '&bulan=11'; return; }
                     this.viewMonth--;
                 },
                 nextMonth() {
-                    if (this.viewMonth === 11) { window.location = '{{ route('kabid.kalender.index') }}?tahun=' + (this.tahun + 1) + '&bulan=0'; return; }
+                    if (this.viewMonth === 11) { window.location = '{{ route('staf.kalender.index') }}?tahun=' + (this.tahun + 1) + '&bulan=0'; return; }
                     this.viewMonth++;
                 },
                 openMonth(m) { this.viewMonth = m; this.mode = 'bulan'; this.refreshIcons(); },
@@ -385,43 +355,8 @@
                     const hol = this.holidayOf(iso);
                     if (hol) items.push({ icon: 'sun', tone: 'rose', label: hol, sub: 'Hari libur', url: null });
                     this.travelsOn(iso).forEach(e => items.push({ icon: 'plane', tone: 'emerald', label: e.label, sub: e.sub + ' · ' + this.rangeLabel(e), url: e.url }));
-                    this.contractsOn(iso).forEach(e => {
-                        const hariKe = this.diffDays(e.start, iso) + 1;
-                        const total = this.diffDays(e.start, e.end) + 1;
-                        const isDeadline = e.end === iso;
-                        items.push({
-                            icon: isDeadline ? 'flag' : 'truck', tone: 'indigo', label: e.label,
-                            sub: isDeadline ? 'Batas akhir kontrak' : 'Pelaksanaan hari ke-' + hariKe + ' dari ' + total,
-                            url: e.url,
-                        });
-                    });
                     return items;
                 },
-
-                get tenggat() {
-                    if (!this.f.contract) return [];
-                    return this.contracts
-                        .filter(e => !e.finished && e.end >= this.todayIso)
-                        .sort((a, b) => a.end.localeCompare(b.end))
-                        .slice(0, 5)
-                        .map(e => ({ ...e, sisa: this.diffDays(this.todayIso, e.end) }));
-                },
-
-                // Linimasa tahun (posisi % dalam setahun)
-                pct(iso) {
-                    const start = new Date(this.tahun, 0, 1);
-                    const days = (new Date(this.tahun, 11, 31) - start) / 86400000 + 1;
-                    const d = Math.max(0, Math.min(days, (new Date(iso + 'T00:00:00') - start) / 86400000));
-                    return d / days * 100;
-                },
-                barStyle(e) {
-                    const s = e.start < this.tahun + '-01-01' ? this.tahun + '-01-01' : e.start;
-                    const t = e.end > this.tahun + '-12-31' ? this.tahun + '-12-31' : e.end;
-                    const l = this.pct(s);
-                    return 'left:' + l.toFixed(2) + '%; width:' + Math.max(0.8, this.pct(t) - l).toFixed(2) + '%;';
-                },
-                flagStyle(e) { return 'left:' + Math.min(98, this.pct(e.end)).toFixed(2) + '%;'; },
-                get ganttContracts() { return this.f.contract ? [...this.contracts].sort((a, b) => a.start.localeCompare(b.start)) : []; },
 
                 refreshIcons() { this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }); },
             };

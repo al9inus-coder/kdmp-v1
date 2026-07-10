@@ -58,6 +58,9 @@ Route::middleware('auth')->group(function () {
         Route::get('packages/{package}', [\App\Http\Controllers\Staff\PackageController::class, 'show'])->name('packages.show');
         Route::get('packages/{package}/edit', [\App\Http\Controllers\Staff\PackageController::class, 'edit'])->name('packages.edit');
 
+        // Kalender Staf
+        Route::get('kalender', [\App\Http\Controllers\Staff\CalendarController::class, 'index'])->name('kalender.index');
+
         // SPPD (Staff) — daftar pengajuan
         Route::get('sppd', [\App\Http\Controllers\Staff\SppdController::class, 'index'])->name('sppd.index');
 

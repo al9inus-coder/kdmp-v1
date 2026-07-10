@@ -195,8 +195,50 @@
             </table>
         </div>
 
+        <!-- Pagination -->
         @if($travelOrders->hasPages())
-            <div class="p-4 border-t border-slate-100 bg-slate-50/50">{{ $travelOrders->links() }}</div>
+            <div class="p-4 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <p class="text-sm text-slate-500 text-center sm:text-left">
+                    Menampilkan <span class="font-semibold text-slate-700">{{ $travelOrders->firstItem() }}–{{ $travelOrders->lastItem() }}</span>
+                    dari <span class="font-semibold text-slate-700">{{ $travelOrders->total() }}</span> pengajuan
+                </p>
+                <div class="flex items-center justify-center gap-1">
+                    {{-- Prev --}}
+                    @if($travelOrders->onFirstPage())
+                        <span class="px-3 py-1.5 text-xs font-medium text-slate-300 bg-white border border-slate-200 rounded-lg cursor-not-allowed">
+                            <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+                        </span>
+                    @else
+                        <a href="{{ $travelOrders->previousPageUrl() }}" class="px-3 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                            <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+                        </a>
+                    @endif
+
+                    {{-- Page Numbers --}}
+                    @foreach($travelOrders->getUrlRange(max(1, $travelOrders->currentPage()-2), min($travelOrders->lastPage(), $travelOrders->currentPage()+2)) as $page => $url)
+                        @if($page == $travelOrders->currentPage())
+                            <span class="px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 border border-emerald-600 rounded-lg">{{ $page }}</span>
+                        @else
+                            <a href="{{ $url }}" class="px-3 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">{{ $page }}</a>
+                        @endif
+                    @endforeach
+
+                    {{-- Next --}}
+                    @if($travelOrders->hasMorePages())
+                        <a href="{{ $travelOrders->nextPageUrl() }}" class="px-3 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                        </a>
+                    @else
+                        <span class="px-3 py-1.5 text-xs font-medium text-slate-300 bg-white border border-slate-200 rounded-lg cursor-not-allowed">
+                            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                        </span>
+                    @endif
+                </div>
+            </div>
+        @else
+            <div class="p-4 border-t border-slate-100 bg-slate-50/50">
+                <p class="text-sm text-slate-500">Menampilkan <span class="font-semibold text-slate-700">{{ $travelOrders->count() }}</span> pengajuan</p>
+            </div>
         @endif
     </div>
 </div>

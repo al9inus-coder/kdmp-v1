@@ -61,6 +61,7 @@ class CalendarController extends Controller
                 $p = $pp->procurementProcess;
 
                 return $pp->package
+                    && $p
                     && $p->tanggal_surat_pesanan->lte($akhirTahun)
                     && $p->tanggal_barang_diterima->gte($awalTahun);
             })

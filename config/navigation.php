@@ -30,6 +30,12 @@ return [
         'roles' => ['Staff'],
     ],
     [
+        'title' => 'Kalender',
+        'route' => 'staf.kalender.index',
+        'icon'  => 'calendar-days',
+        'roles' => ['Staff'],
+    ],
+    [
         'title'  => 'PENGADAAN',
         'type'   => 'group',
         'roles'  => ['Staff'],
