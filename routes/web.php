@@ -100,7 +100,8 @@ Route::middleware('auth')->group(function () {
         Route::post('packages/{package}/overtimes/{month}/lock', [\App\Http\Controllers\Kabid\OvertimeController::class, 'lock'])->name('packages.overtimes.lock');
         Route::post('packages/{package}/overtimes/{month}/unlock', [\App\Http\Controllers\Kabid\OvertimeController::class, 'unlock'])->name('packages.overtimes.unlock');
         Route::post('packages/{package}/overtimes/{overtime}/details/{detail}/rates', [\App\Http\Controllers\Kabid\OvertimeController::class, 'updateRates'])->name('packages.overtimes.update_rates');
-        Route::get('procurement-packages', [\App\Http\Controllers\Kabid\ProcurementPackageController::class, 'index'])->name('procurement-packages.index');
+        // Halaman gabungan lama — kini diarahkan ke daftar Penyedia (navigasi kabid per jenis pengadaan).
+        Route::get('procurement-packages', fn () => redirect()->route('kabid.penyedia.index'))->name('procurement-packages.index');
         Route::get('procurement-packages/{package}', [\App\Http\Controllers\Kabid\ProcurementPackageController::class, 'show'])->name('procurement-packages.show');
         // Kabid hanya meninjau SPPD — tidak boleh membuat/mengedit perjalanan dinas.
         Route::get('packages/{package}/travel-orders/{travelOrder}', [\App\Http\Controllers\Kabid\TravelOrderController::class, 'show'])->name('packages.travel-orders.show');

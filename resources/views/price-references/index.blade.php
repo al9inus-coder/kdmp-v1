@@ -37,9 +37,12 @@
         @php
             $namaBarang = $item->nama_barang_jasa;
             $references = $groupedReferences[$namaBarang] ?? collect();
-            $rataRataHargaSatuan = $references->avg('harga_satuan') ?? 0;
-            $rataRataJumlahHarga = $references->avg('jumlah_harga') ?? 0;
-            $hargaTerendah = $references->min('harga_satuan') ?? 0;
+            // Statistik hanya dari referensi berharga > 0 — harga 0 berarti
+            // penyedia tidak memiliki barang, bukan penawaran termurah.
+            $validReferences = $references->filter(fn ($r) => (float) $r->harga_satuan > 0);
+            $rataRataHargaSatuan = $validReferences->avg('harga_satuan') ?? 0;
+            $rataRataJumlahHarga = $validReferences->avg('jumlah_harga') ?? 0;
+            $hargaTerendah = $validReferences->min('harga_satuan') ?? 0;
         @endphp
         <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-5">
             {{-- Header barang --}}
@@ -83,8 +86,16 @@
                                     <td class="px-4 py-3 text-center text-slate-500">{{ $index + 1 }}</td>
                                     <td class="px-4 py-3 text-slate-700">{{ $priceReference->nama_produk_etalase ?? '-' }}</td>
                                     <td class="px-4 py-3 text-slate-700">{{ $priceReference->nama_pelaku_usaha ?? '-' }}</td>
-                                    <td class="px-4 py-3 text-right font-semibold text-slate-800 tabular-nums">Rp {{ number_format((float) $priceReference->harga_satuan, 0, ',', '.') }}</td>
-                                    <td class="px-4 py-3 text-right font-semibold text-emerald-700 tabular-nums">Rp {{ number_format((float) $priceReference->jumlah_harga, 0, ',', '.') }}</td>
+                                    @if((float) $priceReference->harga_satuan > 0)
+                                        <td class="px-4 py-3 text-right font-semibold text-slate-800 tabular-nums">Rp {{ number_format((float) $priceReference->harga_satuan, 0, ',', '.') }}</td>
+                                        <td class="px-4 py-3 text-right font-semibold text-emerald-700 tabular-nums">Rp {{ number_format((float) $priceReference->jumlah_harga, 0, ',', '.') }}</td>
+                                    @else
+                                        <td colspan="2" class="px-4 py-3 text-right">
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                                <i data-lucide="package-x" class="w-3 h-3"></i> Tidak tersedia
+                                            </span>
+                                        </td>
+                                    @endif
                                     <td class="px-4 py-3 text-center">
                                         @if($priceReference->link_produk)
                                             <a href="{{ $priceReference->link_produk }}" target="_blank" class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold text-sky-700 bg-sky-50 border border-sky-100 hover:bg-sky-100 transition-colors"><i data-lucide="external-link" class="w-3 h-3"></i> Buka</a>

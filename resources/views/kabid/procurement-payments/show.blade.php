@@ -72,7 +72,7 @@
                     </p>
                 </div>
             </div>
-            <a href="{{ route('procurement-packages.index') }}"
+            <a href="{{ route('kabid.penyedia.index') }}"
                 class="relative inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-emerald-700 bg-white hover:bg-emerald-50 rounded-xl shadow-sm transition-colors shrink-0">
                 <i data-lucide="list" class="w-4 h-4"></i>
                 Daftar Paket Pengadaan

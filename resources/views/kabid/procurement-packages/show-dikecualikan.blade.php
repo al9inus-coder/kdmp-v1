@@ -28,7 +28,7 @@
                 </span>
             @endif
         </div>
-        <a href="{{ route('kabid.procurement-packages.index', ['type' => 'dikecualikan']) }}"
+        <a href="{{ route('kabid.dikecualikan.index') }}"
             class="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 shadow-sm">
             <i data-lucide="arrow-left" class="w-4 h-4"></i>Kembali
         </a>

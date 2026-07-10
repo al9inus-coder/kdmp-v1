@@ -21,6 +21,19 @@
 
     $current = $statusStep[$procurementPackage->workflow_status] ?? 0;
     $isDone  = $current >= count($steps);
+
+    // Tahap yang sudah dilalui / sedang berjalan bisa diklik menuju halamannya.
+    // Sementara hanya untuk Kabid — halaman admin memakai rute berbeda.
+    $stepUrls = [null, null, null, null];
+    if (auth()->user()?->hasRole('Kabid') && $procurementPackage->package) {
+        $pkg = $procurementPackage->package;
+        $stepUrls = [
+            route('kabid.procurement-packages.show', $pkg),
+            route('kabid.procurement-packages.procurement-process.show', $pkg),
+            route('kabid.procurement-packages.execution.show', $pkg),
+            route('kabid.procurement-packages.payment.show', $pkg),
+        ];
+    }
 @endphp
 
 <style>
@@ -41,10 +54,14 @@
             @php
                 $completed = $current > $index;
                 $active    = !$isDone && $current === $index;
+                // Hanya tahap yang sudah dilalui/berjalan yang bisa diklik.
+                $url = ($completed || $active) ? ($stepUrls[$index] ?? null) : null;
+                $tag = $url ? 'a' : 'div';
             @endphp
 
             {{-- Step --}}
-            <div class="flex items-center gap-3 shrink-0">
+            <{{ $tag }} @if($url) href="{{ $url }}" title="Buka {{ $step['title'] }}" @endif
+                class="flex items-center gap-3 shrink-0 {{ $url ? 'rounded-xl -m-1.5 p-1.5 hover:bg-slate-50 transition-colors cursor-pointer' : '' }}">
                 <div class="relative shrink-0">
                     @if($active)
                         <span class="absolute inset-0 rounded-full bg-amber-400 opacity-40 animate-ping"></span>
@@ -76,7 +93,7 @@
                         {{ $step['title'] }}
                     </p>
                 </div>
-            </div>
+            </{{ $tag }}>
 
             {{-- Connector --}}
             @if($index < count($steps) - 1)

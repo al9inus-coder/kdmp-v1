@@ -177,8 +177,9 @@
         {{-- Kolom kiri: kalender + ringkasan kontrak --}}
         <div class="flex-1 w-full min-w-0 space-y-6">
 
-        {{-- Kalender pelaksanaan (setengah lebar kolom di layar besar) --}}
-        <div class="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden lg:max-w-md">
+        {{-- Kalender pelaksanaan: 2 bulan berdampingan di layar >= md, 1 bulan di layar kecil.
+             Lebar penuh kolom kiri agar sejajar dengan strip ringkasan kontrak di bawahnya. --}}
+        <div class="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
             <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-2">
                 <h3 class="font-bold text-slate-800 flex items-center gap-2 text-sm">
                     <i data-lucide="calendar-days" class="w-4 h-4 text-blue-500"></i>
@@ -200,31 +201,62 @@
             </div>
 
             <div class="p-4 sm:p-6 select-none">
-                <div class="flex items-center justify-between mb-3">
-                    <button type="button" @click="prevMonth()" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+                {{-- Navigasi: panah menggeser jendela 2 bulan per 1 bulan --}}
+                <div class="flex items-center justify-between mb-3 gap-2">
+                    <button type="button" @click="prevMonth()" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors shrink-0">
                         <i data-lucide="chevron-left" class="w-5 h-5"></i>
                     </button>
-                    <p class="text-lg font-extrabold text-slate-800" x-text="monthLabel"></p>
-                    <button type="button" @click="nextMonth()" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+                    <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-x-8 text-center">
+                        <p class="text-lg font-extrabold text-slate-800" x-text="monthLabel"></p>
+                        <p class="text-lg font-extrabold text-slate-800 hidden md:block" x-text="monthLabelNext"></p>
+                    </div>
+                    <button type="button" @click="nextMonth()" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors shrink-0">
                         <i data-lucide="chevron-right" class="w-5 h-5"></i>
                     </button>
                 </div>
-                <div class="grid grid-cols-7 text-center text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-1">
-                    <template x-for="h in ['Min','Sen','Sel','Rab','Kam','Jum','Sab']"><span x-text="h" class="py-1.5"></span></template>
-                </div>
-                <div class="grid grid-cols-7 gap-1">
-                    <template x-for="(cell, idx) in cells" :key="idx">
-                        <div>
-                            <button type="button" x-show="cell.d" @click="pickDate(cell.iso)"
-                                class="w-full h-11 sm:h-14 rounded-xl text-sm font-semibold transition-all flex flex-col items-center justify-center leading-none gap-1"
-                                :class="cellClass(cell.iso)">
-                                <span x-text="cell.d"></span>
-                                <span class="flex items-center gap-0.5">
-                                    <span x-show="isAdendum(cell.iso)" class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                                </span>
-                            </button>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                    {{-- Bulan berjalan --}}
+                    <div>
+                        <div class="grid grid-cols-7 text-center text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-1">
+                            <template x-for="h in ['Min','Sen','Sel','Rab','Kam','Jum','Sab']"><span x-text="h" class="py-1.5"></span></template>
                         </div>
-                    </template>
+                        <div class="grid grid-cols-7 gap-1">
+                            <template x-for="(cell, idx) in cells" :key="'a' + idx">
+                                <div>
+                                    <button type="button" x-show="cell.d" @click="pickDate(cell.iso)"
+                                        class="w-full h-11 sm:h-12 rounded-xl text-sm font-semibold transition-all flex flex-col items-center justify-center leading-none gap-1"
+                                        :class="cellClass(cell.iso)">
+                                        <span x-text="cell.d"></span>
+                                        <span class="flex items-center gap-0.5">
+                                            <span x-show="isAdendum(cell.iso)" class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                        </span>
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    {{-- Bulan berikutnya (disembunyikan di layar kecil) --}}
+                    <div class="hidden md:block">
+                        <div class="grid grid-cols-7 text-center text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-1">
+                            <template x-for="h in ['Min','Sen','Sel','Rab','Kam','Jum','Sab']"><span x-text="h" class="py-1.5"></span></template>
+                        </div>
+                        <div class="grid grid-cols-7 gap-1">
+                            <template x-for="(cell, idx) in cellsNext" :key="'b' + idx">
+                                <div>
+                                    <button type="button" x-show="cell.d" @click="pickDate(cell.iso)"
+                                        class="w-full h-11 sm:h-12 rounded-xl text-sm font-semibold transition-all flex flex-col items-center justify-center leading-none gap-1"
+                                        :class="cellClass(cell.iso)">
+                                        <span x-text="cell.d"></span>
+                                        <span class="flex items-center gap-0.5">
+                                            <span x-show="isAdendum(cell.iso)" class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                        </span>
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-4 pt-4 border-t border-dashed border-slate-200">
@@ -654,18 +686,35 @@
             viewMonth: anchor.getMonth(),
             todayIso: toIso(new Date()),
 
+            buildCells(year, month) {
+                const first = new Date(year, month, 1);
+                const total = new Date(year, month + 1, 0).getDate();
+                const cells = [];
+                for (let i = 0; i < first.getDay(); i++) cells.push({ d: null, iso: null });
+                for (let d = 1; d <= total; d++) {
+                    cells.push({ d, iso: toIso(new Date(year, month, d)) });
+                }
+                return cells;
+            },
             get monthLabel() {
                 return bulan[this.viewMonth] + ' ' + this.viewYear;
             },
             get cells() {
-                const first = new Date(this.viewYear, this.viewMonth, 1);
-                const total = new Date(this.viewYear, this.viewMonth + 1, 0).getDate();
-                const cells = [];
-                for (let i = 0; i < first.getDay(); i++) cells.push({ d: null, iso: null });
-                for (let d = 1; d <= total; d++) {
-                    cells.push({ d, iso: toIso(new Date(this.viewYear, this.viewMonth, d)) });
-                }
-                return cells;
+                return this.buildCells(this.viewYear, this.viewMonth);
+            },
+            // Bulan kedua (jendela 2 bulan): bulan setelah viewMonth.
+            get nextYearMonth() {
+                return this.viewMonth === 11
+                    ? { y: this.viewYear + 1, m: 0 }
+                    : { y: this.viewYear, m: this.viewMonth + 1 };
+            },
+            get monthLabelNext() {
+                const n = this.nextYearMonth;
+                return bulan[n.m] + ' ' + n.y;
+            },
+            get cellsNext() {
+                const n = this.nextYearMonth;
+                return this.buildCells(n.y, n.m);
             },
 
             prevMonth() {
@@ -677,6 +726,10 @@
             gotoDate(iso) {
                 if (!iso) return;
                 const d = fromIso(iso);
+                const target = d.getFullYear() * 12 + d.getMonth();
+                const current = this.viewYear * 12 + this.viewMonth;
+                // Sudah terlihat di salah satu dari 2 bulan — tidak perlu pindah.
+                if (target === current || target === current + 1) return;
                 this.viewYear = d.getFullYear();
                 this.viewMonth = d.getMonth();
             },
