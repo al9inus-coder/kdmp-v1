@@ -98,21 +98,22 @@
     @foreach($personnels as $personnel)
         @php
             $employee = $personnel->employee;
-            $nomorSpd = $personnel->nomor_sppd ?: '................';
-            $tanggalSpd = $travelOrder->tanggal_surat
-                ? \Carbon\Carbon::parse($travelOrder->tanggal_surat)->translatedFormat('d F Y')
+            // Nomor & tanggal SPD dari form Laporan; fallback ke nomor SPPD pelaksana / tanggal surat.
+            $report = $travelOrder->report;
+            $nomorSpd = $report?->nomor_spd ?: ($personnel->nomor_sppd ?: '................');
+            $tanggalSpdRaw = $report?->tanggal_spd ?: $travelOrder->tanggal_surat;
+            $tanggalSpd = $tanggalSpdRaw
+                ? \Carbon\Carbon::parse($tanggalSpdRaw)->locale('id')->translatedFormat('d F Y')
                 : '................';
 
-            // Baris pengeluaran riil: komponen biaya yang ditandai pada SPJ.
+            // Baris pengeluaran riil: hanya transport/taksi tanpa bukti yang ditandai pada SPJ.
+            // Penginapan 30% (tidak menginap di hotel) TIDAK termasuk daftar pengeluaran riil.
             $items = [];
             if ($personnel->transport_riil && $personnel->biaya_transport > 0) {
                 $items[] = ['uraian' => 'Biaya transportasi (tidak diperoleh bukti pengeluaran)', 'jumlah' => $personnel->biaya_transport];
             }
             if ($personnel->taksi_riil && ($personnel->biaya_taksi ?? 0) > 0) {
                 $items[] = ['uraian' => 'Biaya taksi (tidak diperoleh bukti pengeluaran)', 'jumlah' => $personnel->biaya_taksi];
-            }
-            if ($personnel->penginapan_riil && $personnel->biaya_penginapan > 0) {
-                $items[] = ['uraian' => 'Biaya penginapan sebesar 30% dari tarif hotel sesuai SBU (tidak menginap di hotel)', 'jumlah' => $personnel->biaya_penginapan];
             }
             $totalRiil = collect($items)->sum('jumlah');
             $barisKosong = max(0, 8 - count($items));

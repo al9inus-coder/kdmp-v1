@@ -188,20 +188,17 @@
                         if($val >= 2) { $totalJam += $val; $daysWithOvertime++; }
                     }
                     if($totalJam == 0) continue;
-                    $empGol = strtoupper($golongan); $mappedGolongan = 'P3K Paruh Waktu';
-                    if (str_contains($empGol, 'IV-') || str_contains($empGol, '/IV') || str_contains($empGol, 'GOLONGAN IV')) $mappedGolongan = 'Golongan IV';
-                    elseif (str_contains($empGol, 'III-') || str_contains($empGol, '/III') || str_contains($empGol, 'GOLONGAN III')) $mappedGolongan = 'Golongan III';
-                    elseif (str_contains($empGol, 'II-') || str_contains($empGol, '/II') || str_contains($empGol, 'GOLONGAN II') || str_contains($empGol, 'VII')) $mappedGolongan = 'Golongan II';
-                    elseif (str_contains($empGol, 'I-') || str_contains($empGol, '/I') || str_contains($empGol, 'GOLONGAN I')) $mappedGolongan = 'Golongan I';
+                    // Pemetaan golongan -> tarif SBU: terpusat & toleran format (SbuLembur::pickRate).
+                    $rateMissing = false;
                     if (!is_null($detail->rate_lembur_fix)) $valLembur = $detail->rate_lembur_fix;
-                    else { $rateLembur = $sbuRates->where('jenis', 'Uang Lembur')->where('golongan', $mappedGolongan)->first(); if(!$rateLembur) $rateLembur = $sbuRates->where('jenis', 'Uang Lembur')->sortBy('besaran')->first(); $valLembur = $rateLembur ? $rateLembur->besaran : 0; }
-                    if (!is_null($detail->rate_makan_fix)) $valMakan = $detail->rate_makan_fix;
                     else {
-                        $rateMakan = $sbuRates->where('jenis', 'Uang Makan Lembur')->where('golongan', $mappedGolongan)->first();
-                        if(!$rateMakan && (str_contains($mappedGolongan, 'II') || str_contains($mappedGolongan, 'I'))) $rateMakan = $sbuRates->where('jenis', 'Uang Makan Lembur')->where('golongan', 'Golongan II dan Golongan I')->first();
-                        if(!$rateMakan) $rateMakan = $sbuRates->where('jenis', 'Uang Makan Lembur')->sortBy('besaran')->first();
-                        $valMakan = $rateMakan ? $rateMakan->besaran : 0;
+                        $rateLembur = \App\Models\SbuLembur::pickRate($sbuRates, 'Uang Lembur', $golongan);
+                        $valLembur = $rateLembur?->besaran ?? 0;
+                        // Baris SBU golongan ini tidak ada — jangan tebak tarif lain, tandai agar terlihat.
+                        if (!$rateLembur) $rateMissing = true;
                     }
+                    if (!is_null($detail->rate_makan_fix)) $valMakan = $detail->rate_makan_fix;
+                    else $valMakan = \App\Models\SbuLembur::pickRate($sbuRates, 'Uang Makan Lembur', $golongan)?->besaran ?? 0;
                     $uangLembur = $totalJam * $valLembur;
                     $uangMakan = $detail->use_uang_makan ? ($daysWithOvertime * $valMakan) : 0;
                     if($uangMakan > 0) $hasUangMakanBulanIni = true;
@@ -211,7 +208,7 @@
                     $pph = $uangLembur * $pphRate;
                     $totalDiterima = ($uangLembur - $pph) + $uangMakan;
                     $totalKeseluruhan += $totalDiterima; $sumUpahLembur += $uangLembur; $sumUangMakan += $uangMakan; $sumPajak += $pph;
-                    $processedDetails[] = compact('detail','emp','valLembur','valMakan','totalJam','uangLembur','uangMakan','pph','totalDiterima');
+                    $processedDetails[] = compact('detail','emp','valLembur','valMakan','totalJam','uangLembur','uangMakan','pph','totalDiterima','rateMissing');
                 }
             @endphp
             <section id="rekapSection" class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
@@ -241,6 +238,12 @@
                                     <td class="px-4 py-3 text-center text-slate-400">{{ $index + 1 }}</td>
                                     <td class="px-4 py-3 font-semibold text-slate-800">{{ $row['emp']->nama }}</td>
                                     <td class="px-4 py-3 text-right whitespace-nowrap">
+                                        @if($row['rateMissing'] ?? false)
+                                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold rounded bg-rose-50 text-rose-600 border border-rose-200 align-middle"
+                                                title="Tarif SBU untuk golongan pegawai ini tidak ditemukan — lengkapi Data SBU Lembur.">
+                                                <i data-lucide="alert-triangle" class="w-3 h-3"></i> SBU?
+                                            </span>
+                                        @endif
                                         {{ $money($row['valLembur']) }}
                                         @if(!$overtime->is_locked)
                                             <button type="button" class="ml-1 text-indigo-500 hover:text-indigo-700 btn-edit-sbu align-middle"

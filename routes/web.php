@@ -71,7 +71,13 @@ Route::middleware('auth')->group(function () {
         Route::post('packages/{package}/travel-orders/{travelOrder}/spj', [\App\Http\Controllers\Staff\TravelSpjController::class, 'store'])->name('packages.travel-orders.spj.store');
         Route::post('packages/{package}/travel-orders/{travelOrder}/spj/submit', [\App\Http\Controllers\Staff\TravelSpjController::class, 'submit'])->name('packages.travel-orders.spj.submit');
         Route::post('packages/{package}/travel-orders/{travelOrder}/spj/withdraw', [\App\Http\Controllers\Staff\TravelSpjController::class, 'withdraw'])->name('packages.travel-orders.spj.withdraw');
+        Route::post('packages/{package}/travel-orders/{travelOrder}/laporan', [\App\Http\Controllers\Staff\TravelReportController::class, 'store'])->name('packages.travel-orders.laporan.store');
+        Route::post('packages/{package}/travel-orders/{travelOrder}/laporan/generate', [\App\Http\Controllers\Staff\TravelReportController::class, 'generate'])->name('packages.travel-orders.laporan.generate');
+        Route::post('packages/{package}/travel-orders/{travelOrder}/laporan/prompt', [\App\Http\Controllers\Staff\TravelReportController::class, 'updatePrompt'])->name('packages.travel-orders.laporan.prompt');
         Route::get('packages/{package}/travel-orders/{travelOrder}', [\App\Http\Controllers\Staff\TravelOrderController::class, 'show'])->name('packages.travel-orders.show');
+
+        // Arsip Dokumen
+        Route::get('arsip', [\App\Http\Controllers\ArsipController::class, 'index'])->name('arsip.index');
     });
     // Kabid Packages Module
     Route::middleware(['role:Kabid'])->prefix('kabid')->name('kabid.')->group(function () {
@@ -105,6 +111,8 @@ Route::middleware('auth')->group(function () {
         // Review SPJ (Kabid) — setujui / revisi
         Route::post('packages/{package}/travel-orders/{travelOrder}/spj/approve', [\App\Http\Controllers\Kabid\TravelOrderController::class, 'approveSpj'])->name('packages.travel-orders.spj.approve');
         Route::post('packages/{package}/travel-orders/{travelOrder}/spj/revise', [\App\Http\Controllers\Kabid\TravelOrderController::class, 'reviseSpj'])->name('packages.travel-orders.spj.revise');
+        // Arsip Dokumen
+        Route::get('arsip', [\App\Http\Controllers\ArsipController::class, 'index'])->name('arsip.index');
         Route::put('procurement-packages/{package}/items', [\App\Http\Controllers\Kabid\ProcurementPackageController::class, 'updateItems'])->name('procurement-packages.items.update');
         Route::put('procurement-packages/{package}/contract', [\App\Http\Controllers\Kabid\ProcurementPackageController::class, 'updateContract'])->name('procurement-packages.contract.update');
         Route::put('procurement-packages/{package}/specification', [\App\Http\Controllers\Kabid\ProcurementPackageController::class, 'updateSpecification'])->name('procurement-packages.specification.update');
@@ -137,6 +145,9 @@ Route::middleware('auth')->group(function () {
 
         // Buku Register
         Route::get('buku-register', [BukuRegisterController::class, 'index'])->name('buku-register.index');
+
+        // Arsip Dokumen
+        Route::get('arsip', [\App\Http\Controllers\ArsipController::class, 'index'])->name('arsip.index');
 
         // Manajemen User
         Route::get('users/{user}/reset-password', [\App\Http\Controllers\Admin\UserController::class, 'editPassword'])->name('users.reset-password');
@@ -336,6 +347,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/packages/{package}/travel-orders/{travelOrder}/personnels/{personnel}/print-kuitansi', [App\Http\Controllers\TravelOrderDocumentController::class, 'printKuitansi'])->name('packages.travel-orders.personnels.print-kuitansi');
     Route::get('/packages/{package}/travel-orders/{travelOrder}/print-kuitansi', [App\Http\Controllers\TravelOrderDocumentController::class, 'printKuitansiAll'])->name('packages.travel-orders.print-kuitansi');
     Route::get('/packages/{package}/travel-orders/{travelOrder}/print-pengeluaran-riil', [App\Http\Controllers\TravelOrderDocumentController::class, 'printPengeluaranRiil'])->name('packages.travel-orders.print-pengeluaran-riil');
+    Route::get('/packages/{package}/travel-orders/{travelOrder}/print-laporan', [App\Http\Controllers\TravelOrderDocumentController::class, 'printLaporan'])->name('packages.travel-orders.print-laporan');
 
 });
 

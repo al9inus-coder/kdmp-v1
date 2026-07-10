@@ -169,9 +169,25 @@ class TravelOrderDocumentController extends Controller
      */
     public function printPengeluaranRiil(Package $package, TravelOrder $travelOrder)
     {
-        $travelOrder->load('personnels.employee');
+        $travelOrder->load('personnels.employee', 'report');
         $personnels = $travelOrder->personnels;
 
         return view('travel-orders.print.pengeluaran-riil', compact('package', 'travelOrder', 'personnels'));
+    }
+
+    /**
+     * Print Laporan Perjalanan Dinas (satu laporan per SPPD, ttd ketua pelaksana)
+     */
+    public function printLaporan(Package $package, TravelOrder $travelOrder)
+    {
+        $travelOrder->load('personnels.employee', 'report');
+
+        abort_if(!$travelOrder->report, 404, 'Laporan belum dibuat.');
+
+        return view('travel-orders.print.laporan', [
+            'package' => $package,
+            'travelOrder' => $travelOrder,
+            'report' => $travelOrder->report,
+        ]);
     }
 }

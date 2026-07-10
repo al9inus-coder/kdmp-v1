@@ -7,9 +7,10 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Penanda komponen biaya yang masuk Daftar Pengeluaran Riil:
-     * - transport_riil / taksi_riil : biaya tanpa bukti pengeluaran.
-     * - penginapan_riil             : tidak menginap di hotel, dibayar 30% tarif SBU.
+     * Penanda komponen biaya SPJ:
+     * - transport_riil / taksi_riil : tanpa bukti pengeluaran, masuk Daftar Pengeluaran Riil.
+     * - penginapan_riil             : tidak menginap di hotel, dibayar 30% tarif SBU
+     *                                 (TIDAK masuk Daftar Pengeluaran Riil).
      */
     public function up(): void
     {

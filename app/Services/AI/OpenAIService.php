@@ -61,4 +61,26 @@ class OpenAIService
             JSON_THROW_ON_ERROR
         );
     }
+
+    /**
+     * Generate JSON generik dengan system prompt kustom (dipakai a.l. laporan perjalanan dinas).
+     */
+    public function generateJson(string $systemPrompt, string $userPrompt, int $maxTokens = 3000): array
+    {
+        $response = OpenAI::chat()->create([
+            'model' => 'gpt-4o-mini',
+            'messages' => [
+                ['role' => 'system', 'content' => $systemPrompt],
+                ['role' => 'user', 'content' => $userPrompt],
+            ],
+            'temperature' => 0.2,
+            'max_tokens' => $maxTokens,
+            'response_format' => ['type' => 'json_object'],
+        ]);
+
+        $text = trim($response->choices[0]->message->content);
+        $text = str_replace(['```json', '```'], '', $text);
+
+        return json_decode($text, true, 512, JSON_THROW_ON_ERROR);
+    }
 }

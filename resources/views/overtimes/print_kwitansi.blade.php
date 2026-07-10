@@ -95,25 +95,11 @@
             }
             if($totalJam == 0) continue;
             
-            $empGol = strtoupper($golongan);
-            $mappedGolongan = 'P3K Paruh Waktu'; // default
-
-            if (str_contains($empGol, 'IV-') || str_contains($empGol, '/IV') || str_contains($empGol, 'GOLONGAN IV')) {
-                $mappedGolongan = 'Golongan IV';
-            } elseif (str_contains($empGol, 'III-') || str_contains($empGol, '/III') || str_contains($empGol, 'GOLONGAN III')) {
-                $mappedGolongan = 'Golongan III';
-            } elseif (str_contains($empGol, 'II-') || str_contains($empGol, '/II') || str_contains($empGol, 'GOLONGAN II') || str_contains($empGol, 'VII')) {
-                $mappedGolongan = 'Golongan II';
-            } elseif (str_contains($empGol, 'I-') || str_contains($empGol, '/I') || str_contains($empGol, 'GOLONGAN I')) {
-                $mappedGolongan = 'Golongan I';
-            }
-
+            // Pemetaan golongan -> tarif SBU terpusat & toleran format (SbuLembur::pickRate).
             if (!is_null($detail->rate_lembur_fix)) {
                 $valLembur = $detail->rate_lembur_fix;
             } else {
-                $rateLembur = $sbuRates->where('jenis', 'Uang Lembur')->where('golongan', $mappedGolongan)->first();
-                if(!$rateLembur) $rateLembur = $sbuRates->where('jenis', 'Uang Lembur')->sortBy('besaran')->first();
-                $valLembur = $rateLembur ? $rateLembur->besaran : 0;
+                $valLembur = \App\Models\SbuLembur::pickRate($sbuRates, 'Uang Lembur', $golongan)?->besaran ?? 0;
             }
             $uangLembur = $totalJam * $valLembur;
             

@@ -133,6 +133,11 @@ class TravelOrder extends Model
         return $this->belongsTo(Package::class);
     }
 
+    public function report()
+    {
+        return $this->hasOne(TravelReport::class);
+    }
+
     public function reviewer()
     {
         return $this->belongsTo(User::class, 'reviewed_by');

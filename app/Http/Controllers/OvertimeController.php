@@ -295,35 +295,17 @@ class OvertimeController extends Controller
             $sbuRates = \App\Models\SbuLembur::all();
             
             foreach ($overtime->details as $detail) {
-                $empGol = strtoupper($detail->employee->golongan ?? '-');
-                $mappedGolongan = 'P3K Paruh Waktu'; // default
-
-                if (str_contains($empGol, 'IV-') || str_contains($empGol, '/IV') || str_contains($empGol, 'GOLONGAN IV')) {
-                    $mappedGolongan = 'Golongan IV';
-                } elseif (str_contains($empGol, 'III-') || str_contains($empGol, '/III') || str_contains($empGol, 'GOLONGAN III')) {
-                    $mappedGolongan = 'Golongan III';
-                } elseif (str_contains($empGol, 'II-') || str_contains($empGol, '/II') || str_contains($empGol, 'GOLONGAN II') || str_contains($empGol, 'VII')) {
-                    $mappedGolongan = 'Golongan II';
-                } elseif (str_contains($empGol, 'I-') || str_contains($empGol, '/I') || str_contains($empGol, 'GOLONGAN I')) {
-                    $mappedGolongan = 'Golongan I';
-                }
+                $golongan = $detail->employee->golongan ?? null;
 
                 $updateData = [];
-                $updateData['golongan_fix'] = $detail->employee->golongan ?? '-';
+                $updateData['golongan_fix'] = $golongan ?? '-';
 
                 if (is_null($detail->rate_lembur_fix)) {
-                    $rateLembur = $sbuRates->where('jenis', 'Uang Lembur')->where('golongan', $mappedGolongan)->first();
-                    if(!$rateLembur) $rateLembur = $sbuRates->where('jenis', 'Uang Lembur')->sortBy('besaran')->first();
-                    $updateData['rate_lembur_fix'] = $rateLembur ? $rateLembur->besaran : 0;
+                    $updateData['rate_lembur_fix'] = \App\Models\SbuLembur::pickRate($sbuRates, 'Uang Lembur', $golongan)?->besaran ?? 0;
                 }
 
                 if (is_null($detail->rate_makan_fix)) {
-                    $rateMakan = $sbuRates->where('jenis', 'Uang Makan Lembur')->where('golongan', $mappedGolongan)->first();
-                    if(!$rateMakan && (str_contains($mappedGolongan, 'II') || str_contains($mappedGolongan, 'I'))) {
-                        $rateMakan = $sbuRates->where('jenis', 'Uang Makan Lembur')->where('golongan', 'Golongan II dan Golongan I')->first();
-                    }
-                    if(!$rateMakan) $rateMakan = $sbuRates->where('jenis', 'Uang Makan Lembur')->sortBy('besaran')->first();
-                    $updateData['rate_makan_fix'] = $rateMakan ? $rateMakan->besaran : 0;
+                    $updateData['rate_makan_fix'] = \App\Models\SbuLembur::pickRate($sbuRates, 'Uang Makan Lembur', $golongan)?->besaran ?? 0;
                 }
 
                 $detail->update($updateData);

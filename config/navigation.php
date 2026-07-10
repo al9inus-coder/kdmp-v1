@@ -59,6 +59,12 @@ return [
                 'icon'  => 'plane',
                 'roles' => ['Staff'],
             ],
+            [
+                'title' => 'Arsip Dokumen',
+                'route' => 'staf.arsip.index',
+                'icon'  => 'folder-open',
+                'roles' => ['Staff'],
+            ],
         ],
     ],
 
@@ -265,6 +271,12 @@ return [
                 'icon'  => 'book-marked',
                 'roles' => ['Admin'],
             ],
+            [
+                'title' => 'Arsip Dokumen',
+                'route' => 'admin.arsip.index',
+                'icon'  => 'folder-open',
+                'roles' => ['Admin'],
+            ],
         ],
     ],
     [
@@ -282,6 +294,12 @@ return [
                 'title' => 'Buku Register',
                 'route' => 'kabid.buku-register.index',
                 'icon'  => 'book-marked',
+                'roles' => ['Kabid'],
+            ],
+            [
+                'title' => 'Arsip Dokumen',
+                'route' => 'kabid.arsip.index',
+                'icon'  => 'folder-open',
                 'roles' => ['Kabid'],
             ],
         ],

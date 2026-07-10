@@ -188,20 +188,11 @@
                         if($val >= 2) { $totalJam += $val; $daysWithOvertime++; }
                     }
                     if($totalJam == 0) continue;
-                    $empGol = strtoupper($golongan); $mappedGolongan = 'P3K Paruh Waktu';
-                    if (str_contains($empGol, 'IV-') || str_contains($empGol, '/IV') || str_contains($empGol, 'GOLONGAN IV')) $mappedGolongan = 'Golongan IV';
-                    elseif (str_contains($empGol, 'III-') || str_contains($empGol, '/III') || str_contains($empGol, 'GOLONGAN III')) $mappedGolongan = 'Golongan III';
-                    elseif (str_contains($empGol, 'II-') || str_contains($empGol, '/II') || str_contains($empGol, 'GOLONGAN II') || str_contains($empGol, 'VII')) $mappedGolongan = 'Golongan II';
-                    elseif (str_contains($empGol, 'I-') || str_contains($empGol, '/I') || str_contains($empGol, 'GOLONGAN I')) $mappedGolongan = 'Golongan I';
+                    // Pemetaan golongan -> tarif SBU terpusat & toleran format (SbuLembur::pickRate).
                     if (!is_null($detail->rate_lembur_fix)) $valLembur = $detail->rate_lembur_fix;
-                    else { $rateLembur = $sbuRates->where('jenis', 'Uang Lembur')->where('golongan', $mappedGolongan)->first(); if(!$rateLembur) $rateLembur = $sbuRates->where('jenis', 'Uang Lembur')->sortBy('besaran')->first(); $valLembur = $rateLembur ? $rateLembur->besaran : 0; }
+                    else $valLembur = \App\Models\SbuLembur::pickRate($sbuRates, 'Uang Lembur', $golongan)?->besaran ?? 0;
                     if (!is_null($detail->rate_makan_fix)) $valMakan = $detail->rate_makan_fix;
-                    else {
-                        $rateMakan = $sbuRates->where('jenis', 'Uang Makan Lembur')->where('golongan', $mappedGolongan)->first();
-                        if(!$rateMakan && (str_contains($mappedGolongan, 'II') || str_contains($mappedGolongan, 'I'))) $rateMakan = $sbuRates->where('jenis', 'Uang Makan Lembur')->where('golongan', 'Golongan II dan Golongan I')->first();
-                        if(!$rateMakan) $rateMakan = $sbuRates->where('jenis', 'Uang Makan Lembur')->sortBy('besaran')->first();
-                        $valMakan = $rateMakan ? $rateMakan->besaran : 0;
-                    }
+                    else $valMakan = \App\Models\SbuLembur::pickRate($sbuRates, 'Uang Makan Lembur', $golongan)?->besaran ?? 0;
                     $uangLembur = $totalJam * $valLembur;
                     $uangMakan = $detail->use_uang_makan ? ($daysWithOvertime * $valMakan) : 0;
                     if($uangMakan > 0) $hasUangMakanBulanIni = true;

@@ -51,38 +51,18 @@ class Overtime extends Model
             }
             if ($totalJam == 0) continue;
 
-            $empGol = strtoupper($golongan);
-            $mappedGolongan = 'P3K Paruh Waktu'; // default
-
-            if (str_contains($empGol, 'IV-') || str_contains($empGol, '/IV') || str_contains($empGol, 'GOLONGAN IV')) {
-                $mappedGolongan = 'Golongan IV';
-            } elseif (str_contains($empGol, 'III-') || str_contains($empGol, '/III') || str_contains($empGol, 'GOLONGAN III')) {
-                $mappedGolongan = 'Golongan III';
-            } elseif (str_contains($empGol, 'II-') || str_contains($empGol, '/II') || str_contains($empGol, 'GOLONGAN II') || str_contains($empGol, 'VII')) {
-                $mappedGolongan = 'Golongan II';
-            } elseif (str_contains($empGol, 'I-') || str_contains($empGol, '/I') || str_contains($empGol, 'GOLONGAN I')) {
-                $mappedGolongan = 'Golongan I';
-            }
-
-            // Rate Lembur
+            // Rate Lembur (pemetaan golongan toleran format, tanpa fallback tarif lain)
             if (!is_null($detail->rate_lembur_fix)) {
                 $valLembur = $detail->rate_lembur_fix;
             } else {
-                $rateLembur = $sbuRates->where('jenis', 'Uang Lembur')->where('golongan', $mappedGolongan)->first();
-                if (!$rateLembur) $rateLembur = $sbuRates->where('jenis', 'Uang Lembur')->sortBy('besaran')->first();
-                $valLembur = $rateLembur ? $rateLembur->besaran : 0;
+                $valLembur = SbuLembur::pickRate($sbuRates, 'Uang Lembur', $golongan)?->besaran ?? 0;
             }
-            
+
             // Rate Makan
             if (!is_null($detail->rate_makan_fix)) {
                 $valMakan = $detail->rate_makan_fix;
             } else {
-                $rateMakan = $sbuRates->where('jenis', 'Uang Makan Lembur')->where('golongan', $mappedGolongan)->first();
-                if (!$rateMakan && (str_contains($mappedGolongan, 'II') || str_contains($mappedGolongan, 'I'))) {
-                    $rateMakan = $sbuRates->where('jenis', 'Uang Makan Lembur')->where('golongan', 'Golongan II dan Golongan I')->first();
-                }
-                if (!$rateMakan) $rateMakan = $sbuRates->where('jenis', 'Uang Makan Lembur')->sortBy('besaran')->first();
-                $valMakan = $rateMakan ? $rateMakan->besaran : 0;
+                $valMakan = SbuLembur::pickRate($sbuRates, 'Uang Makan Lembur', $golongan)?->besaran ?? 0;
             }
 
             // Values computed above
