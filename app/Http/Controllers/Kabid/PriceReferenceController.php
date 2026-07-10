@@ -185,6 +185,6 @@ class PriceReferenceController extends Controller
         return redirect()
             ->route('kabid.procurement-packages.show', $package)
             ->with('success', $message)
-            ->with('panel', 4);
+            ->with('panel', request('next_panel', 4));
     }
 }

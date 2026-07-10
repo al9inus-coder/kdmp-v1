@@ -114,6 +114,8 @@ Route::middleware('auth')->group(function () {
         Route::post('packages/{package}/travel-orders/{travelOrder}/spj/revise', [\App\Http\Controllers\Kabid\TravelOrderController::class, 'reviseSpj'])->name('packages.travel-orders.spj.revise');
         // Arsip Dokumen
         Route::get('arsip', [\App\Http\Controllers\ArsipController::class, 'index'])->name('arsip.index');
+        // Kalender Kegiatan
+        Route::get('kalender', [\App\Http\Controllers\Kabid\CalendarController::class, 'index'])->name('kalender.index');
         Route::put('procurement-packages/{package}/items', [\App\Http\Controllers\Kabid\ProcurementPackageController::class, 'updateItems'])->name('procurement-packages.items.update');
         Route::put('procurement-packages/{package}/contract', [\App\Http\Controllers\Kabid\ProcurementPackageController::class, 'updateContract'])->name('procurement-packages.contract.update');
         Route::put('procurement-packages/{package}/specification', [\App\Http\Controllers\Kabid\ProcurementPackageController::class, 'updateSpecification'])->name('procurement-packages.specification.update');

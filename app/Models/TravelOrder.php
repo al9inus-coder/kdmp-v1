@@ -128,6 +128,52 @@ class TravelOrder extends Model
         ][$this->spjStatus()];
     }
 
+    /**
+     * Cari bentrok jadwal: pegawai yang sudah terdaftar pada SPPD lain
+     * yang rentang tanggalnya beririsan. SPPD ditolak tidak dihitung.
+     *
+     * @param  array<int>  $employeeIds
+     * @return array<int, array{nama:string, tujuan:string, mulai:string, selesai:string}>
+     */
+    public static function bentrokJadwal(
+        array $employeeIds,
+        string $tanggalBerangkat,
+        string $tanggalKembali,
+        ?int $exceptTravelOrderId = null
+    ): array {
+        if (empty($employeeIds)) {
+            return [];
+        }
+
+        $personnels = TravelPersonnel::query()
+            ->whereIn('employee_id', $employeeIds)
+            ->whereHas('travelOrder', function ($q) use ($tanggalBerangkat, $tanggalKembali, $exceptTravelOrderId) {
+                $q->where('status', '!=', self::STATUS_REJECTED)
+                    ->whereDate('tanggal_berangkat', '<=', $tanggalKembali)
+                    ->whereDate('tanggal_kembali', '>=', $tanggalBerangkat)
+                    ->when($exceptTravelOrderId, fn ($sub) => $sub->where('id', '!=', $exceptTravelOrderId));
+            })
+            ->with(['employee:id,nama', 'travelOrder:id,tempat_tujuan,tanggal_berangkat,tanggal_kembali'])
+            ->get();
+
+        return $personnels->map(fn ($p) => [
+            'nama' => $p->employee?->nama ?? 'Pegawai',
+            'tujuan' => $p->travelOrder?->tempat_tujuan ?? '-',
+            'mulai' => $p->travelOrder?->tanggal_berangkat?->locale('id')->translatedFormat('d M Y') ?? '-',
+            'selesai' => $p->travelOrder?->tanggal_kembali?->locale('id')->translatedFormat('d M Y') ?? '-',
+        ])->values()->all();
+    }
+
+    /** Pesan validasi ringkas dari hasil bentrokJadwal(). */
+    public static function pesanBentrok(array $bentrok): string
+    {
+        $rincian = collect($bentrok)
+            ->map(fn ($b) => sprintf('%s (sudah SPPD ke %s, %s s.d. %s)', $b['nama'], $b['tujuan'], $b['mulai'], $b['selesai']))
+            ->implode('; ');
+
+        return 'Bentrok jadwal perjalanan dinas: ' . $rincian . '.';
+    }
+
     public function package()
     {
         return $this->belongsTo(Package::class);

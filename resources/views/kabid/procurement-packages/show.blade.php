@@ -1,7 +1,46 @@
 @component('layouts.kdmp')
 @section('title', 'Tinjau Persiapan Pengadaan')
 
-<div class="space-y-6" x-data="{ step: {{ (int) session('panel', 1) }} }">
+<div class="space-y-6" x-data="{ 
+    step: {{ (int) session('panel', 1) }},
+    getFormId() {
+        const forms = {
+            1: 'form-detail-kontrak',
+            2: 'form-barang-jasa',
+            3: 'form-spesifikasi-teknis',
+            4: 'form-referensi-harga',
+            5: 'form-surat-permohonan'
+        };
+        return forms[this.step] || null;
+    },
+    saveAndNext() {
+        let formId = this.getFormId();
+        let isLocked = {{ $locked ?? 'false' ? 'true' : 'false' }};
+        if (formId && !isLocked) {
+            let form = document.getElementById(formId);
+            if (form) {
+                // If form has no next_panel input, add it
+                if (!form.querySelector('input[name=\'next_panel\']')) {
+                    let input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'next_panel';
+                    input.value = this.step + 1;
+                    form.appendChild(input);
+                } else {
+                    form.querySelector('input[name=\'next_panel\']').value = this.step + 1;
+                }
+                
+                if (typeof form.requestSubmit === 'function') {
+                    form.requestSubmit();
+                } else {
+                    form.submit();
+                }
+                return;
+            }
+        }
+        if (this.step < 6) this.step++;
+    }
+}">
     <x-ui.toast />
 
     {{-- Identitas Paket --}}
@@ -32,7 +71,7 @@
 
                     // Panel dengan 'view' terisi memakai partial; sisanya placeholder (didesain bertahap).
                     $panels = [
-                        1 => ['title' => 'Informasi Kontrak',  'icon' => 'file-signature', 'desc' => 'Data PPK dan detail kontrak paket ini.', 'view' => 'kabid.procurement-packages.panels.informasi-kontrak', 'save_form' => 'form-detail-kontrak', 'save_label' => 'Simpan Detail Kontrak', 'lock_wrap' => true],
+                        1 => ['title' => 'Informasi Kontrak',  'icon' => 'file-signature', 'desc' => 'Data PPK dan detail kontrak paket ini.', 'view' => 'kabid.procurement-packages.panels.informasi-kontrak', 'save_form' => 'form-detail-kontrak', 'save_label' => 'Simpan', 'lock_wrap' => true],
                         2 => ['title' => 'Barang / Jasa',      'icon' => 'shopping-basket', 'desc' => 'Kelola rincian item barang/jasa yang diadakan.', 'view' => 'kabid.procurement-packages.panels.barang-jasa', 'save_form' => 'form-barang-jasa', 'save_label' => 'Simpan Barang/Jasa', 'lock_wrap' => true],
                         3 => ['title' => 'Spesifikasi Teknis', 'icon' => 'file-text',       'desc' => 'Susun dan periksa dokumen spesifikasi teknis (draf AI dapat diedit).', 'view' => 'kabid.procurement-packages.panels.spesifikasi-teknis'],
                         4 => ['title' => 'Referensi Harga',    'icon' => 'tags',            'desc' => 'Catat hasil survei harga per item dari katalog elektronik.', 'view' => 'kabid.procurement-packages.panels.referensi-harga'],
@@ -65,7 +104,7 @@
                                 </div>
                                 @if(isset($panel['save_form']) && !$locked)
                                     <button type="submit" form="{{ $panel['save_form'] }}"
-                                        class="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm shadow-emerald-200 transition-colors shrink-0">
+                                        class="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-slate-900 hover:bg-black rounded-lg shadow-sm shadow-slate-300 transition-colors shrink-0">
                                         <i data-lucide="save" class="w-4 h-4"></i>
                                         {{ $panel['save_label'] }}
                                     </button>
@@ -101,7 +140,7 @@
                         class="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                         <i data-lucide="chevron-left" class="w-4 h-4"></i> Sebelumnya
                     </button>
-                    <button type="button" @click="step < 6 ? step++ : null" :disabled="step === 6"
+                    <button type="button" @click="saveAndNext()" :disabled="step === 6"
                         class="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                         Selanjutnya <i data-lucide="chevron-right" class="w-4 h-4"></i>
                     </button>

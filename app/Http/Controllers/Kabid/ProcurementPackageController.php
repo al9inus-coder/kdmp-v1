@@ -201,7 +201,7 @@ class ProcurementPackageController extends Controller
             return redirect()
                 ->route('kabid.procurement-packages.show', $package)
                 ->with('error', 'Masih ada langkah persiapan yang belum lengkap. Periksa kembali daftar periksa.')
-                ->with('panel', 6);
+                ->with('panel', request('next_panel', 6));
         }
 
         $procurementPackage->update([
@@ -211,7 +211,7 @@ class ProcurementPackageController extends Controller
         return redirect()
             ->route('kabid.procurement-packages.show', $package)
             ->with('success', 'Persiapan pengadaan selesai. Paket masuk tahap Pemilihan Penyedia.')
-            ->with('panel', 6);
+            ->with('panel', request('next_panel', 6));
     }
 
     public function updatePrompt(Request $request, Package $package)
@@ -234,7 +234,7 @@ class ProcurementPackageController extends Controller
         return redirect()
             ->route('kabid.procurement-packages.show', $package)
             ->with('success', 'Prompt AI berhasil diperbarui.')
-            ->with('panel', 3);
+            ->with('panel', request('next_panel', 3));
     }
 
     public function updateContract(Request $request, Package $package)
@@ -266,7 +266,7 @@ class ProcurementPackageController extends Controller
         return redirect()
             ->route('kabid.procurement-packages.show', $package)
             ->with('success', 'Detail kontrak & pelaksanaan berhasil disimpan.')
-            ->with('panel', 1);
+            ->with('panel', request('next_panel', 1));
     }
 
     public function updateItems(Request $request, Package $package)
@@ -319,7 +319,7 @@ class ProcurementPackageController extends Controller
         return redirect()
             ->route('kabid.procurement-packages.show', $package)
             ->with('success', 'Rincian barang/jasa berhasil disimpan.')
-            ->with('panel', 2);
+            ->with('panel', request('next_panel', 2));
     }
 
     public function updateRequest(Request $request, Package $package)
@@ -349,7 +349,7 @@ class ProcurementPackageController extends Controller
         return redirect()
             ->route('kabid.procurement-packages.show', $package)
             ->with('success', 'Surat Permohonan berhasil disimpan.')
-            ->with('panel', 5);
+            ->with('panel', request('next_panel', 5));
     }
 
     public function updateSpecification(Request $request, Package $package)
@@ -386,7 +386,7 @@ class ProcurementPackageController extends Controller
         return redirect()
             ->route('kabid.procurement-packages.show', $package)
             ->with('success', 'Spesifikasi teknis berhasil disimpan.')
-            ->with('panel', 3);
+            ->with('panel', request('next_panel', 3));
     }
 
     public function generateSpecification(Package $package, OpenAIService $openai)
@@ -407,7 +407,7 @@ class ProcurementPackageController extends Controller
             return redirect()
                 ->route('kabid.procurement-packages.show', $package)
                 ->with('error', 'Isi rincian Barang/Jasa terlebih dahulu sebelum membuat draf AI.')
-                ->with('panel', 2);
+                ->with('panel', request('next_panel', 2));
         }
 
         $items = $technicalSpecification->items->map(fn($item) => [
@@ -435,12 +435,12 @@ class ProcurementPackageController extends Controller
             return redirect()
                 ->route('kabid.procurement-packages.show', $package)
                 ->with('success', 'Draf Spesifikasi Teknis berhasil dibuat oleh AI. Silakan periksa dan sesuaikan.')
-                ->with('panel', 3);
+                ->with('panel', request('next_panel', 3));
         } catch (\Exception $e) {
             return redirect()
                 ->route('kabid.procurement-packages.show', $package)
                 ->with('error', 'Gagal menghasilkan dokumen. Server AI mungkin sedang sibuk. Detail: ' . $e->getMessage())
-                ->with('panel', 3);
+                ->with('panel', request('next_panel', 3));
         }
     }
 

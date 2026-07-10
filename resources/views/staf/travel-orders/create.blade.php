@@ -39,7 +39,8 @@
     initialEnd: @js(old('tanggal_kembali', $isEdit ? $travelOrder->tanggal_kembali?->format('Y-m-d') : null)),
     initialSurat: @js(old('tanggal_surat', $isEdit ? $travelOrder->tanggal_surat?->format('Y-m-d') : now()->toDateString())),
     initialSelected: @js(collect(old('employees', $selectedEmployeeIds))->map(fn ($id) => (string) $id)->values()),
-    initialVehicles: @js(old('kendaraan', $selectedVehicles))
+    initialVehicles: @js(old('kendaraan', $selectedVehicles)),
+    jadwalTerpakai: @js($jadwalTerpakai ?? [])
 })">
     <x-ui.toast />
 
@@ -239,6 +240,22 @@
 
                 @error('employees') <div class="mx-6 mt-4 rounded-lg border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{{ $message }}</div> @enderror
 
+                {{-- Peringatan bentrok jadwal (langsung saat pegawai/tanggal dipilih) --}}
+                <div x-show="bentrokTerpilih.length" style="display:none"
+                    class="mx-6 mt-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3">
+                    <p class="text-sm font-bold text-rose-700 flex items-center gap-2">
+                        <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                        Bentrok jadwal perjalanan dinas
+                    </p>
+                    <ul class="mt-1.5 space-y-0.5">
+                        <template x-for="e in bentrokTerpilih" :key="e.id">
+                            <li class="text-xs font-semibold text-rose-600">
+                                <span x-text="e.nama"></span> &mdash; <span x-text="bentrokLabel(e.id)"></span>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+
                 <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 p-4 sm:p-6">
                     <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50/70 overflow-hidden transition-colors"
                         :class="draggedId && !selectedIds.includes(draggedId) ? 'border-slate-300' : (draggedId ? 'border-blue-300 bg-blue-50/40' : '')"
@@ -258,13 +275,25 @@
                                             <i data-lucide="grip-vertical" class="w-4 h-4"></i>
                                         </div>
                                         <div class="min-w-0">
-                                            <p class="font-bold text-sm text-slate-900 leading-snug truncate" x-text="employee.nama"></p>
+                                            <p class="font-bold text-sm text-slate-900 leading-snug truncate flex items-center gap-1.5">
+                                                <span x-text="employee.nama"></span>
+                                                <span x-show="isBentrok(employee.id)" style="display:none"
+                                                    class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-black bg-rose-100 text-rose-600 shrink-0"
+                                                    :title="bentrokLabel(employee.id)">
+                                                    <i data-lucide="alert-triangle" class="w-2.5 h-2.5"></i> BENTROK
+                                                </span>
+                                            </p>
                                             <p class="mt-1 text-xs text-slate-500 leading-relaxed truncate">
-                                                <span x-text="'NIP ' + (employee.nip || '-')"></span>
-                                                <span> &bull; </span>
-                                                <span x-text="employee.jabatan || 'Jabatan belum tersedia'"></span>
-                                                <span> &bull; Gol. </span>
-                                                <span x-text="employee.golongan || '-'"></span>
+                                                <span x-show="isBentrok(employee.id)" style="display:none" class="text-rose-500 font-semibold" x-text="bentrokLabel(employee.id)"></span>
+                                                <template x-if="!isBentrok(employee.id)">
+                                                    <span>
+                                                        <span x-text="'NIP ' + (employee.nip || '-')"></span>
+                                                        <span> &bull; </span>
+                                                        <span x-text="employee.jabatan || 'Jabatan belum tersedia'"></span>
+                                                        <span> &bull; Gol. </span>
+                                                        <span x-text="employee.golongan || '-'"></span>
+                                                    </span>
+                                                </template>
                                             </p>
                                         </div>
                                     </div>
@@ -423,6 +452,7 @@
             todayIso: toIso(new Date()),
             selectedIds: initialSelected,
             vehicles: config.initialVehicles || {},
+            jadwalTerpakai: config.jadwalTerpakai || {},
             draggedId: null,
             dragOverId: null,
 
@@ -456,6 +486,27 @@
                 return this.selectedIds
                     .map((id) => this.employees.find((employee) => employee.id === id))
                     .filter(Boolean);
+            },
+            // Jadwal SPPD lain milik pegawai yang beririsan dengan tanggal yang dipilih.
+            bentrokOf(employeeId) {
+                if (!this.start || !this.end) return [];
+                return (this.jadwalTerpakai[employeeId] || [])
+                    .filter((j) => j.start <= this.end && j.end >= this.start);
+            },
+            isBentrok(employeeId) {
+                return this.bentrokOf(employeeId).length > 0;
+            },
+            bentrokLabel(employeeId) {
+                const j = this.bentrokOf(employeeId)[0];
+                if (!j) return '';
+                const f = (iso) => {
+                    const [, m, d] = iso.split('-').map(Number);
+                    return d + ' ' + monthNames[m - 1].slice(0, 3);
+                };
+                return 'Sudah SPPD ke ' + j.tujuan + ' (' + f(j.start) + '–' + f(j.end) + ')';
+            },
+            get bentrokTerpilih() {
+                return this.selectedEmployees.filter((e) => this.isBentrok(e.id));
             },
             prevMonth() {
                 if (--this.viewMonth < 0) {

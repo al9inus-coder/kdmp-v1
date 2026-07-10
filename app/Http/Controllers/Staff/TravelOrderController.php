@@ -40,8 +40,11 @@ class TravelOrderController extends KabidTravelOrderController
         ] = $this->travelOrderFormData();
 
         $eligiblePackages = Package::with(['subActivity', 'account'])
+            ->where('status', 'approved')
             ->whereHas('account', fn ($q) => $q->where('nama', 'like', '%perjalanan dinas%'))
             ->get();
+
+        $jadwalTerpakai = $this->jadwalTerpakai();
 
         return view($this->rolePrefix . '.travel-orders.create', compact(
             'package',
@@ -49,7 +52,8 @@ class TravelOrderController extends KabidTravelOrderController
             'dalamDaerahDestinations',
             'luarDaerahKalbarDestinations',
             'luarDaerahLuarProvinsiDestinations',
-            'eligiblePackages'
+            'eligiblePackages',
+            'jadwalTerpakai'
         ));
     }
 
@@ -77,8 +81,11 @@ class TravelOrderController extends KabidTravelOrderController
         ] = $this->travelOrderFormData();
 
         $eligiblePackages = Package::with(['subActivity', 'account'])
+            ->where('status', 'approved')
             ->whereHas('account', fn ($q) => $q->where('nama', 'like', '%perjalanan dinas%'))
             ->get();
+
+        $jadwalTerpakai = $this->jadwalTerpakai($travelOrder->id);
 
         return view($this->rolePrefix . '.travel-orders.create', compact(
             'package',
@@ -87,7 +94,8 @@ class TravelOrderController extends KabidTravelOrderController
             'dalamDaerahDestinations',
             'luarDaerahKalbarDestinations',
             'luarDaerahLuarProvinsiDestinations',
-            'eligiblePackages'
+            'eligiblePackages',
+            'jadwalTerpakai'
         ));
     }
 
@@ -113,6 +121,17 @@ class TravelOrderController extends KabidTravelOrderController
             'employees.required' => 'Pilih minimal satu pegawai pelaksana perjalanan dinas.',
             'employees.min' => 'Pilih minimal satu pegawai pelaksana perjalanan dinas.',
         ]);
+
+        // Satu pegawai tidak boleh punya dua perjalanan dinas di tanggal yang beririsan.
+        $bentrok = TravelOrder::bentrokJadwal(
+            array_map('intval', $validated['employees']),
+            $validated['tanggal_berangkat'],
+            $validated['tanggal_kembali'],
+        );
+
+        if ($bentrok) {
+            return back()->withInput()->withErrors(['employees' => TravelOrder::pesanBentrok($bentrok)]);
+        }
 
         $submissionFlow = $this->submissionFlow;
 
@@ -174,6 +193,18 @@ class TravelOrderController extends KabidTravelOrderController
             'package_id' => 'nullable|exists:packages,id'
         ]);
 
+        // Bentrok jadwal — SPPD yang sedang diedit dikecualikan dari pengecekan.
+        $bentrok = TravelOrder::bentrokJadwal(
+            array_map('intval', $validated['employees']),
+            $validated['tanggal_berangkat'],
+            $validated['tanggal_kembali'],
+            $travelOrder->id,
+        );
+
+        if ($bentrok) {
+            return back()->withInput()->withErrors(['employees' => TravelOrder::pesanBentrok($bentrok)]);
+        }
+
         $newPackageId = $request->input('package_id', $package->id);
         $packageChanged = (int) $newPackageId !== (int) $package->id;
         $newPackage = $packageChanged ? Package::findOrFail($newPackageId) : $package;
@@ -218,6 +249,29 @@ class TravelOrderController extends KabidTravelOrderController
         return redirect()
             ->route($this->rolePrefix . '.packages.travel-orders.show', [$newPackage, $travelOrder])
             ->with('success', 'Perjalanan dinas berhasil diperbarui.');
+    }
+
+    /**
+     * Jadwal perjalanan dinas yang sudah terpakai per pegawai (untuk peringatan bentrok di form).
+     *
+     * @return array<int, array<int, array{start:string,end:string,tujuan:string}>>
+     */
+    protected function jadwalTerpakai(?int $exceptTravelOrderId = null): array
+    {
+        return \App\Models\TravelPersonnel::query()
+            ->whereHas('travelOrder', fn ($q) => $q
+                ->where('status', '!=', TravelOrder::STATUS_REJECTED)
+                ->whereDate('tanggal_kembali', '>=', now()->subMonths(3))
+                ->when($exceptTravelOrderId, fn ($sub) => $sub->where('id', '!=', $exceptTravelOrderId)))
+            ->with('travelOrder:id,tempat_tujuan,tanggal_berangkat,tanggal_kembali')
+            ->get()
+            ->groupBy('employee_id')
+            ->map(fn ($rows) => $rows->map(fn ($p) => [
+                'start' => $p->travelOrder->tanggal_berangkat->format('Y-m-d'),
+                'end' => $p->travelOrder->tanggal_kembali->format('Y-m-d'),
+                'tujuan' => $p->travelOrder->tempat_tujuan,
+            ])->values()->all())
+            ->all();
     }
 
     protected function travelOrderFormData(): array

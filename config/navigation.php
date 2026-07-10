@@ -15,6 +15,12 @@ return [
         'icon'  => 'layout-dashboard',
         'roles' => ['Kabid'],
     ],
+    [
+        'title' => 'Kalender',
+        'route' => 'kabid.kalender.index',
+        'icon'  => 'calendar-days',
+        'roles' => ['Kabid'],
+    ],
 
     // ─── STAF MENU ───────────────────────────────────────────────────────────
     [

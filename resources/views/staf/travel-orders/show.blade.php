@@ -1,4 +1,4 @@
-﻿@component('layouts.kdmp')
+@component('layouts.kdmp')
     @section('title', 'Detail SPPD')
 
     @php
@@ -34,10 +34,11 @@
         // (default tarif standar), jumlah = koef x harga. 'std' = harga SBU per satuan.
         $alpineRows = [];
         if ($reporting) {
-            $mk = function ($label, $koef, $satuan, $stored, $estAmt, $sbuRate = null, $riil = false) {
+            $mk = function ($label, $koef, $satuan, $stored, $estAmt, $sbuRate = null, $riil = false) use ($travelOrder) {
                 $koef = max(0, $koef);
                 $divisor = $koef > 0 ? $koef : 1;
-                $amount = (int) ($stored > 0 ? $stored : ($estAmt ?? 0));
+                $hasSaved = $travelOrder->spj_status !== null;
+                $amount = (int) ($hasSaved ? $stored : ($estAmt ?? 0));
                 return [
                     'label' => $label, 'koef' => $koef, 'satuan' => $satuan,
                     'rate' => $koef > 0 ? $amount / $divisor : 0,
