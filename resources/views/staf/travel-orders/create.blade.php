@@ -488,10 +488,12 @@
                     .filter(Boolean);
             },
             // Jadwal SPPD lain milik pegawai yang beririsan dengan tanggal yang dipilih.
+            // Bila tanggal kembali belum diisi (mis. dari kalender 1 hari), pakai tanggal berangkat.
             bentrokOf(employeeId) {
-                if (!this.start || !this.end) return [];
+                if (!this.start) return [];
+                const end = this.end || this.start;
                 return (this.jadwalTerpakai[employeeId] || [])
-                    .filter((j) => j.start <= this.end && j.end >= this.start);
+                    .filter((j) => j.start <= end && j.end >= this.start);
             },
             isBentrok(employeeId) {
                 return this.bentrokOf(employeeId).length > 0;

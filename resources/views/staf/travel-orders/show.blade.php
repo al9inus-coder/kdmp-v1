@@ -602,15 +602,19 @@
                                                                         @endif
                                                                     </td>
                                                                     <td class="px-2 sm:px-3 py-2.5 align-top text-center text-slate-500 whitespace-nowrap">
-                                                                        {{ rtrim(rtrim(number_format($c['koef'], 2, ',', '.'), '0'), ',') }} {{ $c['satuan'] }}
+                                                                        <div class="flex items-center justify-center gap-1.5">
+                                                                            <input type="number" step="0.5" min="0"
+                                                                                x-model.number="rows[{{ $personnel->id }}]['{{ $key }}'].koef"
+                                                                                class="w-16 text-center px-1.5 py-1 rounded-md border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white">
+                                                                            <span class="text-xs">{{ $c['satuan'] }}</span>
+                                                                        </div>
                                                                     </td>
                                                                     <td class="hidden sm:table-cell px-3 py-2.5 align-top text-right text-slate-500 whitespace-nowrap">
                                                                         {{ $money($c['std']) }}
                                                                     </td>
                                                                     <td class="px-2 sm:px-3 py-2.5 align-top">
                                                                         <input type="text" inputmode="numeric" autocomplete="off"
-                                                                            @if($c['koef'] <= 0) disabled @endif
-                                                                            @if($key === 'biaya_penginapan' && $c['koef'] > 0) :disabled="rows[{{ $personnel->id }}]['{{ $key }}'].riil" @endif
+                                                                            :disabled="rows[{{ $personnel->id }}]['{{ $key }}'].koef <= 0 {{ $key === 'biaya_penginapan' ? "|| rows[{$personnel->id}]['{$key}'].riil" : '' }}"
                                                                             :value="fmt(rows[{{ $personnel->id }}]['{{ $key }}'].rate)"
                                                                             @input="rows[{{ $personnel->id }}]['{{ $key }}'].rate = parseNum($event.target.value); $event.target.value = fmt(rows[{{ $personnel->id }}]['{{ $key }}'].rate)"
                                                                             class="w-full min-w-[76px] text-right rounded-lg border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500 disabled:bg-slate-50 disabled:text-slate-500">
@@ -621,7 +625,18 @@
                                                                                 :value="rows[{{ $personnel->id }}]['{{ $key }}'].riil ? 1 : 0">
                                                                         @endif
                                                                     </td>
-                                                                    <td class="px-2.5 sm:px-4 py-2.5 align-top text-right font-bold text-slate-800 whitespace-nowrap" x-text="rp(compTotal({{ $personnel->id }}, '{{ $key }}'))"></td>
+                                                                    <td class="px-2.5 sm:px-4 py-2.5 align-top">
+                                                                        <input type="text" inputmode="numeric" autocomplete="off"
+                                                                            :disabled="rows[{{ $personnel->id }}]['{{ $key }}'].koef <= 0"
+                                                                            :value="fmt(compTotal({{ $personnel->id }}, '{{ $key }}'))"
+                                                                            @input="
+                                                                                let newTotal = parseNum($event.target.value);
+                                                                                let k = Number(rows[{{ $personnel->id }}]['{{ $key }}'].koef) || 1;
+                                                                                rows[{{ $personnel->id }}]['{{ $key }}'].rate = newTotal / (k > 0 ? k : 1);
+                                                                                $event.target.value = fmt(newTotal);
+                                                                            "
+                                                                            class="w-full min-w-[96px] text-right rounded-lg border-slate-300 text-sm font-bold text-slate-800 focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500">
+                                                                    </td>
                                                                 </tr>
                                                             @endforeach
                                                         </tbody>

@@ -2,6 +2,19 @@
     $menuItems = config('navigation', []);
 @endphp
 
+<style>
+    @keyframes berkibar {
+        0%, 100% { transform: rotate(0deg) skewY(0deg) scale(1); }
+        25% { transform: rotate(2deg) skewY(3deg) scale(1.02); }
+        50% { transform: rotate(0deg) skewY(0deg) scale(1); }
+        75% { transform: rotate(-1deg) skewY(-2deg) scale(0.98); }
+    }
+    .animate-berkibar {
+        animation: berkibar 4s ease-in-out infinite;
+        transform-origin: left center;
+    }
+</style>
+
 <!-- Sidebar -->
 <!-- Fixed width 260px, Background White, Solid (Bukan Glass), Border Kanan Tipis -->
 <aside class="fixed inset-y-0 left-0 z-50 flex flex-col bg-white border-r border-slate-200 transition-all duration-300 transform overflow-hidden"
@@ -9,8 +22,11 @@
 
     <!-- Logo Area -->
     <div class="flex items-center justify-between md:justify-center h-[64px] border-b border-slate-100 px-4 shrink-0">
-        <a href="/" class="flex items-center justify-center">
-            <img src="{{ asset('images/logo_kdmp.png') }}" alt="KDMP - Kendali Digital Manajemen Pengadaan" class="w-auto object-contain transition-all duration-300" :class="sidebarCollapsed ? 'h-8' : 'h-12'">
+        <a href="{{ route('dashboard') }}" class="flex items-center gap-3 overflow-hidden transition-all duration-300">
+            <img src="{{ asset('images/bendera.svg') }}" alt="Bendera" class="w-12 h-8 rounded-sm shrink-0 shadow-md drop-shadow-sm border border-slate-200/50 object-cover animate-berkibar">
+            <div class="flex items-center whitespace-nowrap pr-1" x-show="!sidebarCollapsed">
+                <span class="text-2xl font-black tracking-tight text-slate-900 leading-none">KDMP</span>
+            </div>
         </a>
         <button type="button" @click="sidebarOpen = false" class="p-1 rounded-md text-slate-400 hover:bg-slate-100 md:hidden transition-colors">
             <i data-lucide="x" class="w-5 h-5"></i>
