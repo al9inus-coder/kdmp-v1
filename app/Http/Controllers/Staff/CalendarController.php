@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Staff;
 
 use App\Http\Controllers\Controller;
 use App\Models\Holiday;
+use App\Models\SubActivity;
 use App\Models\TravelOrder;
-use App\Models\Package;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
@@ -50,16 +50,29 @@ class CalendarController extends Controller
                 Carbon::parse($h->holiday_date)->format('Y-m-d') => $h->description ?? 'Hari libur',
             ]);
 
-        // Paket pengadaan yang eligible untuk pembuatan SPPD (double click)
-        $eligiblePackages = Package::with(['subActivity', 'account'])
-            ->where('status', 'approved')
-            ->whereHas('account', fn ($q) => $q->where('nama', 'like', '%perjalanan dinas%'))
-            ->get();
+        // Sub kegiatan yang berhak dibuatkan SPPD (punya paket rekening perjalanan dinas).
+        // Setiap item membawa package_id paket perjalanan dinas-nya untuk create SPPD.
+        $eligibleSubActivities = SubActivity::query()
+            ->with([
+                'packages' => fn ($q) => $q
+                    ->whereHas('account', fn ($account) => $account->where('nama', 'like', '%perjalanan dinas%'))
+                    ->orderByDesc('id'),
+            ])
+            ->whereHas('packages.account', fn ($q) => $q->where('nama', 'like', '%perjalanan dinas%'))
+            ->orderBy('kode')
+            ->get()
+            ->map(fn ($sa) => [
+                'id' => $sa->id,
+                'label' => trim(($sa->kode ? $sa->kode . ' — ' : '') . $sa->nama),
+                'package_id' => $sa->packages->first()?->id,
+            ])
+            ->filter(fn ($sa) => $sa['package_id'])
+            ->values();
 
         $bulanAwal = $request->filled('bulan')
             ? max(0, min(11, (int) $request->input('bulan')))
             : ($tahun === now()->year ? now()->month - 1 : 0);
 
-        return view('staf.calendar.index', compact('tahun', 'travels', 'holidays', 'bulanAwal', 'eligiblePackages'));
+        return view('staf.calendar.index', compact('tahun', 'travels', 'holidays', 'bulanAwal', 'eligibleSubActivities'));
     }
 }

@@ -54,6 +54,10 @@ Route::middleware('auth')->group(function () {
     // Staff Packages Module
     Route::middleware(['role:Staff'])->prefix('staf')->name('staf.')->group(function () {
         Route::get('packages', [\App\Http\Controllers\Staff\PackageController::class, 'index'])->name('packages.index');
+        Route::get('packages/import', [\App\Http\Controllers\ImportBatchController::class, 'index'])->name('packages.import');
+        Route::post('packages/import', [\App\Http\Controllers\ImportBatchController::class, 'store'])->name('packages.import.store');
+        Route::get('packages/import/{batch}', [\App\Http\Controllers\ImportBatchController::class, 'show'])->name('packages.import.show');
+        
         Route::get('packages/create', [\App\Http\Controllers\Staff\PackageController::class, 'create'])->name('packages.create');
         Route::get('packages/{package}', [\App\Http\Controllers\Staff\PackageController::class, 'show'])->name('packages.show');
         Route::get('packages/{package}/edit', [\App\Http\Controllers\Staff\PackageController::class, 'edit'])->name('packages.edit');
@@ -63,6 +67,7 @@ Route::middleware('auth')->group(function () {
 
         // SPPD (Staff) — daftar pengajuan
         Route::get('sppd', [\App\Http\Controllers\Staff\SppdController::class, 'index'])->name('sppd.index');
+        Route::get('sppd/create', [\App\Http\Controllers\Staff\SppdController::class, 'create'])->name('sppd.create');
 
         // Perjalanan Dinas (Staff)
         Route::get('packages/{package}/travel-orders/create', [\App\Http\Controllers\Staff\TravelOrderController::class, 'create'])->name('packages.travel-orders.create');
@@ -165,13 +170,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/schedules', [\App\Http\Controllers\ScheduleController::class, 'index'])->name('schedules.index');
 
     // Resource Routes
-    Route::resource('skpds', SkpdController::class)->except(['show']);
-    Route::resource('programs', ProgramController::class)->except(['show', 'destroy']);
-    Route::resource('activities', ActivityController::class)->except(['show', 'destroy']);
-    Route::resource('sub-activities', SubActivityController::class)->except(['show', 'destroy']);
-    Route::resource('accounts', AccountController::class)->except(['show', 'destroy']);
-    Route::resource('fiscal-years', FiscalYearController::class)->except(['show', 'edit', 'update', 'destroy']);
-    Route::resource('employees', \App\Http\Controllers\EmployeeController::class)->except(['show']);
+    Route::middleware(['role:Admin|Super Admin'])->group(function () {
+        Route::resource('skpds', SkpdController::class)->except(['show']);
+        Route::resource('programs', ProgramController::class)->except(['show', 'destroy']);
+        Route::resource('activities', ActivityController::class)->except(['show', 'destroy']);
+        Route::resource('sub-activities', SubActivityController::class)->except(['show', 'destroy']);
+        Route::resource('accounts', AccountController::class)->except(['show', 'destroy']);
+        Route::resource('fiscal-years', FiscalYearController::class)->except(['show', 'edit', 'update', 'destroy']);
+        Route::resource('employees', \App\Http\Controllers\EmployeeController::class)->except(['show']);
+    });
 
     // Procurement Packages Routes
     Route::get('procurement-packages', [ProcurementPackageController::class, 'index'])
@@ -249,11 +256,13 @@ Route::middleware('auth')->group(function () {
     Route::get('monev/{subActivity}/print', [MonevController::class, 'print'])->name('monev.print');
     
     // SBU Management
-    Route::resource('sbu-transport-rates', App\Http\Controllers\SbuTransportRateController::class)->except(['show']);
-    Route::resource('sbu-uang-harians', App\Http\Controllers\SbuUangHarianController::class)->except(['show']);
-    Route::resource('sbu-penginapans', App\Http\Controllers\SbuPenginapanController::class)->except(['show']);
-    Route::resource('sbu-tiket-pesawats', App\Http\Controllers\SbuTiketPesawatController::class)->except(['show']);
-    Route::resource('sbu-lemburs', App\Http\Controllers\SbuLemburController::class)->except(['show', 'create', 'edit']);
+    Route::middleware(['role:Admin|Super Admin'])->group(function () {
+        Route::resource('sbu-transport-rates', App\Http\Controllers\SbuTransportRateController::class)->except(['show']);
+        Route::resource('sbu-uang-harians', App\Http\Controllers\SbuUangHarianController::class)->except(['show']);
+        Route::resource('sbu-penginapans', App\Http\Controllers\SbuPenginapanController::class)->except(['show']);
+        Route::resource('sbu-tiket-pesawats', App\Http\Controllers\SbuTiketPesawatController::class)->except(['show']);
+        Route::resource('sbu-lemburs', App\Http\Controllers\SbuLemburController::class)->except(['show', 'create', 'edit']);
+    });
     
     // Procurement Packages & sub-resources
     Route::resource('packages', PackageController::class);

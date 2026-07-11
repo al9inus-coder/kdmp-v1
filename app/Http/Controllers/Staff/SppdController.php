@@ -74,4 +74,25 @@ class SppdController extends Controller
             'travelOrders', 'statusCounts', 'spjCounts', 'status', 'search', 'eligibleSubActivities'
         ));
     }
+
+    public function create()
+    {
+        $eligibleSubActivity = SubActivity::query()
+            ->with([
+                'packages' => fn ($q) => $q
+                    ->whereHas('account', fn ($account) => $account->where('nama', 'like', '%perjalanan dinas%'))
+                    ->orderByDesc('id'),
+            ])
+            ->whereHas('packages.account', fn ($q) => $q->where('nama', 'like', '%perjalanan dinas%'))
+            ->orderBy('kode')
+            ->first();
+
+        $firstEligiblePackage = $eligibleSubActivity?->packages->first();
+
+        if ($firstEligiblePackage) {
+            return redirect()->route('staf.packages.travel-orders.create', $firstEligiblePackage);
+        }
+
+        return redirect()->route('staf.sppd.index')->with('error', 'Tidak ada sub kegiatan dengan paket perjalanan dinas yang tersedia untuk diajukan.');
+    }
 }

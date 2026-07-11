@@ -45,7 +45,8 @@ class TravelOrderController extends KabidTravelOrderController
             ->get();
 
         $jadwalTerpakai = $this->jadwalTerpakai();
-        $defaultDate = request()->query('date');
+        $defaultDate = request()->query('date');           // tanggal berangkat
+        $defaultEndDate = request()->query('end');          // tanggal kembali (opsional, dari drag di kalender)
 
         return view($this->rolePrefix . '.travel-orders.create', compact(
             'package',
@@ -55,7 +56,8 @@ class TravelOrderController extends KabidTravelOrderController
             'luarDaerahLuarProvinsiDestinations',
             'eligiblePackages',
             'jadwalTerpakai',
-            'defaultDate'
+            'defaultDate',
+            'defaultEndDate'
         ));
     }
 

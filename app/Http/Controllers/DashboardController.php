@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\FiscalYear;
 use App\Models\Package;
 use App\Models\ProcurementPackage;
+use App\Models\TravelOrder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class DashboardController extends Controller
 {
@@ -292,23 +294,52 @@ class DashboardController extends Controller
         }
 
         $totalPaket      = (clone $baseQuery)->count();
-        $totalPagu       = (clone $baseQuery)->sum('pagu');
         $draftCount      = (clone $baseQuery)->where('status', 'draft')->count();
         $needsReviewCount = (clone $baseQuery)->where('status', 'needs_review')->count();
         $submittedCount  = (clone $baseQuery)->where('status', 'submitted')->count();
         $approvedCount   = (clone $baseQuery)->where('status', 'approved')->count();
 
-        // Paket terbaru (5 terakhir)
-        $recentPackages = (clone $baseQuery)
-            ->with(['subActivity.activity.program'])
-            ->orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get();
-
         // Paket needs_review (perlu dilengkapi)
         $needsReviewPackages = (clone $baseQuery)
             ->where('status', 'needs_review')
             ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        // ===== Perjalanan Dinas (SPPD) =====
+        $sppdBase = TravelOrder::query()->whereNotNull('created_by');
+
+        $sppdCounts = [
+            'draft'     => (clone $sppdBase)->where('status', TravelOrder::STATUS_DRAFT)->count(),
+            'submitted' => (clone $sppdBase)->where('status', TravelOrder::STATUS_SUBMITTED)->count(),
+            'revision'  => (clone $sppdBase)->where('status', TravelOrder::STATUS_REVISION)->count(),
+            'approved'  => (clone $sppdBase)->where('status', TravelOrder::STATUS_APPROVED)->count(),
+        ];
+
+        // SPJ perlu diproses: SPPD sudah disetujui tapi SPJ belum disetujui (draf/null/revisi).
+        $spjPendingCount = (clone $sppdBase)
+            ->where('status', TravelOrder::STATUS_APPROVED)
+            ->where(fn ($q) => $q
+                ->whereNull('spj_status')
+                ->orWhereIn('spj_status', [TravelOrder::SPJ_DRAFT, TravelOrder::SPJ_REVISION]))
+            ->count();
+
+        // SPPD yang butuh tindakan staf: draf & perlu revisi.
+        $sppdActionCount = $sppdCounts['draft'] + $sppdCounts['revision'];
+
+        // Perjalanan dinas terbaru (5)
+        $recentTravels = (clone $sppdBase)
+            ->with(['personnels.employee', 'package.subActivity'])
+            ->orderByDesc('updated_at')
+            ->limit(5)
+            ->get();
+
+        // Agenda perjalanan: sedang berlangsung / akan datang (disetujui, belum lewat)
+        $upcomingTravels = (clone $sppdBase)
+            ->where('status', TravelOrder::STATUS_APPROVED)
+            ->whereDate('tanggal_kembali', '>=', Carbon::today())
+            ->with(['personnels.employee'])
+            ->orderBy('tanggal_berangkat')
             ->limit(5)
             ->get();
 
@@ -337,10 +368,26 @@ class DashboardController extends Controller
                     ->map(fn ($pkg) => [
                         'icon'  => 'send',
                         'color' => 'blue',
-                        'title' => 'Mengajukan: '.$pkg->nama_paket,
-                        'desc'  => 'Rp '.number_format((float) $pkg->pagu, 0, ',', '.'),
+                        'title' => 'Mengajukan paket: '.$pkg->nama_paket,
+                        'desc'  => 'Paket pengadaan',
                         'time'  => $pkg->submitted_at,
                         'url'   => route('staf.packages.show', $pkg),
+                    ])
+            )
+            ->concat(
+                (clone $sppdBase)
+                    ->where('created_by', $user->id)
+                    ->whereNotNull('submitted_at')
+                    ->orderByDesc('submitted_at')
+                    ->limit(6)
+                    ->get()
+                    ->map(fn ($to) => [
+                        'icon'  => 'plane',
+                        'color' => 'indigo',
+                        'title' => 'Mengajukan SPPD: '.$to->tempat_tujuan,
+                        'desc'  => $to->maksud_perjalanan ? \Illuminate\Support\Str::limit($to->maksud_perjalanan, 40) : 'Perjalanan dinas',
+                        'time'  => $to->submitted_at,
+                        'url'   => route('staf.packages.travel-orders.show', [$to->package_id, $to]),
                     ])
             )
             ->sortByDesc('time')
@@ -349,9 +396,11 @@ class DashboardController extends Controller
 
         return view('staf.dashboard', compact(
             'activeFiscalYear',
-            'totalPaket', 'totalPagu',
+            'totalPaket',
             'draftCount', 'needsReviewCount', 'submittedCount', 'approvedCount',
-            'recentPackages', 'needsReviewPackages', 'recentActivities'
+            'needsReviewPackages', 'recentActivities',
+            'sppdCounts', 'spjPendingCount', 'sppdActionCount',
+            'recentTravels', 'upcomingTravels'
         ));
     }
 }

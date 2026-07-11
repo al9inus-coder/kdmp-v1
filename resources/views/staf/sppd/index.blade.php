@@ -1,5 +1,5 @@
 @component('layouts.kdmp')
-    @section('title', 'Daftar SPPD')
+    @section('title', 'Daftar SPD')
 
     <div class="space-y-6" x-data="{ showPicker: false, pickedPackage: '' }">
         <x-ui.toast />
@@ -9,9 +9,9 @@
             <div>
                 <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
                     <i data-lucide="plane" class="w-6 h-6 text-indigo-600"></i>
-                    Surat Perintah <span class="text-indigo-600">Perjalanan Dinas</span>
+                    Daftar <span class="text-indigo-600">SPD</span>
                 </h1>
-                <p class="text-sm text-slate-500 mt-1">Ajukan dan pantau status persetujuan SPPD Anda.</p>
+                <p class="text-sm text-slate-500 mt-1">Ajukan dan pantau status persetujuan SPD Anda.</p>
             </div>
             @php
                 $firstEligiblePackage = $eligibleSubActivities->first()?->packages->first();
@@ -20,14 +20,14 @@
                 <a href="{{ route('staf.packages.travel-orders.create', $firstEligiblePackage) }}"
                     class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200 shrink-0">
                     <i data-lucide="plus" class="w-4 h-4"></i>
-                    Ajukan SPPD
+                    Ajukan SPD
                 </a>
             @else
                 <button type="button" disabled
                     class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-400 bg-slate-100 rounded-xl cursor-not-allowed shrink-0"
                     title="Tidak ada sub kegiatan dengan paket perjalanan dinas">
                     <i data-lucide="plus" class="w-4 h-4"></i>
-                    Ajukan SPPD
+                    Ajukan SPD
                 </button>
             @endif
         </div>
@@ -118,7 +118,7 @@
                     </a>
                 @endforeach
 
-                {{-- Pemisah tab SPPD | SPJ --}}
+                {{-- Pemisah tab SPD | SPJ --}}
                 <span class="w-px h-5 bg-slate-200 self-center mx-1 shrink-0"></span>
 
                 @foreach ($spjTabs as $value => $tab)
@@ -260,8 +260,8 @@
                                             class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
                                             <i data-lucide="plane" class="w-8 h-8 text-slate-400"></i>
                                         </div>
-                                        <p class="font-medium text-slate-600">Belum ada pengajuan SPPD.</p>
-                                        <p class="text-sm mt-1">Klik "Ajukan SPPD" untuk membuat pengajuan pertama.</p>
+                                        <p class="font-medium text-slate-600">Belum ada pengajuan SPD.</p>
+                                        <p class="text-sm mt-1">Klik "Ajukan SPD" untuk membuat pengajuan pertama.</p>
                                     </div>
                                 </td>
                             </tr>

@@ -11,7 +11,7 @@
             </h1>
             <p class="text-sm text-slate-500 mt-1">Rincian hasil proses import file Excel RUP.</p>
         </div>
-        <a href="{{ route('packages.import.index') }}" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm">
+        <a href="{{ auth()->user()->hasRole('Staff') ? route('staf.packages.import') : route('packages.import.index') }}" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm">
             <i data-lucide="arrow-left" class="w-4 h-4"></i>
             Kembali
         </a>

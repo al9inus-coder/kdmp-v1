@@ -143,31 +143,32 @@
             <div class="space-y-4">
 
                 {{-- Tab: Informasi / Laporan / Biaya --}}
-                <div class="inline-flex items-center p-1 bg-slate-100 border border-slate-200 rounded-xl">
+                <div class="inline-flex items-center p-1 bg-slate-100 border border-slate-200 rounded-xl max-w-full overflow-x-auto">
                     <button type="button" @click="tab = 'informasi'"
-                        class="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold rounded-lg transition-all"
+                        class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-sm font-semibold rounded-lg transition-all whitespace-nowrap shrink-0"
                         :class="tab === 'informasi' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
-                        <i data-lucide="clipboard-list" class="w-4 h-4"></i> Informasi Perjalanan
+                        <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                        <span class="sm:hidden">Informasi</span><span class="hidden sm:inline">Informasi Perjalanan</span>
                     </button>
                     @if ($reporting)
                         <button type="button" @click="tab = 'laporan'"
-                            class="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold rounded-lg transition-all"
+                            class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-sm font-semibold rounded-lg transition-all whitespace-nowrap shrink-0"
                             :class="tab === 'laporan' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
                             <i data-lucide="file-text" class="w-4 h-4"></i> Laporan
                         </button>
                         <button type="button" @click="tab = 'biaya'"
-                            class="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold rounded-lg transition-all"
+                            class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-sm font-semibold rounded-lg transition-all whitespace-nowrap shrink-0"
                             :class="tab === 'biaya' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
                             <i data-lucide="wallet" class="w-4 h-4"></i> Biaya
                         </button>
                     @else
                         <button type="button" disabled title="Tersedia saat tahap pelaporan"
-                            class="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold rounded-lg text-slate-300 cursor-not-allowed">
+                            class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-sm font-semibold rounded-lg text-slate-300 cursor-not-allowed whitespace-nowrap shrink-0">
                             <i data-lucide="file-text" class="w-4 h-4"></i> Laporan
                             <i data-lucide="lock" class="w-3 h-3"></i>
                         </button>
                         <button type="button" disabled title="Tersedia saat tahap pelaporan"
-                            class="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold rounded-lg text-slate-300 cursor-not-allowed">
+                            class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-sm font-semibold rounded-lg text-slate-300 cursor-not-allowed whitespace-nowrap shrink-0">
                             <i data-lucide="wallet" class="w-4 h-4"></i> Biaya
                             <i data-lucide="lock" class="w-3 h-3"></i>
                         </button>
@@ -197,12 +198,13 @@
                                     <button type="button" @click="showPromptModal = true"
                                         class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors shadow-sm">
                                         <i data-lucide="settings-2" class="w-4 h-4"></i>
-                                        Edit Prompt
+                                        <span class="sm:hidden">Prompt</span><span class="hidden sm:inline">Edit Prompt</span>
                                     </button>
                                     <button type="button" @click="generate()" :disabled="loading"
                                         class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-wait rounded-xl transition-colors shadow-sm shadow-indigo-200">
                                         <span x-show="!loading" class="inline-flex items-center gap-2">
-                                            <i data-lucide="bot" class="w-4 h-4"></i> Generate Laporan
+                                            <i data-lucide="bot" class="w-4 h-4"></i>
+                                            <span class="sm:hidden">Generate</span><span class="hidden sm:inline">Generate Laporan</span>
                                         </span>
                                         <span x-show="loading" style="display:none" class="inline-flex items-center gap-2">
                                             <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Menyusun laporan&hellip;
@@ -340,7 +342,7 @@
                                 <h3 class="font-black text-slate-900 text-lg"
                                     x-text="error ? 'Generate Gagal' : (success ? 'Laporan Selesai!' : 'AI Sedang Menyusun Laporan')"></h3>
                                 <p class="text-xs text-slate-500 mt-1 mb-5"
-                                    x-text="error ? '' : (success ? 'Menuliskan hasil ke kolom laporanâ€¦' : 'Mohon tunggu, biasanya 10â€“30 detik.')"></p>
+                                    x-text="error ? '' : (success ? 'Menuliskan hasil ke kolom laporan…' : 'Mohon tunggu, biasanya 10–30 detik.')"></p>
 
                                 {{-- Tahapan proses --}}
                                 <div x-show="!error" class="text-left space-y-2.5 mb-5">
@@ -520,15 +522,15 @@
                     {{-- ===== Panel Biaya ===== --}}
                     <div x-show="tab === 'biaya'" style="display:none">
                         <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                            <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/60">
+                            <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 bg-slate-50/60">
                                 <h2 class="text-lg font-black text-slate-900 flex items-center gap-2">
                                     <i data-lucide="wallet" class="w-5 h-5 text-indigo-500"></i>
                                     Input Biaya SPD
                                 </h2>
-                                <p class="mt-1 text-sm text-slate-500">Harga satuan default mengikuti tarif standar â€” jumlah = koefisien &times; harga satuan.</p>
+                                <p class="mt-1 text-sm text-slate-500">Harga satuan default mengikuti tarif standar &mdash; jumlah = koefisien &times; harga satuan.</p>
                             </div>
 
-                            <div class="p-5 space-y-4">
+                            <div class="p-3 sm:p-5 space-y-4">
                                 @error('personnels')
                                     <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{{ $message }}</div>
                                 @enderror
@@ -536,7 +538,7 @@
                                 @unless($spjEditable)
                                     <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold text-slate-500 flex items-center gap-2">
                                         <i data-lucide="lock" class="w-3.5 h-3.5"></i>
-                                        {{ $spjApproved ? 'SPJ sudah disetujui dan terkunci.' : 'SPJ sedang diajukan â€” tarik pengajuan untuk mengubah.' }}
+                                        {{ $spjApproved ? 'SPJ sudah disetujui dan terkunci.' : 'SPJ sedang diajukan — tarik pengajuan untuk mengubah.' }}
                                     </div>
                                 @endunless
 
@@ -563,52 +565,55 @@
                                                 <div class="overflow-x-auto">
                                                     <table class="w-full text-sm">
                                                         <thead>
-                                                            <tr class="text-[11px] text-slate-400 uppercase font-semibold bg-white border-b border-slate-100">
-                                                                <th class="text-left font-semibold px-4 py-2.5">Nama Biaya</th>
-                                                                <th class="text-center font-semibold px-3 py-2.5 w-24">Koefisien</th>
-                                                                <th class="text-right font-semibold px-3 py-2.5 w-32">Harga SBU</th>
-                                                                <th class="text-right font-semibold px-3 py-2.5 w-40">Harga Satuan (Rp)</th>
-                                                                <th class="text-right font-semibold px-4 py-2.5 w-36">Jumlah</th>
+                                                            <tr class="text-[10px] sm:text-[11px] text-slate-400 uppercase font-semibold bg-white border-b border-slate-100">
+                                                                <th class="text-left font-semibold px-2.5 sm:px-4 py-2.5">Nama Biaya</th>
+                                                                <th class="text-center font-semibold px-2 sm:px-3 py-2.5">Koef.</th>
+                                                                {{-- Harga SBU hanya referensi: disembunyikan di layar kecil --}}
+                                                                <th class="hidden sm:table-cell text-right font-semibold px-3 py-2.5 w-32">Harga SBU</th>
+                                                                <th class="text-right font-semibold px-2 sm:px-3 py-2.5">Harga Satuan</th>
+                                                                <th class="text-right font-semibold px-2.5 sm:px-4 py-2.5">Jumlah</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody class="divide-y divide-slate-50">
                                                             @foreach($comp as $key => $c)
                                                                 <tr>
-                                                                    <td class="px-4 py-2.5 font-semibold text-slate-700">
+                                                                    <td class="px-2.5 sm:px-4 py-2.5 align-top font-semibold text-slate-700">
                                                                         {{ $c['label'] }}
                                                                         @if($key === 'biaya_representasi')
                                                                             <span class="block text-[10px] font-normal text-slate-400">Khusus Eselon II</span>
                                                                         @endif
+                                                                        {{-- Harga SBU sebagai keterangan kecil (pengganti kolom yang disembunyikan di mobile) --}}
+                                                                        <span class="sm:hidden block text-[10px] font-normal text-slate-400 mt-0.5">SBU: {{ $money($c['std']) }}</span>
                                                                         @if(in_array($key, ['biaya_transport', 'biaya_taksi'], true))
-                                                                            <label class="mt-1 flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 cursor-pointer">
-                                                                                <input type="checkbox" class="w-3.5 h-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                                                            <label class="mt-1 flex items-start gap-1.5 text-[10px] font-semibold text-slate-500 cursor-pointer">
+                                                                                <input type="checkbox" class="mt-0.5 w-3.5 h-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 shrink-0"
                                                                                     x-model="rows[{{ $personnel->id }}]['{{ $key }}'].riil">
-                                                                                Tanpa bukti &mdash; masuk pengeluaran riil
+                                                                                <span>Tanpa bukti &mdash; masuk pengeluaran riil</span>
                                                                             </label>
                                                                         @elseif($key === 'biaya_penginapan' && $c['koef'] > 0)
-                                                                            <label class="mt-1 flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 cursor-pointer">
-                                                                                <input type="checkbox" class="w-3.5 h-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                                                            <label class="mt-1 flex items-start gap-1.5 text-[10px] font-semibold text-slate-500 cursor-pointer">
+                                                                                <input type="checkbox" class="mt-0.5 w-3.5 h-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 shrink-0"
                                                                                     x-model="rows[{{ $personnel->id }}]['{{ $key }}'].riil"
                                                                                     @change="rows[{{ $personnel->id }}]['{{ $key }}'].rate = $event.target.checked
                                                                                         ? Math.round(rows[{{ $personnel->id }}]['{{ $key }}'].std * 0.3)
                                                                                         : rows[{{ $personnel->id }}]['{{ $key }}'].std">
-                                                                                Tidak menginap di hotel &mdash; dibayar 30% tarif SBU
+                                                                                <span>Tidak menginap di hotel &mdash; dibayar 30% tarif SBU</span>
                                                                             </label>
                                                                         @endif
                                                                     </td>
-                                                                    <td class="px-3 py-2.5 text-center text-slate-500 whitespace-nowrap">
+                                                                    <td class="px-2 sm:px-3 py-2.5 align-top text-center text-slate-500 whitespace-nowrap">
                                                                         {{ rtrim(rtrim(number_format($c['koef'], 2, ',', '.'), '0'), ',') }} {{ $c['satuan'] }}
                                                                     </td>
-                                                                    <td class="px-3 py-2.5 text-right text-slate-500 whitespace-nowrap">
+                                                                    <td class="hidden sm:table-cell px-3 py-2.5 align-top text-right text-slate-500 whitespace-nowrap">
                                                                         {{ $money($c['std']) }}
                                                                     </td>
-                                                                    <td class="px-3 py-2.5">
+                                                                    <td class="px-2 sm:px-3 py-2.5 align-top">
                                                                         <input type="text" inputmode="numeric" autocomplete="off"
                                                                             @if($c['koef'] <= 0) disabled @endif
                                                                             @if($key === 'biaya_penginapan' && $c['koef'] > 0) :disabled="rows[{{ $personnel->id }}]['{{ $key }}'].riil" @endif
                                                                             :value="fmt(rows[{{ $personnel->id }}]['{{ $key }}'].rate)"
                                                                             @input="rows[{{ $personnel->id }}]['{{ $key }}'].rate = parseNum($event.target.value); $event.target.value = fmt(rows[{{ $personnel->id }}]['{{ $key }}'].rate)"
-                                                                            class="w-full text-right rounded-lg border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500 disabled:bg-slate-50 disabled:text-slate-500">
+                                                                            class="w-full min-w-[76px] text-right rounded-lg border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500 disabled:bg-slate-50 disabled:text-slate-500">
                                                                         <input type="hidden" name="personnels[{{ $personnel->id }}][{{ $key }}]"
                                                                             :value="Math.round(compTotal({{ $personnel->id }}, '{{ $key }}'))">
                                                                         @if(in_array($key, ['biaya_transport', 'biaya_taksi', 'biaya_penginapan'], true))
@@ -616,14 +621,15 @@
                                                                                 :value="rows[{{ $personnel->id }}]['{{ $key }}'].riil ? 1 : 0">
                                                                         @endif
                                                                     </td>
-                                                                    <td class="px-4 py-2.5 text-right font-bold text-slate-800 whitespace-nowrap" x-text="rp(compTotal({{ $personnel->id }}, '{{ $key }}'))"></td>
+                                                                    <td class="px-2.5 sm:px-4 py-2.5 align-top text-right font-bold text-slate-800 whitespace-nowrap" x-text="rp(compTotal({{ $personnel->id }}, '{{ $key }}'))"></td>
                                                                 </tr>
                                                             @endforeach
                                                         </tbody>
                                                         <tfoot>
                                                             <tr class="border-t border-slate-100 bg-slate-50/50">
-                                                                <td colspan="4" class="px-4 py-2.5 text-right text-xs font-bold text-slate-500 uppercase tracking-wide">Total</td>
-                                                                <td class="px-4 py-2.5 text-right font-extrabold text-emerald-700 whitespace-nowrap" x-text="rp(rowTotal({{ $personnel->id }}))"></td>
+                                                                <td colspan="3" class="sm:hidden px-2.5 py-2.5 text-right text-xs font-bold text-slate-500 uppercase tracking-wide">Total</td>
+                                                                <td colspan="4" class="hidden sm:table-cell px-4 py-2.5 text-right text-xs font-bold text-slate-500 uppercase tracking-wide">Total</td>
+                                                                <td class="px-2.5 sm:px-4 py-2.5 text-right font-extrabold text-emerald-700 whitespace-nowrap" x-text="rp(rowTotal({{ $personnel->id }}))"></td>
                                                             </tr>
                                                         </tfoot>
                                                     </table>
@@ -873,7 +879,7 @@
                             <div class="flex items-start gap-3">
                                 <span class="w-9 h-9 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0"><i data-lucide="file-pen" class="w-4 h-4"></i></span>
                                 <div>
-                                    <p class="font-bold text-slate-800 text-sm">Draf â€” belum diajukan</p>
+                                    <p class="font-bold text-slate-800 text-sm">Draf — belum diajukan</p>
                                     <p class="text-xs text-slate-500 mt-0.5">Periksa data lalu ajukan ke Pimpinan untuk disetujui.</p>
                                 </div>
                             </div>

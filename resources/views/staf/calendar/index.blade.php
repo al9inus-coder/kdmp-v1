@@ -8,8 +8,8 @@
             selected: '{{ $tahun === now()->year ? now()->format('Y-m-d') : sprintf('%d-01-01', $tahun) }}',
             travels: @js($travels),
             holidays: @js($holidays),
-            eligiblePackages: @js($eligiblePackages),
-        })" x-init="refreshIcons()">
+            eligibleSubActivities: @js($eligibleSubActivities),
+        })" x-init="init()" @mouseup.window="endDrag()">
         <x-ui.toast />
 
         {{-- Header --}}
@@ -82,9 +82,12 @@
                 <div class="grid grid-cols-7 gap-px bg-slate-200 border border-slate-200 rounded-xl overflow-hidden">
                     <template x-for="(cell, idx) in cells" :key="idx">
                         <div class="bg-white" :class="cell.iso === todayIso ? 'bg-amber-50/10' : ''">
-                            <button type="button" x-show="cell.d" @click="pick(cell.iso)" @dblclick="openCreateModal(cell.iso)"
-                                class="w-full min-h-[90px] sm:min-h-[110px] p-1.5 sm:p-2 transition-all flex flex-col items-stretch text-left group"
-                                :class="cell.iso === selected ? 'ring-2 ring-inset ring-indigo-500 bg-indigo-50/30' : 'hover:bg-slate-50'">
+                            <button type="button" x-show="cell.d" :data-iso="cell.iso"
+                                @click="pick(cell.iso)" @dblclick="openCreateModal(cell.iso)"
+                                @mousedown.prevent="startDrag(cell.iso)" @mouseenter="extendDrag(cell.iso)" @mouseup="endDrag()"
+                                @touchstart="startDrag(cell.iso)"
+                                class="w-full min-h-[90px] sm:min-h-[110px] p-1.5 sm:p-2 transition-all flex flex-col items-stretch text-left group select-none touch-none"
+                                :class="inDrag(cell.iso) ? 'ring-2 ring-inset ring-emerald-500 bg-emerald-50/60' : (cell.iso === selected ? 'ring-2 ring-inset ring-indigo-500 bg-indigo-50/30' : 'hover:bg-slate-50')">
                                 
                                 {{-- Tanggal & Indikator --}}
                                 <div class="flex items-center justify-between w-full mb-1.5">
@@ -117,6 +120,7 @@
                     <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500"><span class="w-3 h-3 rounded-full ring-2 ring-inset ring-amber-400 bg-amber-50"></span> Hari ini</span>
                     <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500"><span class="w-4 h-3 rounded bg-emerald-100 border border-emerald-200"></span> Perjalanan dinas</span>
                     <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500"><i data-lucide="sun" class="w-3.5 h-3.5 text-rose-500"></i> Libur</span>
+                    <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-400"><i data-lucide="mouse-pointer-click" class="w-3.5 h-3.5"></i> Klik &amp; seret tanggal untuk buat SPPD</span>
                 </div>
             </div>
 
@@ -124,8 +128,12 @@
             <aside class="space-y-4 lg:sticky lg:top-20">
                 {{-- Agenda tanggal terpilih --}}
                 <section class="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-                    <div class="px-5 py-3.5 border-b border-slate-100 bg-slate-50/50">
+                    <div class="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between gap-2">
                         <h2 class="text-xs font-black text-slate-500 uppercase tracking-widest">Agenda &middot; <span x-text="selectedLabel"></span></h2>
+                        <button type="button" @click="openCreateModal(selected)"
+                            class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors shrink-0">
+                            <i data-lucide="plus" class="w-3 h-3"></i> SPPD
+                        </button>
                     </div>
                     <div class="p-4 space-y-1">
                         <template x-if="agenda.length === 0">
@@ -206,13 +214,21 @@
                                 <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left flex-1">
                                     <h3 class="text-base font-semibold leading-6 text-slate-900" id="modal-title">Buat Perjalanan Dinas</h3>
                                     <div class="mt-2">
-                                        <p class="text-sm text-slate-500 mb-4">Pilih paket pengadaan untuk perjalanan dinas yang akan dimulai pada tanggal <strong class="text-slate-700" x-text="formatDateStr(modalDate)"></strong>.</p>
-                                        
-                                        <label for="modal-package" class="block text-sm font-medium leading-6 text-slate-900">Paket Pengadaan</label>
-                                        <select id="modal-package" x-model="modalPackage" class="mt-1 block w-full rounded-md border-0 py-2 pl-3 pr-10 text-slate-900 ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-emerald-600 sm:text-sm sm:leading-6">
-                                            <option value="" disabled selected>-- Pilih Paket --</option>
-                                            <template x-for="p in eligiblePackages" :key="p.id">
-                                                <option :value="p.id" x-text="p.nama_paket + (p.account ? ' (Sisa: ' + p.account.sisa_pagu_formatted + ')' : '')"></option>
+                                        <p class="text-sm text-slate-500 mb-4">
+                                            Pilih sub kegiatan untuk perjalanan dinas
+                                            <template x-if="modalStart === modalEnd">
+                                                <span>pada tanggal <strong class="text-slate-700" x-text="formatDateStr(modalStart)"></strong>.</span>
+                                            </template>
+                                            <template x-if="modalStart !== modalEnd">
+                                                <span><strong class="text-slate-700" x-text="formatDateStr(modalStart)"></strong> s.d. <strong class="text-slate-700" x-text="formatDateStr(modalEnd)"></strong> (<span x-text="rangeDays"></span> hari).</span>
+                                            </template>
+                                        </p>
+
+                                        <label for="modal-sub" class="block text-sm font-medium leading-6 text-slate-900">Sub Kegiatan</label>
+                                        <select id="modal-sub" x-model="modalPackage" class="mt-1 block w-full rounded-md border-0 py-2 pl-3 pr-10 text-slate-900 ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-emerald-600 sm:text-sm sm:leading-6">
+                                            <option value="" disabled selected>-- Pilih Sub Kegiatan --</option>
+                                            <template x-for="s in eligibleSubActivities" :key="s.package_id">
+                                                <option :value="s.package_id" x-text="s.label"></option>
                                             </template>
                                         </select>
                                     </div>
@@ -245,23 +261,83 @@
                 f: { travel: true, holiday: true },
                 travels: cfg.travels || [],
                 holidays: cfg.holidays || {},
-                eligiblePackages: cfg.eligiblePackages || [],
+                eligibleSubActivities: cfg.eligibleSubActivities || [],
                 bulanNama,
 
-                // Modal state
+                // Modal state (rentang tanggal)
                 modalOpen: false,
-                modalDate: '',
+                modalStart: '',
+                modalEnd: '',
                 modalPackage: '',
 
-                openCreateModal(iso) {
+                // Drag state
+                dragging: false,
+                dragStart: null,
+                dragHover: null,
+
+                init() {
+                    this.refreshIcons();
+                    // Touch: petakan koordinat jari ke sel tanggal (mouseenter tak ada di layar sentuh).
+                    document.addEventListener('touchmove', (e) => this.touchMove(e), { passive: false });
+                    document.addEventListener('touchend', () => this.endDrag());
+                    document.addEventListener('touchcancel', () => this.endDrag());
+                },
+                touchMove(e) {
+                    if (!this.dragging) return;
+                    const t = e.touches[0];
+                    if (!t) return;
+                    const el = document.elementFromPoint(t.clientX, t.clientY);
+                    const btn = el && el.closest('[data-iso]');
+                    if (btn) {
+                        const iso = btn.getAttribute('data-iso');
+                        if (iso && iso !== this.dragStart) {
+                            this.extendDrag(iso);
+                            e.preventDefault(); // kunci scroll hanya saat benar-benar menyeret lintas tanggal
+                        }
+                    }
+                },
+                startDrag(iso) {
                     if (!iso) return;
-                    this.modalDate = iso;
+                    this.dragging = true;
+                    this.dragStart = iso;
+                    this.dragHover = iso;
+                },
+                extendDrag(iso) {
+                    if (this.dragging && iso) this.dragHover = iso;
+                },
+                endDrag() {
+                    if (!this.dragging) return;
+                    this.dragging = false;
+                    // Hanya buka modal bila benar-benar diseret melintasi tanggal (bukan klik biasa).
+                    if (this.dragStart && this.dragHover && this.dragStart !== this.dragHover) {
+                        const [a, b] = [this.dragStart, this.dragHover].sort();
+                        this.openCreateModal(a, b);
+                    }
+                    this.dragStart = this.dragHover = null;
+                },
+                inDrag(iso) {
+                    if (!this.dragging || !this.dragStart || !iso) return false;
+                    const [a, b] = [this.dragStart, this.dragHover].sort();
+                    return iso >= a && iso <= b;
+                },
+
+                openCreateModal(startIso, endIso = null) {
+                    if (!startIso) return;
+                    this.modalStart = startIso;
+                    this.modalEnd = endIso || startIso;
                     this.modalPackage = '';
                     this.modalOpen = true;
+                    this.refreshIcons();
+                },
+                get rangeDays() {
+                    if (!this.modalStart || !this.modalEnd) return 1;
+                    return Math.round((new Date(this.modalEnd) - new Date(this.modalStart)) / 86400000) + 1;
                 },
                 submitModal() {
-                    if (!this.modalPackage || !this.modalDate) return;
-                    window.location.href = `/staf/packages/${this.modalPackage}/travel-orders/create?date=${this.modalDate}`;
+                    if (!this.modalPackage || !this.modalStart) return;
+                    let url = `/staf/packages/${this.modalPackage}/travel-orders/create?date=${this.modalStart}`;
+                    if (this.modalEnd && this.modalEnd !== this.modalStart) url += `&end=${this.modalEnd}`;
+                    window.location.href = url;
                 },
                 formatDateStr(iso) {
                     if (!iso) return '';

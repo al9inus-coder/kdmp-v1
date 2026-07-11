@@ -29,12 +29,7 @@ return [
         'icon'  => 'layout-dashboard',
         'roles' => ['Staff'],
     ],
-    [
-        'title' => 'Kalender',
-        'route' => 'staf.kalender.index',
-        'icon'  => 'calendar-days',
-        'roles' => ['Staff'],
-    ],
+
     [
         'title'  => 'PENGADAAN',
         'type'   => 'group',
@@ -66,15 +61,21 @@ return [
         'roles'  => ['Staff'],
         'children' => [
             [
-                'title' => 'SPPD',
+                'title' => 'Kalender',
+                'route' => 'staf.kalender.index',
+                'icon'  => 'calendar-days',
+                'roles' => ['Staff'],
+            ],
+            [
+                'title' => 'Daftar SPD',
                 'route' => 'staf.sppd.index',
                 'icon'  => 'plane',
                 'roles' => ['Staff'],
             ],
             [
-                'title' => 'Arsip Dokumen',
-                'route' => 'staf.arsip.index',
-                'icon'  => 'folder-open',
+                'title' => 'Ajukan SPD',
+                'route' => 'staf.sppd.create',
+                'icon'  => 'plus-circle',
                 'roles' => ['Staff'],
             ],
         ],
@@ -94,7 +95,7 @@ return [
                 'roles' => ['Kabid'],
             ],
             [
-                'title' => 'Pengajuan SPPD',
+                'title' => 'Daftar SPD',
                 'route' => 'kabid.sppd.index',
                 'icon'  => 'plane',
                 'badge' => 'kabid_sppd_pending',

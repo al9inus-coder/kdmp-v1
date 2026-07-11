@@ -88,8 +88,11 @@
         </div>
 
         {{-- Form --}}
-        <form id="importForm" action="{{ route('packages.import.store') }}" method="POST" enctype="multipart/form-data" class="p-6 space-y-4">
+        <form id="importForm" action="{{ auth()->user()->hasRole('Staff') ? route('staf.packages.import.store') : route('packages.import.store') }}" method="POST" enctype="multipart/form-data" class="p-6 space-y-4">
             @csrf
+            @if(auth()->user()->hasRole('Staff'))
+                <input type="hidden" name="source" value="staf">
+            @endif
 
             {{-- Drop Zone Hero --}}
             <label for="file" id="dropZone"
@@ -179,7 +182,7 @@
                 <tbody class="divide-y divide-slate-100">
                     @forelse($batches as $batch)
                         <tr class="hover:bg-slate-50 transition-colors cursor-pointer"
-                            onclick="window.location='{{ route('packages.import.show', $batch->id) }}'">
+                            onclick="window.location='{{ auth()->user()->hasRole('Staff') ? route('staf.packages.import.show', $batch->id) : route('packages.import.show', $batch->id) }}'">
                             <td class="px-5 py-3 font-medium text-slate-800 max-w-48 truncate">
                                 <span title="{{ $batch->file_name }}">{{ $batch->file_name }}</span>
                             </td>

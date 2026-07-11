@@ -285,6 +285,9 @@ class ImportBatchController extends Controller
 
     private function redirectBack(bool $isStaf): \Illuminate\Http\RedirectResponse
     {
+        if ($isStaf) {
+            return redirect()->route('staf.packages.import');
+        }
         return redirect()->route('packages.import.index');
     }
 
