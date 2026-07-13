@@ -58,10 +58,10 @@
         <div class="flex items-center gap-3 bg-slate-50 rounded-full px-4 py-1.5 text-sm text-slate-600 font-medium mr-2 border border-slate-100 shadow-sm">
             {{ $procurementPackages->total() }} paket
         </div>
-        <x-ui.button variant="outline" size="md" href="{{ route('packages.import.index') }}">
+        <x-ui.button variant="outline" size="md" href="{{ route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'packages.import.index') }}">
             <i data-lucide="upload" class="w-4 h-4 mr-2"></i> Impor
         </x-ui.button>
-        <x-ui.button variant="primary" size="md" href="{{ route('packages.create') }}">
+        <x-ui.button variant="primary" size="md" href="{{ route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'packages.create') }}">
             <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambah Paket
         </x-ui.button>
     </x-slot:actions>
@@ -150,13 +150,13 @@
         <!-- Toolbar -->
         <div class="px-6 py-4 border-b border-slate-100">
             @php
-                $tabUrl = fn($status) => route('procurement-packages.index', array_filter([
+                $tabUrl = fn($status) => route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.index', array_filter([
                     'type'   => request('type'),
                     'status' => $status,
                     'search' => request('search'),
                 ], fn($v) => $v !== null && $v !== ''));
             @endphp
-            <form action="{{ route('procurement-packages.index') }}" method="GET" class="w-full">
+            <form action="{{ route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.index') }}" method="GET" class="w-full">
                 @if(request('status'))
                     <input type="hidden" name="status" value="{{ request('status') }}">
                 @endif
@@ -249,7 +249,7 @@
                             // Generate dot color classes
                             $dc = fn($state) => $state === 2 ? 'bg-emerald-500' : ($state === 1 ? 'bg-blue-500 ring-2 ring-blue-400/50 animate-pulse' : 'bg-slate-200');
                         @endphp
-                        <tr class="hover:bg-slate-50 transition-colors group cursor-pointer" onclick="window.location='{{ route('procurement-packages.show', $p->package ?? $p->id) }}'">
+                        <tr class="hover:bg-slate-50 transition-colors group cursor-pointer" onclick="window.location='{{ route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.show', $p->package ?? $p->id) }}'">
                             <td class="px-6 py-4 text-slate-400 font-semibold tracking-wide">
                                 {{ $p->package->id_rup ?? '-' }}
                             </td>

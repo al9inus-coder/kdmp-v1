@@ -36,11 +36,11 @@
     }
 @endphp
 
-<div class="card border">
-    <div class="card-header">
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden border">
+    <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/50">
         <h5 class="mb-0 font-weight-bold">Narasi Spesifikasi Teknis</h5>
     </div>
-    <div class="card-body">
+    <div class="p-6">
         <div class="form-group">
             <label for="latar_belakang">Latar Belakang</label>
             <textarea id="latar_belakang"
@@ -119,11 +119,11 @@
     </div>
 </div>
 
-<div class="card border">
-    <div class="card-header">
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden border">
+    <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/50">
         <h5 class="mb-0 font-weight-bold">Informasi Kontrak</h5>
     </div>
-    <div class="card-body">
+    <div class="p-6">
         <div class="row">
             <div class="col-md-6">
                 <div class="form-group">
@@ -230,11 +230,11 @@
     </div>
 </div>
 
-<div class="card border">
-    <div class="card-header">
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden border">
+    <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/50">
         <h5 class="mb-0 font-weight-bold">Informasi PPK</h5>
     </div>
-    <div class="card-body">
+    <div class="p-6">
         <div class="row">
             <div class="col-md-6">
                 <div class="form-group">
@@ -324,14 +324,14 @@
     </div>
 </div>
 
-<div class="card border">
-    <div class="card-header d-flex justify-content-between align-items-center">
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden border">
+    <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/50 d-flex justify-content-between align-items-center">
         <h5 class="mb-0 font-weight-bold">Rincian Barang/Jasa</h5>
         <button type="button" class="btn btn-sm btn-primary" id="add-item-row">
             <i class="fas fa-plus mr-1"></i> Tambah Baris
         </button>
     </div>
-    <div class="card-body">
+    <div class="p-6">
         @error('items')
             <div class="alert alert-danger">{{ $message }}</div>
         @enderror
@@ -449,7 +449,7 @@
     <button type="submit" class="btn btn-success">
         {{ $submitLabel }}
     </button>
-    <a href="{{ route('procurement-packages.show', $procurementPackage->package) }}" class="btn btn-secondary">
+    <a href="{{ route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.show', $procurementPackage->package) }}" class="btn btn-secondary">
         Kembali
     </a>
 </div>

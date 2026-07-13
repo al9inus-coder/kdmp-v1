@@ -93,11 +93,9 @@ class ProcurementPackageController extends Controller
             'Hanya Admin atau Kabid yang dapat membuat ruang pengadaan.'
         );
 
-        // Kabid diarahkan kembali ke area kabid setelah ruang pengadaan dibuat
         $showRoute = $request->input('source') === 'kabid'
             ? 'kabid.procurement-packages.show'
-            : 'procurement-packages.show';
-
+            : 'admin.procurement-packages.show';
         if (!$package->isComplete()) {
             return back()->with('error', 'Hanya package yang sudah lengkap datanya yang dapat dieksekusi.');
         }
@@ -122,67 +120,7 @@ class ProcurementPackageController extends Controller
             ->with('success', 'Paket Pengadaan berhasil dibuat.');
     }
 
-    public function show(Package $package): View
-    {
-        $procurementPackage = $package->procurementPackage;
 
-        abort_if(!$procurementPackage, 404);
-
-        $procurementPackage->load([
-            'package.fiscalYear',
-            'package.program',
-            'package.activity',
-            'package.subActivity',
-            'package.account',
-            'creator',
-            'technicalSpecification.items',
-            'procurementRequest',
-        ]);
-
-        // Auto-fill logic dari Master SKPD (bersifat snapshot)
-        $procurementPackage->syncPpkFromSkpd();
-
-        $procurementPackage->loadCount('priceReferences');
-
-        $aiPrompt = \App\Models\AiPrompt::where('code', 'technical_specification')->where('is_active', true)->first();
-
-        if ($package->metode_pengadaan === 'Dikecualikan') {
-            return view(
-                'procurement-packages.show-dikecualikan',
-                compact('procurementPackage', 'aiPrompt')
-            );
-        }
-
-        return view(
-            'procurement-packages.show',
-            compact('procurementPackage', 'aiPrompt')
-        );
-    }
-
-    public function workspace(Package $package): View
-    {
-        $procurementPackage = $package->procurementPackage;
-
-        abort_if(!$procurementPackage, 404);
-
-        $procurementPackage->load([
-            'package.fiscalYear',
-            'package.program',
-            'package.activity',
-            'package.subActivity',
-            'package.account',
-            'creator',
-            'technicalSpecification.items',
-            'procurementRequest',
-        ]);
-
-        $aiPrompt = \App\Models\AiPrompt::where('code', 'technical_specification')->where('is_active', true)->first();
-
-        return view(
-            'procurement-packages.workspace',
-            compact('procurementPackage', 'aiPrompt')
-        );
-    }
 
     public function updateMeta(Request $request, ProcurementPackage $procurementPackage)
     {
@@ -339,8 +277,7 @@ class ProcurementPackageController extends Controller
             ]);
 
             return redirect()
-                ->route(
-                    'procurement-packages.technical-specifications.show',
+                ->route('procurement-packages.technical-specifications.show',
                     $procurementPackage->package
                 )
                 ->with(

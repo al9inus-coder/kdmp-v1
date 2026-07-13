@@ -46,7 +46,7 @@ class AccountController extends Controller
         Account::create($request->validated());
 
         return redirect()
-            ->route('accounts.index')
+            ->route('admin.accounts.index')
             ->with('success', 'Rekening Belanja berhasil ditambahkan.');
     }
 
@@ -60,7 +60,7 @@ class AccountController extends Controller
         $account->update($request->validated());
 
         return redirect()
-            ->route('accounts.index')
+            ->route('admin.accounts.index')
             ->with('success', 'Rekening Belanja berhasil diperbarui.');
     }
 }

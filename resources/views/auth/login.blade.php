@@ -8,10 +8,27 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
         body { font-family: 'Inter', sans-serif; }
+
+        @keyframes wave-animation {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.05) rotate(0.5deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+
+        .animate-flag {
+            animation: wave-animation 12s ease-in-out infinite;
+        }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat" 
-      style="background-image: url('{{ asset('image_a3cf6b.png') }}');">
+<body class="min-h-screen flex items-center justify-center relative overflow-hidden p-4">
+
+    {{-- Background Flag --}}
+    <div class="fixed inset-0 overflow-hidden -z-10 pointer-events-none">
+        <img src="{{ asset('/images/bendera.jpg') }}"
+             class="w-full h-full object-cover opacity-55 animate-flag"
+             alt="Indonesia Flag">
+    </div>
+    <div class="fixed inset-0 bg-slate-950/65 -z-10 pointer-events-none"></div>
 
     <!-- Login Card -->
     <div class="w-full max-w-[380px] px-8 py-12 bg-white/80 backdrop-blur-xl rounded-[32px] shadow-2xl border border-white/50">

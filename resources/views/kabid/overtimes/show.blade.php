@@ -324,7 +324,24 @@
 </div>
 
 <style>
-    .fc-event { cursor: pointer; }
+    .fc-event {
+        cursor: pointer;
+        border-radius: 6px !important;
+        padding: 3px 8px !important;
+        font-size: 0.75rem !important;
+        font-weight: 600 !important;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+        margin: 2px 4px !important;
+        border: 1px solid #fcd34d !important;
+        background-color: #fef3c7 !important;
+        color: #78350f !important;
+        transition: all 0.2s ease !important;
+    }
+    .fc-event:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04) !important;
+        filter: brightness(0.97);
+    }
     #external-events .external-event:hover { background-color: #eef2ff !important; }
     .holiday-bg { background-color: #fff1f2 !important; }
     .weekend-bg { background-color: #f8fafc !important; }
@@ -375,7 +392,7 @@
             if($detail->use_uang_makan) $title .= ' 🍽️';
             $eventsData[] = [
                 'id' => $emp->id . '_' . $d, 'title' => $title, 'start' => $dateStr, 'allDay' => true,
-                'backgroundColor' => '#f59e0b', 'borderColor' => '#d97706', 'textColor' => '#fff',
+                'backgroundColor' => '#fef3c7', 'borderColor' => '#fcd34d', 'textColor' => '#78350f',
                 'extendedProps' => ['employee_id' => $emp->id, 'employee_name' => $emp->nama, 'hours' => $hours, 'use_uang_makan' => $detail->use_uang_makan ? true : false, 'day' => $d],
             ];
         }
@@ -403,7 +420,7 @@
         new FullCalendar.Draggable(document.getElementById('external-events'), {
             itemSelector: '.external-event',
             eventData: function (eventEl) {
-                return { title: eventEl.dataset.employeeName + ' (2 Jam)', backgroundColor: '#f59e0b', borderColor: '#d97706', textColor: '#fff',
+                return { title: eventEl.dataset.employeeName + ' (2 Jam)', backgroundColor: '#fef3c7', borderColor: '#fcd34d', textColor: '#78350f',
                     extendedProps: { employee_id: eventEl.dataset.employeeId, employee_name: eventEl.dataset.employeeName, hours: 2, use_uang_makan: false } };
             }
         });
@@ -427,7 +444,11 @@
                 saveEventAjax(employeeId, dateStr, defaultHours, false, 'update').then(res => {
                     if (res.success) {
                         event.setProp('id', targetId); event.setExtendedProp('day', day); event.setExtendedProp('hours', defaultHours);
-                        event.setProp('title', employeeName + ' (' + defaultHours + ' Jam)'); Toast.fire({ icon: 'success', title: 'Disimpan' }); refreshRekap();
+                        event.setProp('title', employeeName + ' (' + defaultHours + ' Jam)');
+                        event.setProp('backgroundColor', '#fef3c7');
+                        event.setProp('borderColor', '#fcd34d');
+                        event.setProp('textColor', '#78350f');
+                        Toast.fire({ icon: 'success', title: 'Disimpan' }); refreshRekap();
                     } else { event.remove(); Swal.fire('Error', res.message || 'Gagal menyimpan', 'error'); }
                 });
             },

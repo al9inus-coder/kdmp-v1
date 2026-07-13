@@ -1,15 +1,15 @@
-@extends('adminlte::page')
+@component('layouts.kdmp')
 
 @section('title', 'Edit Spesifikasi Teknis')
 
-@section('content_header')
+@slot('header')
     <h1>Edit Spesifikasi Teknis</h1>
-@stop
+@endslot
 
-@section('content')
-    <div class="card">
-        <div class="card-body">
-            <form action="{{ route('procurement-packages.technical-specification.update', $procurementPackage) }}"
+
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-6">
+            <form action="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.technical-specification.update', $procurementPackage) }}"
                   method="POST">
                 @method('PUT')
                 @php($submitLabel = 'Perbarui')
@@ -17,4 +17,5 @@
             </form>
         </div>
     </div>
-@stop
+
+@endcomponent

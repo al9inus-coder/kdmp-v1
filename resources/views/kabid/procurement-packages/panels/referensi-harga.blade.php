@@ -31,7 +31,7 @@
 <div x-data="kabidRefHarga({
         storeUrl: '{{ route('kabid.procurement-packages.price-references.store', $package) }}',
         updateBase: '{{ url('kabid/procurement-packages/' . $package->getRouteKey() . '/price-references') }}',
-        printUrl: '{{ route('procurement-packages.price-references.print', $package) }}?embed=1',
+        printUrl: '{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.price-references.print', $package) }}?embed=1',
         fetchUrl: '{{ route('kabid.procurement-packages.price-references.fetch', $package) }}',
         csrf: '{{ csrf_token() }}',
     })">
@@ -226,7 +226,7 @@
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded-lg shadow-sm transition-colors">
                         <i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak PDF
                     </button>
-                    <a href="{{ route('procurement-packages.price-references.print', $package) }}" target="_blank"
+                    <a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.price-references.print', $package) }}" target="_blank"
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg shadow-sm transition-colors">
                         <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Tab Baru
                     </a>

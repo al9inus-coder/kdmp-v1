@@ -39,7 +39,7 @@
             </div>
             <div class="flex items-center gap-3 shrink-0">
                 @can('returnToDraft', $package)
-                    <form action="{{ route('packages.return', $package) }}" method="POST"
+                    <form action="{{ route('kabid.packages.return', $package) }}" method="POST"
                         onsubmit="return confirm('Kembalikan paket ini ke Draft agar diperbaiki staf?');">
                         @csrf
                         <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-rose-700 bg-white border border-rose-200 rounded-xl hover:bg-rose-50 transition-colors shadow-sm">
@@ -49,7 +49,7 @@
                     </form>
                 @endcan
                 @can('approve', $package)
-                    <form action="{{ route('packages.approve', $package) }}" method="POST"
+                    <form action="{{ route('kabid.packages.approve', $package) }}" method="POST"
                         onsubmit="return confirm('Setujui paket ini?');">
                         @csrf
                         <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-200">
@@ -234,7 +234,7 @@
                             }
                         }
                     @endphp
-                    <form action="{{ route('packages.procurement-packages.store', $package) }}" method="POST"
+                    <form action="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'packages.procurement-packages.store', $package) }}" method="POST"
                         onsubmit="return confirm('Buat ruang pengadaan untuk paket ini?');">
                         @csrf
                         <input type="hidden" name="source" value="kabid">

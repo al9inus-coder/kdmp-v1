@@ -47,12 +47,12 @@
         </p>
 
         <div class="flex flex-wrap items-center justify-center gap-3 mt-6">
-            <a href="{{ route('procurement-packages.procurement-process.print-document', $package) }}" target="_blank"
+            <a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.procurement-process.print-document', $package) }}" target="_blank"
                 class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl shadow-sm transition-colors">
                 <i data-lucide="printer" class="w-4 h-4"></i>
                 Cetak SSUK &amp; SSKK
             </a>
-            <a href="{{ route('kabid.procurement-packages.execution.show', $package) }}"
+            <a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.execution.show', $package) }}"
                 class="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 rounded-xl shadow-md shadow-emerald-200 transition-all hover:-translate-y-0.5">
                 Lanjut ke Pelaksanaan Kontrak
                 <i data-lucide="arrow-right" class="w-4 h-4"></i>

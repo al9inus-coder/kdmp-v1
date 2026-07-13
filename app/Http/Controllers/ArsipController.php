@@ -16,22 +16,9 @@ use Illuminate\Support\Str;
  */
 class ArsipController extends Controller
 {
-    private const TYPE_ORDER = [
-        'SPPD',
-        'Surat Permohonan',
-        'Surat Tugas',
-        'Kwitansi',
-        'Pengeluaran Riil',
-        'Laporan Perjalanan Dinas',
-    ];
-
     public function index(Request $request)
     {
         $tree = [];
-
-        $push = function (string $year, string $category, string $subcategory, string $label, string $sub, string $url, string $action) use (&$tree): void {
-            $tree[$year][$category][$subcategory][] = compact('label', 'sub', 'url', 'action');
-        };
 
         // 1. KATEGORI SPD (Dari TravelOrder)
         $orders = TravelOrder::query()
@@ -41,145 +28,162 @@ class ArsipController extends Controller
             ->orderByDesc('tanggal_berangkat')
             ->get();
 
+        $rolePrefix = auth()->user()->hasRole('Admin') || auth()->user()->hasRole('Super Admin') ? 'admin.' : (auth()->user()->hasRole('Kabid') ? 'kabid.' : 'staf.');
+
+        // Setiap perjalanan dinas jadi satu folder; di dalamnya dokumen-dokumennya.
         foreach ($orders as $to) {
             $package = $to->package;
             if (!$package) continue;
 
             $year = $package->fiscalYear?->tahun ?? $to->tanggal_berangkat?->format('Y') ?? 'Lainnya';
-            $label = Str::limit($to->maksud_perjalanan ?: 'Perjalanan dinas', 80);
-            $sub = collect([
-                $to->tempat_tujuan,
-                $to->tanggal_berangkat?->locale('id')->translatedFormat('d M Y'),
-                $to->personnels->count() . ' pelaksana',
-            ])->filter()->implode(' · ');
+
+            // Nama folder perjalanan dinas: tujuan + rentang tanggal (disertai #id agar unik).
+            $tglBerangkat = $to->tanggal_berangkat?->locale('id')->translatedFormat('d M Y');
+            $tglKembali = $to->tanggal_kembali?->locale('id')->translatedFormat('d M Y');
+            $periode = $tglBerangkat && $tglKembali && $tglBerangkat !== $tglKembali
+                ? $tglBerangkat . ' – ' . $tglKembali
+                : ($tglBerangkat ?? '-');
+            $folder = trim(($to->tempat_tujuan ?: 'Perjalanan dinas') . ' · ' . $periode) . ' · #' . $to->id;
 
             $isLuarDaerah = in_array(strtolower($to->tipe_perjalanan), ['luar daerah', 'luar_daerah'], true);
             $spjApproved = $to->spjStatus() === TravelOrder::SPJ_APPROVED;
 
-            $push($year, 'SPD', 'SPPD', $label, $sub, route('packages.travel-orders.print-html', [$package, $to, 'sppd']), 'tab');
+            $pushDoc = function (string $label, string $desc, string $url, string $action) use (&$tree, $year, $folder): void {
+                $tree[$year]['SPD'][$folder][] = compact('label', 'url', 'action') + ['sub' => $desc];
+            };
+
+            $pushDoc('SPPD', 'Surat Perintah Perjalanan Dinas', route($rolePrefix . 'packages.travel-orders.print-html', [$package, $to, 'sppd']), 'tab');
 
             if ($isLuarDaerah) {
-                $push($year, 'SPD', 'Surat Permohonan', $label, $sub, route('packages.travel-orders.export-word', [$package, $to, 'permohonan-bupati']), 'download');
+                $pushDoc('Surat Permohonan', 'Permohonan ke Bupati', route($rolePrefix . 'packages.travel-orders.export-word', [$package, $to, 'permohonan-bupati']), 'download');
             }
-            $push($year, 'SPD', 'Surat Tugas', $label, $sub, route('packages.travel-orders.export-word', [$package, $to, $isLuarDaerah ? 'surat-tugas-bupati' : 'surat-tugas-kadis']), 'download');
+            $pushDoc('Surat Tugas', 'Surat tugas perjalanan dinas', route($rolePrefix . 'packages.travel-orders.export-word', [$package, $to, $isLuarDaerah ? 'surat-tugas-bupati' : 'surat-tugas-kadis']), 'download');
 
             if ($spjApproved) {
-                $push($year, 'SPD', 'Kwitansi', $label, $sub, route('packages.travel-orders.print-kuitansi', [$package, $to]), 'popup');
-                $push($year, 'SPD', 'Pengeluaran Riil', $label, $sub, route('packages.travel-orders.print-pengeluaran-riil', [$package, $to]), 'popup');
+                $pushDoc('Kwitansi', 'Kwitansi per pelaksana', route($rolePrefix . 'packages.travel-orders.print-kuitansi', [$package, $to]), 'popup');
+                $pushDoc('Pengeluaran Riil', 'Daftar pengeluaran riil', route($rolePrefix . 'packages.travel-orders.print-pengeluaran-riil', [$package, $to]), 'popup');
             }
 
             if ($to->report) {
-                $push($year, 'SPD', 'Laporan Perjalanan Dinas', $label, $sub, route('packages.travel-orders.print-laporan', [$package, $to]), 'popup');
+                $pushDoc('Laporan Perjalanan Dinas', 'Laporan hasil perjalanan', route($rolePrefix . 'packages.travel-orders.print-laporan', [$package, $to]), 'popup');
             }
         }
 
-        // 2. KATEGORI PBJ -> Penyedia (Dari ProcurementPackage)
-        $procurements = \App\Models\ProcurementPackage::with([
-            'package.fiscalYear',
-            'procurementRequest',
-            'procurementProcess',
-            'payment',
-            'technicalSpecification',
-            'priceReferences',
-        ])
+        // Dokumen pengadaan (spek, referensi harga, persiapan, proses, pembayaran)
+        // dari satu ProcurementPackage — dipakai Penyedia & Dikecualikan (di dalam sistem).
+        $collectProcurementDocs = function ($pp, string $sub) use ($rolePrefix): array {
+            $package = $pp->package;
+            $docs = [];
+            if ($pp->technicalSpecification) {
+                $docs[] = ['label' => 'Spesifikasi Teknis', 'sub' => $sub, 'url' => route($rolePrefix . 'technical-specifications.print', $pp->technicalSpecification), 'action' => 'popup'];
+            }
+            if ($pp->priceReferences && $pp->priceReferences->count() > 0) {
+                $docs[] = ['label' => 'Referensi Harga', 'sub' => $sub, 'url' => route($rolePrefix . 'procurement-packages.price-references.print', $package), 'action' => 'popup'];
+            }
+            if ($pp->procurementRequest) {
+                $docs[] = ['label' => 'Form Persiapan Pengadaan', 'sub' => $sub, 'url' => route($rolePrefix . 'procurement-packages.procurement-request.print', $package), 'action' => 'popup'];
+            }
+            if ($pp->procurementProcess) {
+                $docs[] = ['label' => 'Dokumen Proses Pengadaan (SSUK, SSKK, dll)', 'sub' => $sub, 'url' => route($rolePrefix . 'procurement-packages.procurement-process.print-document', $package), 'action' => 'popup'];
+            }
+            if ($pp->payment) {
+                $docs[] = ['label' => 'Dokumen Pembayaran (BAP, Kwitansi, Ringkasan Kontrak)', 'sub' => $sub, 'url' => route($rolePrefix . 'procurement-packages.payment.print-document', $package), 'action' => 'popup'];
+            }
+            return $docs;
+        };
+
+        $procurementWith = [
+            'package.fiscalYear', 'procurementRequest', 'procurementProcess',
+            'payment', 'technicalSpecification', 'priceReferences',
+        ];
+
+        // 2. KATEGORI PBJ -> Penyedia
+        $procurements = \App\Models\ProcurementPackage::with($procurementWith)
             ->whereNull('dikecualikan_type')
             ->whereHas('package', fn ($q) => $q->where('jenis_pengadaan', 'not like', '%swakelola%'))
             ->where('workflow_status', '!=', \App\Models\ProcurementPackage::WORKFLOW_DRAFT)
             ->get();
 
         foreach ($procurements as $pp) {
-            $package = $pp->package;
+            if (!$pp->package) continue;
+            $year = $pp->package->fiscalYear?->tahun ?? 'Lainnya';
+            $folderName = Str::limit($pp->package->nama_paket, 80);
+            $tree[$year]['PBJ']['Penyedia'][$folderName] = $collectProcurementDocs($pp, 'Penyedia · ' . ($pp->package->jenis_pengadaan ?? ''));
+        }
+
+        // 3. KATEGORI PBJ -> Dikecualikan — dokumen berupa kwitansi (external records)
+        $dikecualikan = \App\Models\ProcurementPackage::with(['package.fiscalYear', 'externalRecords'])
+            ->whereNotNull('dikecualikan_type')
+            ->get();
+
+        foreach ($dikecualikan as $pp) {
+            if (!$pp->package) continue;
+            $year = $pp->package->fiscalYear?->tahun ?? 'Lainnya';
+            $folderName = Str::limit($pp->package->nama_paket, 80);
+            $typeLabel = $pp->dikecualikan_type === 'di_luar_sistem' ? 'Di luar sistem' : 'Di dalam sistem';
+
+            $tree[$year]['PBJ']['Dikecualikan'][$folderName] = $pp->externalRecords
+                ->sortByDesc('kwitansi_tgl')
+                ->map(function ($rec) use ($pp, $typeLabel, $rolePrefix) {
+                    $noKwitansi = $rec->kwitansi_no ?: ('#' . $rec->id);
+                    $tgl = $rec->kwitansi_tgl ? \Illuminate\Support\Carbon::parse($rec->kwitansi_tgl)->locale('id')->translatedFormat('d M Y') : null;
+                    $nilai = $rec->nilai_kontrak ? 'Rp ' . number_format((float) $rec->nilai_kontrak, 0, ',', '.') : null;
+                    $sub = collect([$typeLabel, $tgl, $nilai])->filter()->implode(' · ');
+
+                    return [
+                        'label' => 'Kwitansi ' . $noKwitansi,
+                        'sub' => $sub,
+                        'url' => route($rolePrefix . 'procurement-external-records.print', [$pp, $rec]),
+                        'action' => 'popup',
+                    ];
+                })
+                ->values()
+                ->all();
+        }
+
+        // 4. KATEGORI PBJ -> Swakelola (dokumen lembur per bulan yang sudah dikunci)
+        $bulanNama = [1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
+            7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'];
+
+        $swakelola = \App\Models\Package::where('jenis_pengadaan', 'Swakelola')
+            ->whereHas('overtimes', fn ($q) => $q->where('is_locked', true))
+            ->with([
+                'fiscalYear',
+                'overtimes' => fn ($q) => $q->where('is_locked', true)->orderBy('tahun')->orderBy('bulan'),
+            ])
+            ->get();
+
+        foreach ($swakelola as $package) {
             $year = $package->fiscalYear?->tahun ?? 'Lainnya';
-            $labelPkg = Str::limit($package->nama_paket, 80);
-            $subPkg = 'Penyedia · ' . ($package->jenis_pengadaan ?? '');
-            
-            // Nama Folder Paket
-            $folderName = $labelPkg;
+            $folderName = Str::limit($package->nama_paket, 80);
 
-            // Inisialisasi empty array untuk memastikan terbaca sebagai folder di client
-            if (!isset($tree[$year]['PBJ']['Penyedia'][$folderName])) {
-                $tree[$year]['PBJ']['Penyedia'][$folderName] = [];
-            }
-
-            // Spesifikasi Teknis
-            if ($pp->technicalSpecification) {
-                $tree[$year]['PBJ']['Penyedia'][$folderName][] = [
-                    'label' => 'Spesifikasi Teknis', 'sub' => $subPkg,
-                    'url' => route('technical-specifications.print', $pp->technicalSpecification), 'action' => 'popup'
-                ];
-            }
-            
-            // Referensi Harga
-            if ($pp->priceReferences && $pp->priceReferences->count() > 0) {
-                $tree[$year]['PBJ']['Penyedia'][$folderName][] = [
-                    'label' => 'Referensi Harga', 'sub' => $subPkg,
-                    'url' => route('procurement-packages.price-references.print', $package), 'action' => 'popup'
-                ];
-            }
-
-            // Form Persiapan Pengadaan (Surat Permohonan dll)
-            if ($pp->procurementRequest) {
-                $tree[$year]['PBJ']['Penyedia'][$folderName][] = [
-                    'label' => 'Form Persiapan Pengadaan', 'sub' => $subPkg,
-                    'url' => route('procurement-packages.procurement-request.print', $package), 'action' => 'popup'
-                ];
-            }
-
-            // Proses Pengadaan (SSUK, SSKK, Surat Pesanan, dsb)
-            if ($pp->procurementProcess) {
-                $tree[$year]['PBJ']['Penyedia'][$folderName][] = [
-                    'label' => 'Dokumen Proses Pengadaan (SSUK, SSKK, dll)', 'sub' => $subPkg,
-                    'url' => route('procurement-packages.procurement-process.print-document', $package), 'action' => 'popup'
-                ];
-            }
-
-            // Dokumen Pembayaran (BAP, Kwitansi, Ringkasan Kontrak)
-            if ($pp->payment) {
-                $tree[$year]['PBJ']['Penyedia'][$folderName][] = [
-                    'label' => 'Dokumen Pembayaran (BAP, Kwitansi, Ringkasan Kontrak)', 'sub' => $subPkg,
-                    'url' => route('procurement-payments.print-document', $package), 'action' => 'popup'
-                ];
+            foreach ($package->overtimes as $ot) {
+                $bln = ($bulanNama[$ot->bulan] ?? ('Bulan ' . $ot->bulan)) . ' ' . $ot->tahun;
+                $sub = 'Lembur · ' . $bln;
+                $tree[$year]['PBJ']['Swakelola'][$folderName][] = ['label' => 'Rekap Lembur ' . $bln, 'sub' => $sub, 'url' => route($rolePrefix . 'packages.overtimes.print', [$package, $ot, 'rekap']), 'action' => 'tab'];
+                $tree[$year]['PBJ']['Swakelola'][$folderName][] = ['label' => 'Tanda Terima ' . $bln, 'sub' => $sub, 'url' => route($rolePrefix . 'packages.overtimes.print', [$package, $ot, 'tanda_terima']), 'action' => 'tab'];
+                $tree[$year]['PBJ']['Swakelola'][$folderName][] = ['label' => 'Kwitansi Lembur ' . $bln, 'sub' => $sub, 'url' => route($rolePrefix . 'packages.overtimes.print', [$package, $ot, 'kwitansi']), 'action' => 'tab'];
             }
         }
 
-        // 3. KATEGORI PBJ -> Swakelola & Dikecualikan (kosong untuk sementara)
-        // Kita deklarasikan empty array agar foldernya tetap ada
+        // Pastikan ketiga subkategori PBJ selalu ada (tampil walau kosong).
         foreach (array_keys($tree) as $year) {
+            if (!isset($tree[$year]['PBJ']['Penyedia'])) $tree[$year]['PBJ']['Penyedia'] = [];
             if (!isset($tree[$year]['PBJ']['Swakelola'])) $tree[$year]['PBJ']['Swakelola'] = [];
             if (!isset($tree[$year]['PBJ']['Dikecualikan'])) $tree[$year]['PBJ']['Dikecualikan'] = [];
         }
 
         krsort($tree);
 
-        // Define urutan baku untuk SPD
-        $spdOrder = [
-            'SPPD',
-            'Surat Permohonan',
-            'Surat Tugas',
-            'Kwitansi',
-            'Pengeluaran Riil',
-            'Laporan Perjalanan Dinas',
-        ];
+        // Urutan subkategori PBJ tetap baku (Penyedia, Swakelola, Dikecualikan).
+        // SPD kini berupa folder per perjalanan dinas (urut mengikuti tanggal, terbaru dulu).
+        $pbjOrder = ['Penyedia', 'Swakelola', 'Dikecualikan'];
 
-        // Define urutan baku untuk PBJ
-        $pbjOrder = [
-            'Penyedia',
-            'Swakelola',
-            'Dikecualikan'
-        ];
+        // Link Google Drive per tahun (dari config/arsip.php).
+        $gdriveLinks = config('arsip.gdrive_links', []);
+        $gdriveDefault = config('arsip.gdrive_default');
 
-        // Sorting Subkategori sesuai urutan baku
         foreach ($tree as $year => &$categories) {
-            if (isset($categories['SPD'])) {
-                $spdSorted = [];
-                foreach ($spdOrder as $type) {
-                    if (isset($categories['SPD'][$type])) {
-                        $spdSorted[$type] = $categories['SPD'][$type];
-                    }
-                }
-                $categories['SPD'] = $spdSorted;
-            }
-
             if (isset($categories['PBJ'])) {
                 $pbjSorted = [];
                 foreach ($pbjOrder as $type) {
@@ -188,6 +192,21 @@ class ArsipController extends Controller
                     }
                 }
                 $categories['PBJ'] = $pbjSorted;
+            }
+
+            // Susun ulang: SPD, lalu PBJ, lalu pintasan Google Drive (bila ada).
+            $ordered = [];
+            if (isset($categories['SPD'])) $ordered['SPD'] = $categories['SPD'];
+            if (isset($categories['PBJ'])) $ordered['PBJ'] = $categories['PBJ'];
+
+            $driveUrl = $gdriveLinks[$year] ?? $gdriveLinks[(string) $year] ?? $gdriveDefault;
+            if ($driveUrl) {
+                // Ditandai key khusus "__gdrive__" — view membukanya sebagai link, bukan folder.
+                $ordered['__gdrive__'] = $driveUrl;
+            }
+
+            if ($ordered) {
+                $categories = $ordered;
             }
         }
 

@@ -13,7 +13,7 @@
 
     {{-- Filter --}}
     <x-ui.card padding="none" class="mb-6">
-        <form method="GET" action="{{ route('packages.program', $program) }}" class="p-4 flex flex-col sm:flex-row gap-3">
+        <form method="GET" action="{{ route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'packages.program', $program) }}" class="p-4 flex flex-col sm:flex-row gap-3">
             <select name="fiscal_year_id" class="px-3 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all sm:w-52">
                 <option value="">Semua Tahun Anggaran</option>
                 @foreach($fiscalYears as $fiscalYear)
@@ -35,7 +35,7 @@
                 <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-200">
                     <i data-lucide="search" class="w-4 h-4"></i> Filter
                 </button>
-                <a href="{{ route('packages.program', $program) }}" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+                <a href="{{ route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'packages.program', $program) }}" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
                     <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Reset
                 </a>
             </div>
@@ -82,7 +82,7 @@
                             </td>
                             <td class="px-5 py-4">
                                 <div class="flex items-center justify-center">
-                                    <a href="{{ route('packages.show', $package) }}"
+                                    <a href="{{ route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'packages.show', $package) }}"
                                         class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-600 bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors" title="Detail">
                                         <i data-lucide="eye" class="w-3.5 h-3.5"></i>
                                     </a>

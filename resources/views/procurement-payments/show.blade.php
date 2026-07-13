@@ -8,8 +8,8 @@
             <i class="fas fa-money-check-alt text-success mr-2"></i> Tahap Pembayaran
         </h1>
         <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item"><a href="{{ route('procurement-packages.index') }}">Daftar Paket</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('procurement-packages.show', $procurementPackage->package) }}">{{ $procurementPackage->package->id_rup }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ auth()->user()->hasRole(['Admin', 'Super Admin']) ? route('admin.packages.index') : route('kabid.penyedia.index') }}">Daftar Paket</a></li>
+            <li class="breadcrumb-item"><a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.show', $procurementPackage->package) }}">{{ $procurementPackage->package->id_rup }}</a></li>
             <li class="breadcrumb-item active">Pembayaran</li>
         </ol>
     </div>
@@ -116,15 +116,15 @@
                     <h5 class="font-weight-bold mb-3">Dokumen Pembayaran Siap Dicetak</h5>
                     <p class="text-muted mb-4">Pastikan data di atas sudah benar. Jika ada kesalahan, silakan hubungi administrator.</p>
                     
-                    <a href="{{ route('procurement-payments.preview-document', $procurementPackage->package) }}" class="btn btn-lg btn-success px-5 rounded-pill shadow-sm">
-                        <i class="fas fa-print mr-2"></i> Pratinjau & Cetak Dokumen Pembayaran
+                    <a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.payment.preview-document', $procurementPackage->package) }}" class="btn btn-lg btn-success px-5 rounded-pill shadow-sm">
+                        <i class="fas fa-print mr-2"></i> Pratinjau &amp; Cetak Dokumen Pembayaran
                     </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <a href="{{ route('procurement-packages.execution', $procurementPackage->package) }}?action=edit-payment" class="btn btn-default mb-4">
+    <a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.execution.show', $procurementPackage->package) }}?action=edit-payment" class="btn btn-default mb-4">
         <i class="fas fa-arrow-left mr-1"></i> Kembali ke Tahap Pelaksanaan
     </a>
 @stop

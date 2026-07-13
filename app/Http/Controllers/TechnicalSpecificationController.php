@@ -16,8 +16,7 @@ class TechnicalSpecificationController extends Controller
     public function create(ProcurementPackage $procurementPackage): View|RedirectResponse
     {
         if ($procurementPackage->technicalSpecification) {
-            return redirect()->route(
-                'procurement-packages.technical-specification.edit',
+            return redirect()->route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.technical-specification.edit',
                 $procurementPackage
             );
         }
@@ -33,8 +32,7 @@ class TechnicalSpecificationController extends Controller
     public function store(Request $request, ProcurementPackage $procurementPackage): RedirectResponse
     {
         if ($procurementPackage->technicalSpecification) {
-            return redirect()->route(
-                'procurement-packages.technical-specification.show',
+            return redirect()->route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.technical-specification.show',
                 $procurementPackage
             )->with('warning', 'Spesifikasi Teknis sudah tersedia.');
         }
@@ -57,45 +55,17 @@ class TechnicalSpecificationController extends Controller
         });
 
         return redirect()
-            ->route('procurement-packages.technical-specification.show', $procurementPackage)
+            ->route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.technical-specification.show', $procurementPackage)
             ->with('success', 'Spesifikasi Teknis berhasil dibuat.');
     }
-    public function show(Package $package): View
-    {
-        $procurementPackage =
-            $package->procurementPackage;
-
-        abort_if(!$procurementPackage, 404);
-
-        $technicalSpecification =
-            $procurementPackage->technicalSpecification;
-
-        abort_if(!$technicalSpecification, 404);
-
-        $technicalSpecification->load([
-            'items',
-            'procurementPackage.package.program',
-            'procurementPackage.package.activity',
-            'procurementPackage.package.subActivity',
-            'procurementPackage.package.fiscalYear',
-        ]);
-
-        return view(
-            'technical-specifications.show',
-            compact(
-                'technicalSpecification',
-                'procurementPackage'
-            )
-        );
-    }
+    
 
     public function edit(ProcurementPackage $procurementPackage): View|RedirectResponse
     {
         $technicalSpecification = $procurementPackage->technicalSpecification;
 
         if (!$technicalSpecification) {
-            return redirect()->route(
-                'procurement-packages.technical-specification.create',
+            return redirect()->route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.technical-specification.create',
                 $procurementPackage
             );
         }
@@ -113,8 +83,7 @@ class TechnicalSpecificationController extends Controller
         $technicalSpecification = $procurementPackage->technicalSpecification;
 
         if (!$technicalSpecification) {
-            return redirect()->route(
-                'procurement-packages.technical-specification.create',
+            return redirect()->route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.technical-specification.create',
                 $procurementPackage
             );
         }
@@ -177,8 +146,7 @@ class TechnicalSpecificationController extends Controller
         }
 
         return redirect()
-            ->route(
-                'procurement-packages.technical-specifications.show',
+            ->route('procurement-packages.technical-specifications.show',
                 $technicalSpecification
                     ->procurementPackage
                     ->package

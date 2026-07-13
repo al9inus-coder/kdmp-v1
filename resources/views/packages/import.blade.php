@@ -11,7 +11,7 @@
             </h1>
             <p class="text-sm text-slate-500 mt-1">Unggah file Excel ekspor untuk menambahkan banyak paket sekaligus.</p>
         </div>
-        <a href="{{ auth()->user()->hasRole('Staff') ? route('staf.packages.index') : route('packages.index') }}" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm">
+        <a href="{{ auth()->user()->hasRole('Staff') ? route('staf.packages.index') : route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'packages.index') }}" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm">
             <i data-lucide="arrow-left" class="w-4 h-4"></i>
             Kembali
         </a>
@@ -88,7 +88,7 @@
         </div>
 
         {{-- Form --}}
-        <form id="importForm" action="{{ auth()->user()->hasRole('Staff') ? route('staf.packages.import.store') : route('packages.import.store') }}" method="POST" enctype="multipart/form-data" class="p-6 space-y-4">
+        <form id="importForm" action="{{ auth()->user()->hasRole('Staff') ? route('staf.packages.import.store') : route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'packages.import.store') }}" method="POST" enctype="multipart/form-data" class="p-6 space-y-4">
             @csrf
             @if(auth()->user()->hasRole('Staff'))
                 <input type="hidden" name="source" value="staf">
@@ -182,7 +182,7 @@
                 <tbody class="divide-y divide-slate-100">
                     @forelse($batches as $batch)
                         <tr class="hover:bg-slate-50 transition-colors cursor-pointer"
-                            onclick="window.location='{{ auth()->user()->hasRole('Staff') ? route('staf.packages.import.show', $batch->id) : route('packages.import.show', $batch->id) }}'">
+                            onclick="window.location='{{ auth()->user()->hasRole('Staff') ? route('staf.packages.import.show', $batch->id) : route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'packages.import.show', $batch->id) }}'">
                             <td class="px-5 py-3 font-medium text-slate-800 max-w-48 truncate">
                                 <span title="{{ $batch->file_name }}">{{ $batch->file_name }}</span>
                             </td>

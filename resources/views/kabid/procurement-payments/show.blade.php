@@ -7,7 +7,6 @@
     $completed = $procurementPackage->workflow_status === \App\Models\ProcurementPackage::WORKFLOW_COMPLETED;
 
     $docs = [
-        'all' => ['label' => 'Semua Dokumen', 'icon' => 'files'],
         'bap' => ['label' => 'BAP', 'icon' => 'file-check-2'],
         'kwitansi' => ['label' => 'Kwitansi', 'icon' => 'receipt'],
         'ringkasan-kontrak' => ['label' => 'Ringkasan Kontrak', 'icon' => 'file-text'],
@@ -16,12 +15,12 @@
         $docs['non-pkp'] = ['label' => 'Surat Non-PKP', 'icon' => 'file-badge'];
     }
 
-    $printBase = route('procurement-payments.print-document', $package);
+    $printBase = route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.payment.print-document', $package);
 @endphp
 
 <div class="space-y-6" x-data="{
         showConfirmSelesai: false,
-        docType: 'all',
+        docType: 'bap',
         previewLoading: true,
         printBase: @js($printBase),
         loadDoc(type) {
@@ -30,7 +29,7 @@
             this.$refs.docFrame.src = this.printBase + '?embed=1&type=' + type + '&t=' + Date.now();
         },
     }"
-    x-init="loadDoc('all')">
+    x-init="loadDoc('bap')">
     <x-ui.toast />
 
     {{-- Identitas Paket --}}

@@ -9,7 +9,7 @@
             <i data-lucide="wallet" class="w-4 h-4 text-emerald-500"></i>
             {{ $rates->total() }} Provinsi
         </div>
-        <x-ui.button variant="primary" size="md" href="{{ route('sbu-uang-harians.create') }}">
+        <x-ui.button variant="primary" size="md" href="{{ route('admin.sbu-uang-harians.create') }}">
             <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambah Standar Biaya
         </x-ui.button>
     </x-slot:actions>
@@ -35,11 +35,11 @@
                             <td class="px-6 py-4 text-right font-semibold text-slate-800 tabular-nums">Rp {{ number_format($rate->diklat, 0, ',', '.') }}</td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center justify-center gap-1.5">
-                                    <a href="{{ route('sbu-uang-harians.edit', $rate) }}"
+                                    <a href="{{ route('admin.sbu-uang-harians.edit', $rate) }}"
                                         class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-emerald-600 bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 transition-colors" title="Edit">
                                         <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                                     </a>
-                                    <form action="{{ route('sbu-uang-harians.destroy', $rate) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus data ini?');">
+                                    <form action="{{ route('admin.sbu-uang-harians.destroy', $rate) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus data ini?');">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-100 transition-colors" title="Hapus">
@@ -53,7 +53,7 @@
                         <tr>
                             <td colspan="5" class="px-6 py-10">
                                 <x-ui.empty-state icon="wallet" title="Belum Ada Data" description="Klik tombol Tambah Standar Biaya untuk menambahkan data uang harian.">
-                                    <x-ui.button variant="primary" size="md" href="{{ route('sbu-uang-harians.create') }}">
+                                    <x-ui.button variant="primary" size="md" href="{{ route('admin.sbu-uang-harians.create') }}">
                                         <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambah Standar Biaya
                                     </x-ui.button>
                                 </x-ui.empty-state>

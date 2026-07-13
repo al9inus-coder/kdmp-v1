@@ -160,7 +160,7 @@ public function store(PackageRequest $request): RedirectResponse
     }
 
     return redirect()
-        ->route('packages.index')
+        ->route('admin.packages.index')
         ->with('success', 'Paket Pekerjaan berhasil ditambahkan.');
 }
 
@@ -284,9 +284,11 @@ public function update(
         'kontrak_selesai_bulan' => $validated['kontrak_selesai_bulan'] ?? null,
     ]);
 
-    $package->status = $package->isComplete()
-        ? 'draft'
-        : 'needs_review';
+    if (!auth()->user()->hasRole('Admin')) {
+        $package->status = $package->isComplete()
+            ? 'draft'
+            : 'needs_review';
+    }
 
     $package->save();
 
@@ -297,7 +299,7 @@ public function update(
     }
 
     return redirect()
-        ->route('packages.show', $package)
+        ->route('admin.packages.show', $package)
         ->with('success', 'Paket berhasil diperbarui.');
 }
 
@@ -403,7 +405,7 @@ public function update(
         }
 
         return redirect()
-            ->route('packages.index')
+            ->route('admin.packages.index')
             ->with('success', 'Paket Pekerjaan berhasil dihapus.');
     }
 }

@@ -51,7 +51,7 @@ class ActivityController extends Controller
         Activity::create($request->validated());
 
         return redirect()
-            ->route('activities.index')
+            ->route('admin.activities.index')
             ->with('success', 'Kegiatan berhasil ditambahkan.');
     }
 
@@ -69,7 +69,7 @@ class ActivityController extends Controller
         $activity->update($request->validated());
 
         return redirect()
-            ->route('activities.index')
+            ->route('admin.activities.index')
             ->with('success', 'Kegiatan berhasil diperbarui.');
     }
 }

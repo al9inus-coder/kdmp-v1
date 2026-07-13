@@ -23,16 +23,24 @@
     $isDone  = $current >= count($steps);
 
     // Tahap yang sudah dilalui / sedang berjalan bisa diklik menuju halamannya.
-    // Sementara hanya untuk Kabid — halaman admin memakai rute berbeda.
     $stepUrls = [null, null, null, null];
-    if (auth()->user()?->hasRole('Kabid') && $procurementPackage->package) {
+    if ($procurementPackage->package) {
         $pkg = $procurementPackage->package;
-        $stepUrls = [
-            route('kabid.procurement-packages.show', $pkg),
-            route('kabid.procurement-packages.procurement-process.show', $pkg),
-            route('kabid.procurement-packages.execution.show', $pkg),
-            route('kabid.procurement-packages.payment.show', $pkg),
-        ];
+        if (auth()->user()?->hasRole('Kabid')) {
+            $stepUrls = [
+                route('kabid.procurement-packages.show', $pkg),
+                route('kabid.procurement-packages.procurement-process.show', $pkg),
+                route('kabid.procurement-packages.execution.show', $pkg),
+                route('kabid.procurement-packages.payment.show', $pkg),
+            ];
+        } elseif (auth()->user()?->hasRole(['Admin', 'Super Admin'])) {
+            $stepUrls = [
+                route('admin.procurement-packages.show', $pkg),
+                route('admin.procurement-packages.procurement-process.show', $pkg),
+                route('admin.procurement-packages.execution.show', $pkg),
+                route('admin.procurement-packages.payment', $pkg),
+            ];
+        }
     }
 @endphp
 

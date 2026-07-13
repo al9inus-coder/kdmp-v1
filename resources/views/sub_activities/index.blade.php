@@ -3,20 +3,20 @@
 
 <x-ui.toast />
 
-<x-ui.workspace title="Master Sub Kegiatan" description="Kelola daftar sub kegiatan beserta kegiatan induknya.">
+<x-ui.workspace title="Master Sub Kegiatan" description="Kelola daftar sub kegiatan beserta data kegiatannya.">
     <x-slot:actions>
         <div class="flex items-center gap-2 bg-slate-50 rounded-full px-4 py-1.5 text-sm text-slate-600 font-medium border border-slate-100 shadow-sm">
             <i data-lucide="layers" class="w-4 h-4 text-emerald-500"></i>
             {{ $subActivities->total() }} Sub Kegiatan
         </div>
-        <x-ui.button variant="primary" size="md" href="{{ route('sub-activities.create') }}">
+        <x-ui.button variant="primary" size="md" href="{{ route('admin.sub-activities.create') }}">
             <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambah Sub Kegiatan
         </x-ui.button>
     </x-slot:actions>
 
     {{-- Filter --}}
     <x-ui.card padding="none" class="mb-6">
-        <form method="GET" action="{{ route('sub-activities.index') }}" class="p-4 flex flex-col lg:flex-row gap-3">
+        <form method="GET" action="{{ route('admin.sub-activities.index') }}" class="p-4 flex flex-col lg:flex-row gap-3">
             <div class="relative flex-1">
                 <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
                     <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
@@ -41,7 +41,7 @@
                 <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-200">
                     <i data-lucide="search" class="w-4 h-4"></i> Filter
                 </button>
-                <a href="{{ route('sub-activities.index') }}" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+                <a href="{{ route('admin.sub-activities.index') }}" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
                     <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Reset
                 </a>
             </div>
@@ -56,7 +56,7 @@
                     <tr>
                         <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider w-12 text-center">No</th>
                         <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Sub Kegiatan</th>
-                        <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Kegiatan Induk</th>
+                        <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Kegiatan</th>
                         <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider text-center w-32">Status</th>
                         <th class="px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider text-center w-24">Aksi</th>
                     </tr>
@@ -74,10 +74,10 @@
                             <td class="px-6 py-4">
                                 <div class="flex items-start gap-2">
                                     <i data-lucide="briefcase" class="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0"></i>
-                                    <span class="text-slate-600">
-                                        <span class="font-mono text-xs text-slate-400">{{ $subActivity->activity?->kode }}</span>
-                                        {{ $subActivity->activity?->nama ?? '-' }}
-                                    </span>
+                                    <div>
+                                        <p class="font-mono text-xs text-slate-400">{{ $subActivity->activity?->kode ?? '-' }}</p>
+                                        <p class="text-slate-600 leading-snug">{{ $subActivity->activity?->nama ?? '-' }}</p>
+                                    </div>
                                 </div>
                             </td>
                             <td class="px-6 py-4 text-center">
@@ -93,7 +93,7 @@
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center justify-center">
-                                    <a href="{{ route('sub-activities.edit', $subActivity) }}"
+                                    <a href="{{ route('admin.sub-activities.edit', $subActivity) }}"
                                         class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-emerald-600 bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 transition-colors" title="Edit">
                                         <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                                     </a>
@@ -104,7 +104,7 @@
                         <tr>
                             <td colspan="5" class="px-6 py-10">
                                 <x-ui.empty-state icon="layers" title="Belum Ada Sub Kegiatan" description="Klik tombol Tambah Sub Kegiatan untuk menambahkan data pertama.">
-                                    <x-ui.button variant="primary" size="md" href="{{ route('sub-activities.create') }}">
+                                    <x-ui.button variant="primary" size="md" href="{{ route('admin.sub-activities.create') }}">
                                         <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambah Sub Kegiatan
                                     </x-ui.button>
                                 </x-ui.empty-state>

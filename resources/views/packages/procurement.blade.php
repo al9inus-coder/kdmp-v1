@@ -5,12 +5,12 @@
 
 <x-ui.workspace title="Persiapan Pengadaan" description="{{ $package->nama_paket }}">
     <x-slot:actions>
-        <x-ui.button variant="outline" size="md" href="{{ route('packages.show', $package) }}">
+        <x-ui.button variant="outline" size="md" href="{{ route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'packages.show', $package) }}">
             <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
         </x-ui.button>
     </x-slot:actions>
 
-    <form method="POST" action="{{ route('packages.procurement.update', $package) }}">
+    <form method="POST" action="{{ route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'packages.procurement.update', $package) }}">
         @csrf
         @method('PUT')
 
@@ -63,7 +63,7 @@
             </section>
 
             <div class="flex flex-wrap items-center justify-end gap-3 mt-6">
-                <x-ui.button variant="secondary" size="md" href="{{ route('packages.show', $package) }}">
+                <x-ui.button variant="secondary" size="md" href="{{ route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'packages.show', $package) }}">
                     <i data-lucide="x" class="w-4 h-4 mr-2"></i> Batal
                 </x-ui.button>
                 <x-ui.button variant="primary" size="lg" type="submit">

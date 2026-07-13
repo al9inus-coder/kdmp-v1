@@ -5,7 +5,7 @@
 
 <x-ui.workspace title="Jadwal Pengadaan" description="Timeline Rencana Umum Pengadaan (RUP) tahun anggaran berjalan.">
     <x-slot:actions>
-        <form method="GET" action="{{ route('schedules.index') }}" class="flex items-center gap-2">
+        <form method="GET" action="{{ route('admin.schedules.index') }}" class="flex items-center gap-2">
             <label class="text-sm font-semibold text-slate-600">Tahun Anggaran:</label>
             <select name="fiscal_year_id" onchange="this.form.submit()"
                 class="px-4 py-2 text-sm font-semibold border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
@@ -47,7 +47,7 @@
                     @forelse($packages as $paket)
                         <tr class="hover:bg-slate-50/60 transition-colors">
                             <td class="px-5 py-3 align-middle border-r border-slate-100" style="max-width: 320px;">
-                                <a href="{{ route('procurement-packages.show', $paket) }}" class="font-semibold text-slate-800 hover:text-emerald-600 transition-colors leading-snug block" title="{{ $paket->nama_paket }}">
+                                <a href="{{ route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.show', $paket) }}" class="font-semibold text-slate-800 hover:text-emerald-600 transition-colors leading-snug block" title="{{ $paket->nama_paket }}">
                                     {{ \Illuminate\Support\Str::limit($paket->nama_paket, 55) }}
                                 </a>
                             </td>

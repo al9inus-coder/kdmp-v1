@@ -44,7 +44,7 @@
     </div>
 
     <!-- Form Section -->
-    <form action="{{ route('packages.update', $package) }}" method="POST">
+    <form action="{{ route('staf.packages.update', $package) }}" method="POST">
         @csrf
         @method('PUT')
         <input type="hidden" name="source" value="staf">

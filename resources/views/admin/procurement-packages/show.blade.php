@@ -24,7 +24,7 @@
     if ($isCompleted) {
         $unlockTitle  = 'Pengadaan Selesai';
         $unlockText   = 'Seluruh proses pengadaan telah ditutup. Buka status selesai hanya jika dokumen pembayaran perlu diperbaiki — paket akan kembali ke tahap Pembayaran.';
-        $unlockRoute  = route('admin.procurement-packages.unlock-payment', $package);
+        $unlockRoute  = route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.unlock-payment', $package);
         $unlockButtonLabel = 'Buka Status Selesai';
         $unlockModalTitle = 'Buka Status Selesai?';
         $unlockModalText  = 'akan kembali ke tahap Pembayaran dan Kabid dapat memeriksa dokumen pembayaran lagi.';
@@ -32,7 +32,7 @@
     } elseif ($lockedExecution) {
         $unlockTitle  = 'Pelaksanaan Terkunci';
         $unlockText   = 'Pekerjaan telah dinyatakan selesai dan data pelaksanaan terkunci. Buka kunci hanya jika data BAST/tagihan perlu diperbaiki — paket akan kembali ke tahap Pelaksanaan Kontrak.';
-        $unlockRoute  = route('admin.procurement-packages.unlock-execution', $package);
+        $unlockRoute  = route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.unlock-execution', $package);
         $unlockButtonLabel = 'Buka Kunci Pelaksanaan';
         $unlockModalTitle = 'Buka Kunci Pelaksanaan?';
         $unlockModalText  = 'akan kembali ke tahap Pelaksanaan Kontrak dan Kabid dapat mengubah data penyelesaian pekerjaan lagi.';
@@ -40,7 +40,7 @@
     } elseif ($lockedSelection) {
         $unlockTitle  = 'Pemilihan Terkunci';
         $unlockText   = 'Tahap pemilihan penyedia telah diselesaikan dan datanya terkunci. Buka kunci hanya jika data surat pesanan/penyedia perlu diperbaiki — paket akan kembali ke tahap Pemilihan Penyedia.';
-        $unlockRoute  = route('admin.procurement-packages.unlock-selection', $package);
+        $unlockRoute  = route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.unlock-selection', $package);
         $unlockButtonLabel = 'Buka Kunci Pemilihan';
         $unlockModalTitle = 'Buka Kunci Pemilihan?';
         $unlockModalText  = 'akan kembali ke tahap Pemilihan Penyedia dan Kabid dapat mengubah data surat pesanan & penyedia lagi.';
@@ -48,7 +48,7 @@
     } else {
         $unlockTitle  = 'Persiapan Terkunci';
         $unlockText   = 'Persiapan telah diselesaikan oleh Kabid dan datanya terkunci. Buka kunci hanya jika ada data persiapan yang perlu diperbaiki — paket akan kembali ke tahap Persiapan Pengadaan.';
-        $unlockRoute  = route('admin.procurement-packages.unlock', $package);
+        $unlockRoute  = route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.unlock', $package);
         $unlockButtonLabel = 'Buka Kunci Persiapan';
         $unlockModalTitle = 'Buka Kunci Persiapan?';
         $unlockModalText  = 'akan kembali ke tahap Persiapan Pengadaan dan Kabid dapat mengubah datanya lagi.';
@@ -71,11 +71,11 @@
 
     $dokumen = [
         ['label' => 'Spesifikasi Teknis', 'icon' => 'file-text',
-         'url' => $ts ? route('technical-specifications.print', $ts) : null],
+         'url' => $ts ? route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'technical-specifications.print', $ts) : null],
         ['label' => 'Referensi Harga', 'icon' => 'tags',
-         'url' => $refs->isNotEmpty() ? route('procurement-packages.price-references.print', $package) : null],
+         'url' => $refs->isNotEmpty() ? route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.price-references.print', $package) : null],
         ['label' => 'Surat Permohonan', 'icon' => 'mail',
-         'url' => $surat ? route('procurement-packages.procurement-request.print', $package) : null],
+         'url' => $surat ? route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.procurement-request.print', $package) : null],
     ];
 @endphp
 
@@ -94,7 +94,7 @@
                 {{ $package->nama_paket }}
             </span>
         </div>
-        <a href="{{ route('procurement-packages.index') }}"
+        <a href="{{ auth()->user()->hasRole('Kabid') ? route('kabid.penyedia.index') : route('admin.packages.index') }}"
             class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm shrink-0">
             <i data-lucide="arrow-left" class="w-4 h-4"></i>
             Kembali ke Daftar
@@ -216,7 +216,7 @@
                 \App\Models\ProcurementPackage::WORKFLOW_PAYMENT_PROCESS,
                 \App\Models\ProcurementPackage::WORKFLOW_COMPLETED,
             ]) && $procurementPackage->payment)
-                <a href="{{ route('admin.procurement-packages.payment', $package) }}"
+                <a href="{{ route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.payment', $package) }}"
                     class="flex items-center gap-3 bg-white border border-slate-200 shadow-sm rounded-2xl p-4 hover:border-emerald-300 hover:shadow-md transition-all group">
                     <span class="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-500 shrink-0">
                         <i data-lucide="receipt" class="w-5 h-5"></i>

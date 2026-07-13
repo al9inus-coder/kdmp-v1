@@ -13,7 +13,7 @@
             <p class="text-sm text-slate-500 mt-1">Kelola dan pantau seluruh paket pengadaan yang ditugaskan kepada Anda.</p>
         </div>
         <div class="flex items-center gap-3">
-            <a href="{{ route('packages.import.index') }}" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl hover:bg-emerald-100 transition-colors shadow-sm">
+            <a href="{{ route('staf.packages.import') }}" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl hover:bg-emerald-100 transition-colors shadow-sm">
                 <i data-lucide="upload" class="w-4 h-4"></i>
                 Impor Paket
             </a>

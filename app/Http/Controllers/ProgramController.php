@@ -47,7 +47,7 @@ class ProgramController extends Controller
         Program::create($request->validated());
 
         return redirect()
-            ->route('programs.index')
+            ->route('admin.programs.index')
             ->with('success', 'Program berhasil ditambahkan.');
     }
 
@@ -61,7 +61,7 @@ class ProgramController extends Controller
         $program->update($request->validated());
 
         return redirect()
-            ->route('programs.index')
+            ->route('admin.programs.index')
             ->with('success', 'Program berhasil diperbarui.');
     }
 }

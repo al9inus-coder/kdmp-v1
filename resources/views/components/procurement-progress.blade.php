@@ -139,7 +139,7 @@ if (
     }
 
     /* Kartu Progress Bar Premium */
-    .progress-card {
+    .progress-bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden {
         border: none;
         border-radius: 12px;
         box-shadow: 0 4px 20px rgba(0,0,0,0.04) !important;
@@ -176,19 +176,30 @@ if (
     }
 </style>
 
-<div class="card progress-card mb-4">
-    <div class="card-header py-3 bg-white border-bottom-0" style="border-top-left-radius: 12px; border-top-right-radius: 12px;">
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden progress-bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-4">
+    <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/50 py-3 bg-white border-bottom-0" style="border-top-left-radius: 12px; border-top-right-radius: 12px;">
         <h6 class="mb-0 font-weight-bold" style="color: #2c3e50;">
             <i class="fas fa-tasks text-primary mr-2"></i>
             Progres Dokumen Pengadaan
         </h6>
     </div>
 
-    <div class="card-body pt-0 pb-3">
+    <div class="p-6 pt-0 pb-3">
         <div class="ui-stepper">
 
             {{-- STEP 1: SPESIFIKASI TEKNIS --}}
-            <a href="{{ route('procurement-packages.technical-specifications.show', $procurementPackage->package) }}" class="ui-stepper-item {{ $currentStep > 1 ? 'completed' : ($currentStep == 1 ? 'active' : '') }}">
+            @php
+                $rolePrefix = auth()->user()->hasRole('Admin') ? 'admin' : (auth()->user()->hasRole('Kabid') ? 'kabid' : 'staf');
+                $targetUrl = '#';
+                if ($rolePrefix === 'admin') {
+                    $targetUrl = route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.show', $procurementPackage->package);
+                } elseif ($rolePrefix === 'kabid') {
+                    $targetUrl = route('kabid.procurement-packages.show', $procurementPackage->package);
+                } elseif ($rolePrefix === 'staf') {
+                    $targetUrl = route('staf.packages.show', $procurementPackage->package);
+                }
+            @endphp
+            <a href="{{ $targetUrl }}" class="ui-stepper-item {{ $currentStep > 1 ? 'completed' : ($currentStep == 1 ? 'active' : '') }}">
                 <div class="ui-step-icon">
                     <i class="fas fa-file-signature"></i>
                 </div>
@@ -199,7 +210,7 @@ if (
             </a>
 
             {{-- STEP 2: REFERENSI HARGA --}}
-            <a href="{{ route('procurement-packages.price-references.index', $procurementPackage->package) }}" class="ui-stepper-item {{ $currentStep > 2 ? 'completed' : ($currentStep == 2 ? 'active' : '') }}">
+            <a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.price-references.index', $procurementPackage->package) }}" class="ui-stepper-item {{ $currentStep > 2 ? 'completed' : ($currentStep == 2 ? 'active' : '') }}">
                 <div class="ui-step-icon">
                     <i class="fas fa-tags"></i>
                 </div>
@@ -210,7 +221,7 @@ if (
             </a>
 
             {{-- STEP 3: SURAT PERMOHONAN --}}
-            <a href="{{ route('procurement-packages.procurement-request.show', $procurementPackage->package) }}" class="ui-stepper-item {{ $currentStep > 3 ? 'completed' : ($currentStep == 3 ? 'active' : '') }}">
+            <a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.procurement-request.show', $procurementPackage->package) }}" class="ui-stepper-item {{ $currentStep > 3 ? 'completed' : ($currentStep == 3 ? 'active' : '') }}">
                 <div class="ui-step-icon">
                     <i class="fas fa-envelope-open-text"></i>
                 </div>

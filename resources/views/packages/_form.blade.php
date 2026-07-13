@@ -158,7 +158,7 @@
 
     {{-- Aksi --}}
     <div class="flex flex-wrap items-center justify-between gap-3 p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
-        <x-ui.button variant="secondary" size="md" href="{{ route('packages.index') }}">
+        <x-ui.button variant="secondary" size="md" href="{{ route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'packages.index') }}">
             <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
         </x-ui.button>
         <x-ui.button variant="primary" size="lg" type="submit">

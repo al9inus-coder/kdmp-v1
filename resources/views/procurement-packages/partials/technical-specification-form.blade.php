@@ -1,4 +1,4 @@
-<form action="{{ route('technical-specifications.update', $procurementPackage->technicalSpecification) }}" method="POST" class="h-full flex flex-col">
+<form action="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'technical-specifications.update', $procurementPackage->technicalSpecification) }}" method="POST" class="h-full flex flex-col">
     @csrf
     @method('PUT')
     
@@ -21,7 +21,7 @@
                 <i data-lucide="sparkles" class="w-4 h-4 text-indigo-500"></i> Generate AI
             </button>
             @if($procurementPackage->technicalSpecification)
-            <a href="{{ route('technical-specifications.print', $procurementPackage->technicalSpecification) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded-lg shadow-sm transition-colors focus:ring-2 focus:ring-slate-500 focus:ring-offset-1">
+            <a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'technical-specifications.print', $procurementPackage->technicalSpecification) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded-lg shadow-sm transition-colors focus:ring-2 focus:ring-slate-500 focus:ring-offset-1">
                 <i data-lucide="printer" class="w-4 h-4"></i> Cetak PDF
             </a>
             @endif

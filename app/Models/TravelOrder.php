@@ -38,6 +38,9 @@ class TravelOrder extends Model
         'spj_submitted_at',
         'spj_reviewed_at',
         'spj_reviewed_by',
+        'spj_koreksi_by',
+        'spj_koreksi_at',
+        'spj_koreksi_catatan',
     ];
 
     protected $casts = [
@@ -48,6 +51,7 @@ class TravelOrder extends Model
         'reviewed_at' => 'datetime',
         'spj_submitted_at' => 'datetime',
         'spj_reviewed_at' => 'datetime',
+        'spj_koreksi_at' => 'datetime',
     ];
 
     /**
@@ -192,6 +196,11 @@ class TravelOrder extends Model
     public function spjReviewer()
     {
         return $this->belongsTo(User::class, 'spj_reviewed_by');
+    }
+
+    public function spjKoreksiBy()
+    {
+        return $this->belongsTo(User::class, 'spj_koreksi_by');
     }
 
     public function creator()

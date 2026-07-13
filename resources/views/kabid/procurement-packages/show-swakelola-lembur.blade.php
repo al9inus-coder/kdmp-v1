@@ -13,6 +13,7 @@
     // Tahun lembur mengikuti tahun pembuatan paket (sama seperti OvertimeController).
     $overtimeYear = (int) ($package->created_at ? $package->created_at->format('Y') : now()->format('Y'));
     $currentYear = (int) now()->format('Y');
+    $rolePrefix = auth()->user()->hasRole('Admin') ? 'admin' : 'kabid';
 @endphp
 
 <div class="space-y-6">
@@ -34,7 +35,7 @@
                 Lembur
             </span>
         </div>
-        <a href="{{ route('kabid.swakelola.index') }}"
+        <a href="{{ route($rolePrefix . '.swakelola.index') }}"
             class="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 shadow-sm">
             <i data-lucide="arrow-left" class="w-4 h-4"></i>
             Kembali
@@ -135,7 +136,7 @@
                     $isFuture = $overtimeYear > $currentYear
                         || ($overtimeYear === $currentYear && $num > $currentMonth);
                 @endphp
-                <a @if(!$isFuture) href="{{ route('kabid.packages.overtimes.show', [$package, $num]) }}" @endif
+                <a @if(!$isFuture) href="{{ route($rolePrefix . '.packages.overtimes.show', [$package, $num]) }}" @endif
                     @if($isFuture) aria-disabled="true" title="Bulan belum berjalan" @endif
                     class="group relative flex flex-col rounded-2xl border p-4 transition-all
                         {{ $isFuture

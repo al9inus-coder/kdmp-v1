@@ -9,14 +9,14 @@
             <i data-lucide="users" class="w-4 h-4 text-emerald-500"></i>
             {{ $employees->total() }} Pegawai
         </div>
-        <x-ui.button variant="primary" size="md" href="{{ route('employees.create') }}">
+        <x-ui.button variant="primary" size="md" href="{{ route('admin.employees.create') }}">
             <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambah Pegawai
         </x-ui.button>
     </x-slot:actions>
 
     {{-- Filter --}}
     <x-ui.card padding="none" class="mb-6">
-        <form method="GET" action="{{ route('employees.index') }}" class="p-4 flex flex-col sm:flex-row gap-3">
+        <form method="GET" action="{{ route('admin.employees.index') }}" class="p-4 flex flex-col sm:flex-row gap-3">
             <div class="relative flex-1">
                 <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
                     <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
@@ -28,7 +28,7 @@
                 <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-200">
                     <i data-lucide="search" class="w-4 h-4"></i> Cari
                 </button>
-                <a href="{{ route('employees.index') }}" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+                <a href="{{ route('admin.employees.index') }}" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
                     <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Reset
                 </a>
             </div>
@@ -68,11 +68,11 @@
                             <td class="px-6 py-4 text-slate-600">{{ $emp->tanggal_lahir ? $emp->tanggal_lahir->format('d-m-Y') : '-' }}</td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center justify-center gap-1.5">
-                                    <a href="{{ route('employees.edit', $emp) }}"
+                                    <a href="{{ route('admin.employees.edit', $emp) }}"
                                         class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-emerald-600 bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 transition-colors" title="Edit">
                                         <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                                     </a>
-                                    <form action="{{ route('employees.destroy', $emp) }}" method="POST" onsubmit="return confirm('Hapus pegawai {{ $emp->nama }}?');">
+                                    <form action="{{ route('admin.employees.destroy', $emp) }}" method="POST" onsubmit="return confirm('Hapus pegawai {{ $emp->nama }}?');">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-100 transition-colors" title="Hapus">
@@ -86,7 +86,7 @@
                         <tr>
                             <td colspan="6" class="px-6 py-10">
                                 <x-ui.empty-state icon="users" title="Belum Ada Pegawai" description="Klik tombol Tambah Pegawai untuk menambahkan data pertama.">
-                                    <x-ui.button variant="primary" size="md" href="{{ route('employees.create') }}">
+                                    <x-ui.button variant="primary" size="md" href="{{ route('admin.employees.create') }}">
                                         <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambah Pegawai
                                     </x-ui.button>
                                 </x-ui.empty-state>

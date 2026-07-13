@@ -29,7 +29,7 @@ class SbuUangHarianController extends Controller
 
         SbuUangHarian::create($validated);
 
-        return redirect()->route('sbu-uang-harians.index')->with('success', 'Standar Uang Harian berhasil ditambahkan.');
+        return redirect()->route('admin.sbu-uang-harians.index')->with('success', 'Standar Uang Harian berhasil ditambahkan.');
     }
 
     public function edit(SbuUangHarian $sbuUangHarian)
@@ -48,7 +48,7 @@ class SbuUangHarianController extends Controller
 
         $sbuUangHarian->update($validated);
 
-        return redirect()->route('sbu-uang-harians.index')->with('success', 'Standar Uang Harian berhasil diperbarui.');
+        return redirect()->route('admin.sbu-uang-harians.index')->with('success', 'Standar Uang Harian berhasil diperbarui.');
     }
 
     public function destroy(SbuUangHarian $sbuUangHarian)

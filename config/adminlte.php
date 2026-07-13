@@ -307,48 +307,48 @@ return [
     ],
     [
         'text' => 'Dashboard',
-        'url'  => 'dashboard',
+        'url'  => 'admin/dashboard',
         'icon' => 'fas fa-fw fa-home',
     ],
     [
         'text' => 'Manajemen User',
-        'url'  => 'users',
+        'url'  => 'admin/users',
         'icon' => 'fas fa-users',
     ],
     [
     'text' => 'Master SKPD',
-    'url'  => 'skpds',
+    'url'  => 'admin/skpds',
     'icon' => 'fas fa-building',
     ],
     [
         'text' => 'Master Pegawai',
-        'route' => 'employees.index',
+        'route' => 'admin.employees.index',
         'icon' => 'fas fa-users',
-        'active' => ['employees', 'employees/*'],
+        'active' => ['admin/employees', 'admin/employees/*'],
     ],
     [
     'text' => 'Tahun Anggaran',
-    'url'  => 'fiscal-years',
+    'url'  => 'admin/fiscal-years',
     'icon' => 'fas fa-calendar',
     ],
    [
     'text' => 'Program',
-    'url'  => 'programs',
+    'url'  => 'admin/programs',
     'icon' => 'fas fa-project-diagram',
     ],
     [
     'text' => 'Kegiatan',
-    'route' => 'activities.index',
+    'route' => 'admin.activities.index',
     'icon' => 'fas fa-tasks',
     ],
     [
     'text' => 'Sub Kegiatan',
-    'route' => 'sub-activities.index',
+    'route' => 'admin.sub-activities.index',
     'icon' => 'fas fa-list',
     ],
     [
     'text' => 'Rekening Belanja',
-    'route' => 'accounts.index',
+    'route' => 'admin.accounts.index',
     'icon' => 'fas fa-wallet',
     ],
     [
@@ -356,9 +356,9 @@ return [
     ],
     [
         'text' => 'Paket Pekerjaan',
-        'route' => 'packages.index',
+        'route' => 'admin.packages.index',
         'icon' => 'fas fa-briefcase',
-        'active' => ['packages', 'packages/*'],
+        'active' => ['admin/packages', 'admin/packages/*'],
     ],
 
     [
@@ -366,21 +366,21 @@ return [
     ],
     [
         'text' => 'Khusus Penyedia',
-        'url'  => 'procurement-packages?type=penyedia',
+        'url'  => 'admin/procurement-packages?type=penyedia',
         'icon' => 'fas fa-truck',
-        'active' => ['procurement-packages?type=penyedia*'],
+        'active' => ['admin/procurement-packages?type=penyedia*'],
     ],
     [
         'text' => 'Khusus Swakelola',
-        'url'  => 'procurement-packages?type=swakelola',
+        'url'  => 'admin/procurement-packages?type=swakelola',
         'icon' => 'fas fa-people-carry',
-        'active' => ['procurement-packages?type=swakelola*'],
+        'active' => ['admin/procurement-packages?type=swakelola*'],
     ],
     [
         'text' => 'Khusus Dikecualikan',
-        'url'  => 'procurement-packages?type=dikecualikan',
+        'url'  => 'admin/procurement-packages?type=dikecualikan',
         'icon' => 'fas fa-ban',
-        'active' => ['procurement-packages?type=dikecualikan*'],
+        'active' => ['admin/procurement-packages?type=dikecualikan*'],
     ],
 
     [
@@ -388,14 +388,14 @@ return [
     ],
     [
         'text' => 'Jadwal Pengadaan',
-        'url'  => 'schedules',
+        'url'  => 'admin/schedules',
         'icon' => 'fas fa-fw fa-calendar-alt',
     ],
     [
         'text' => 'Monitoring dan Evaluasi',
-        'route' => 'monev.index',
+        'route' => 'admin.monev.index',
         'icon' => 'fas fa-chart-line',
-        'active' => ['monev', 'monev/*'],
+        'active' => ['admin/monev', 'admin/monev/*'],
     ],
     [
         'text' => 'Buku Register',
@@ -414,33 +414,33 @@ return [
         'submenu' => [
             [
                 'text' => 'SBU Uang Harian',
-                'route' => 'sbu-uang-harians.index',
+                'route' => 'admin.sbu-uang-harians.index',
                 'icon' => 'fas fa-money-bill-wave',
-                'active' => ['sbu-uang-harians', 'sbu-uang-harians/*'],
+                'active' => ['admin/sbu-uang-harians', 'admin/sbu-uang-harians/*'],
             ],
             [
                 'text' => 'SBU Penginapan',
-                'route' => 'sbu-penginapans.index',
+                'route' => 'admin.sbu-penginapans.index',
                 'icon' => 'fas fa-bed',
-                'active' => ['sbu-penginapans', 'sbu-penginapans/*'],
+                'active' => ['admin/sbu-penginapans', 'admin/sbu-penginapans/*'],
             ],
             [
                 'text' => 'SBU Tiket Pesawat',
-                'route' => 'sbu-tiket-pesawats.index',
+                'route' => 'admin.sbu-tiket-pesawats.index',
                 'icon' => 'fas fa-plane',
-                'active' => ['sbu-tiket-pesawats', 'sbu-tiket-pesawats/*'],
+                'active' => ['admin/sbu-tiket-pesawats', 'admin/sbu-tiket-pesawats/*'],
             ],
             [
                 'text' => 'SBU Transportasi',
-                'route' => 'sbu-transport-rates.index',
+                'route' => 'admin.sbu-transport-rates.index',
                 'icon' => 'fas fa-car',
-                'active' => ['sbu-transport-rates', 'sbu-transport-rates/*'],
+                'active' => ['admin/sbu-transport-rates', 'admin/sbu-transport-rates/*'],
             ],
             [
                 'text' => 'SBU Lembur',
-                'route' => 'sbu-lemburs.index',
+                'route' => 'admin.sbu-lemburs.index',
                 'icon' => 'fas fa-clock',
-                'active' => ['sbu-lemburs', 'sbu-lemburs/*'],
+                'active' => ['admin/sbu-lemburs', 'admin/sbu-lemburs/*'],
             ],
         ]
     ],

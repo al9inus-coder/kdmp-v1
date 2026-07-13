@@ -27,7 +27,7 @@
     </div>
 @else
 <div x-data="kabidSpesifikasi({
-        printUrl: '{{ route('technical-specifications.print', $ts) }}?embed=1',
+        printUrl: '{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'technical-specifications.print', $ts) }}?embed=1',
         hasDraf: {{ $adaDraf ? 'true' : 'false' }},
         hadFlash: {{ (session('error') || session('success')) ? 'true' : 'false' }},
         locked: {{ ($locked ?? false) ? 'true' : 'false' }},
@@ -233,7 +233,7 @@
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded-lg shadow-sm transition-colors">
                         <i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak PDF
                     </button>
-                    <a href="{{ route('technical-specifications.print', $ts) }}" target="_blank"
+                    <a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'technical-specifications.print', $ts) }}" target="_blank"
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg shadow-sm transition-colors">
                         <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Tab Baru
                     </a>

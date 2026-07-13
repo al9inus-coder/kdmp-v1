@@ -30,7 +30,7 @@ class SbuTransportRateController extends Controller
 
         SbuTransportRate::create($validated);
 
-        return redirect()->route('sbu-transport-rates.index')->with('success', 'Standar Biaya Transportasi berhasil ditambahkan.');
+        return redirect()->route('admin.sbu-transport-rates.index')->with('success', 'Standar Biaya Transportasi berhasil ditambahkan.');
     }
 
     public function edit(SbuTransportRate $sbuTransportRate)
@@ -50,12 +50,12 @@ class SbuTransportRateController extends Controller
 
         $sbuTransportRate->update($validated);
 
-        return redirect()->route('sbu-transport-rates.index')->with('success', 'Standar Biaya Transportasi berhasil diperbarui.');
+        return redirect()->route('admin.sbu-transport-rates.index')->with('success', 'Standar Biaya Transportasi berhasil diperbarui.');
     }
 
     public function destroy(SbuTransportRate $sbuTransportRate)
     {
         $sbuTransportRate->delete();
-        return redirect()->route('sbu-transport-rates.index')->with('success', 'Standar Biaya Transportasi berhasil dihapus.');
+        return redirect()->route('admin.sbu-transport-rates.index')->with('success', 'Standar Biaya Transportasi berhasil dihapus.');
     }
 }

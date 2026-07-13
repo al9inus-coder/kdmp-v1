@@ -7,7 +7,6 @@
     $completed = $procurementPackage->workflow_status === \App\Models\ProcurementPackage::WORKFLOW_COMPLETED;
 
     $docs = [
-        'all' => ['label' => 'Semua Dokumen', 'icon' => 'files'],
         'bap' => ['label' => 'BAP', 'icon' => 'file-check-2'],
         'kwitansi' => ['label' => 'Kwitansi', 'icon' => 'receipt'],
         'ringkasan-kontrak' => ['label' => 'Ringkasan Kontrak', 'icon' => 'file-text'],
@@ -16,12 +15,12 @@
         $docs['non-pkp'] = ['label' => 'Surat Non-PKP', 'icon' => 'file-badge'];
     }
 
-    $printBase = route('procurement-payments.print-document', $package);
+    $printBase = route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.payment.print-document', $package);
 @endphp
 
 <div class="space-y-6" x-data="{
         showUnlockModal: false,
-        docType: 'all',
+        docType: 'bap',
         previewLoading: true,
         printBase: @js($printBase),
         loadDoc(type) {
@@ -30,7 +29,7 @@
             this.$refs.docFrame.src = this.printBase + '?embed=1&type=' + type + '&t=' + Date.now();
         },
     }"
-    x-init="loadDoc('all')">
+    x-init="loadDoc('bap')">
     <x-ui.toast />
 
     {{-- Header --}}
@@ -45,7 +44,7 @@
                 {{ $package->nama_paket }}
             </span>
         </div>
-        <a href="{{ route('admin.procurement-packages.show', $package) }}"
+        <a href="{{ route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.show', $package) }}"
             class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm shrink-0">
             <i data-lucide="arrow-left" class="w-4 h-4"></i>
             Kembali ke Monitoring Paket
@@ -254,7 +253,7 @@
                     Batal
                 </button>
                 <form method="POST"
-                    action="{{ $completed ? route('admin.procurement-packages.unlock-payment', $package) : route('admin.procurement-packages.unlock-execution', $package) }}"
+                    action="{{ $completed ? route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.unlock-payment', $package) : route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.unlock-execution', $package) }}"
                     class="flex-1">
                     @csrf
                     <button type="submit"

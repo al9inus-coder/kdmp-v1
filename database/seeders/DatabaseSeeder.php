@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             ProgramSeeder::class,
             AiPromptSeeder::class,
+            HolidaySeeder::class,
         ]);
     }
 }

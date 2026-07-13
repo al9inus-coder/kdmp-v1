@@ -120,6 +120,6 @@ class ProcurementPaymentController extends Controller
             'workflow_status' => ProcurementPackage::WORKFLOW_COMPLETED
         ]);
 
-        return redirect()->route('procurement-packages.index')->with('success', 'Seluruh Proses Pengadaan telah selesai!');
+        return redirect()->route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.index')->with('success', 'Seluruh Proses Pengadaan telah selesai!');
     }
 }

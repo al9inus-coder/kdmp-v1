@@ -112,43 +112,38 @@ return [
         'children' => [
             [
                 'title' => 'Paket RUP',
-                'route' => 'packages.index',
+                'route' => 'admin.packages.index',
                 'icon'  => 'briefcase',
                 'roles' => ['Admin'],
             ],
             [
                 'title' => 'Paket Pengadaan',
-                'route' => 'procurement-packages.index',
                 'icon'  => 'package',
                 'roles' => ['Admin'],
-            ],
-            [
-                'title' => 'Persiapan Pengadaan',
-                'route' => 'procurement-requests.index',
-                'icon'  => 'clipboard-list',
-                'roles' => ['Admin'],
-            ],
-            [
-                'title' => 'Proses Pengadaan',
-                'route' => 'procurement-processes.index',
-                'icon'  => 'refresh-cw',
-                'roles' => ['Admin'],
-            ],
-            [
-                'title' => 'Pelaksanaan',
-                'route' => 'activities.index',
-                'icon'  => 'play-circle',
-                'roles' => ['Admin'],
-            ],
-            [
-                'title' => 'Pembayaran',
-                'route' => 'procurement-payments.index',
-                'icon'  => 'credit-card',
-                'roles' => ['Admin'],
+                'children' => [
+                    [
+                        'title' => 'Penyedia',
+                        'route' => 'admin.penyedia.index',
+                        'icon'  => 'briefcase-business',
+                        'roles' => ['Admin'],
+                    ],
+                    [
+                        'title' => 'Swakelola',
+                        'route' => 'admin.swakelola.index',
+                        'icon'  => 'handshake',
+                        'roles' => ['Admin'],
+                    ],
+                    [
+                        'title' => 'Dikecualikan',
+                        'route' => 'admin.dikecualikan.index',
+                        'icon'  => 'file-warning',
+                        'roles' => ['Admin'],
+                    ],
+                ]
             ],
             [
                 'title' => 'Jadwal Pengadaan',
-                'route' => 'schedules.index',
+                'route' => 'admin.schedules.index',
                 'icon'  => 'calendar-clock',
                 'roles' => ['Admin'],
             ],
@@ -192,37 +187,37 @@ return [
         'children' => [
             [
                 'title' => 'Program',
-                'route' => 'programs.index',
+                'route' => 'admin.programs.index',
                 'icon'  => 'folder',
                 'roles' => ['Admin'],
             ],
             [
                 'title' => 'Kegiatan',
-                'route' => 'activities.index',
+                'route' => 'admin.activities.index',
                 'icon'  => 'briefcase',
                 'roles' => ['Admin'],
             ],
             [
                 'title' => 'Sub Kegiatan',
-                'route' => 'sub-activities.index',
+                'route' => 'admin.sub-activities.index',
                 'icon'  => 'layers',
                 'roles' => ['Admin'],
             ],
             [
                 'title' => 'Rekening',
-                'route' => 'accounts.index',
+                'route' => 'admin.accounts.index',
                 'icon'  => 'hash',
                 'roles' => ['Admin'],
             ],
             [
                 'title' => 'SKPD',
-                'route' => 'skpds.index',
+                'route' => 'admin.skpds.index',
                 'icon'  => 'building-2',
                 'roles' => ['Admin'],
             ],
             [
                 'title' => 'Pegawai',
-                'route' => 'employees.index',
+                'route' => 'admin.employees.index',
                 'icon'  => 'id-card',
                 'roles' => ['Admin'],
             ],
@@ -233,31 +228,31 @@ return [
                 'children' => [
                     [
                         'title' => 'SBU Uang Harian',
-                        'route' => 'sbu-uang-harians.index',
+                        'route' => 'admin.sbu-uang-harians.index',
                         'icon'  => 'banknote',
                         'roles' => ['Admin'],
                     ],
                     [
                         'title' => 'SBU Penginapan',
-                        'route' => 'sbu-penginapans.index',
+                        'route' => 'admin.sbu-penginapans.index',
                         'icon'  => 'bed',
                         'roles' => ['Admin'],
                     ],
                     [
                         'title' => 'SBU Tiket Pesawat',
-                        'route' => 'sbu-tiket-pesawats.index',
+                        'route' => 'admin.sbu-tiket-pesawats.index',
                         'icon'  => 'plane',
                         'roles' => ['Admin'],
                     ],
                     [
                         'title' => 'SBU Transportasi',
-                        'route' => 'sbu-transport-rates.index',
+                        'route' => 'admin.sbu-transport-rates.index',
                         'icon'  => 'car',
                         'roles' => ['Admin'],
                     ],
                     [
                         'title' => 'SBU Lembur',
-                        'route' => 'sbu-lemburs.index',
+                        'route' => 'admin.sbu-lemburs.index',
                         'icon'  => 'clock',
                         'roles' => ['Admin'],
                     ],
@@ -274,7 +269,7 @@ return [
         'children' => [
             [
                 'title' => 'Monitoring',
-                'route' => 'monev.index',
+                'route' => 'admin.monev.index',
                 'icon'  => 'pie-chart',
                 'roles' => ['Admin'],
             ],
@@ -326,7 +321,7 @@ return [
         'children' => [
             [
                 'title' => 'Tahun Anggaran',
-                'route' => 'fiscal-years.index',
+                'route' => 'admin.fiscal-years.index',
                 'icon'  => 'calendar',
                 'roles' => ['Admin'],
             ],

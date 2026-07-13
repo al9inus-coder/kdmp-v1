@@ -5,12 +5,12 @@
 
 <x-ui.workspace title="Edit Surat Permohonan" description="{{ $procurementPackage->package->nama_paket ?? '' }}">
     <x-slot:actions>
-        <x-ui.button variant="outline" size="md" href="{{ route('procurement-packages.show', $procurementPackage->package) }}">
+        <x-ui.button variant="outline" size="md" href="{{ route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.show', $procurementPackage->package) }}">
             <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
         </x-ui.button>
     </x-slot:actions>
 
-    <form action="{{ route('procurement-packages.procurement-request.update', $procurementPackage->package) }}" method="POST">
+    <form action="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.procurement-request.update', $procurementPackage->package) }}" method="POST">
         @method('PUT')
         @include('procurement-requests._form', ['submitLabel' => 'Perbarui'])
     </form>

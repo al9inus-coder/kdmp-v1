@@ -1,20 +1,20 @@
-@extends('adminlte::page')
+@component('layouts.kdmp')
 
 @section('title', 'Detail Perjalanan Dinas')
 
-@section('content_header')
+@slot('header')
     <h1>Detail Perjalanan Dinas</h1>
-@stop
+@endslot
 
-@section('content')
-<div class="row">
+
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
     <div class="col-md-10">
-        <div class="card">
-            <div class="card-header bg-info">
-                <h3 class="card-title text-white">Informasi Perjalanan</h3>
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/50 bg-info">
+                <h3 class="text-lg font-semibold text-slate-800 flex items-center text-white">Informasi Perjalanan</h3>
             </div>
-            <div class="card-body">
-                <table class="table table-bordered">
+            <div class="p-6">
+                <table class="w-full text-left text-sm text-slate-600 divide-y divide-slate-200-bordered">
                     <tr>
                         <th style="width: 250px;">Tipe Perjalanan</th>
                         <td>{{ ucwords(str_replace('_', ' ', $travelOrder->tipe_perjalanan)) }}</td>
@@ -64,42 +64,42 @@
         </div>
     </div>
     <div class="col-md-2">
-        <div class="card">
-            <div class="card-header bg-primary">
-                <h3 class="card-title text-white">Aksi</h3>
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/50 bg-primary">
+                <h3 class="text-lg font-semibold text-slate-800 flex items-center text-white">Aksi</h3>
             </div>
-            <div class="card-body">
+            <div class="p-6">
                 @if(strtolower($travelOrder->tipe_perjalanan) === 'luar_daerah' || strtolower($travelOrder->tipe_perjalanan) === 'luar daerah')
-                    <a href="{{ route('packages.travel-orders.export-word', [$package, $travelOrder, 'permohonan-bupati']) }}" class="btn btn-warning btn-block mb-2"><i class="fas fa-file-word"></i> Nota Dinas</a>
-                    <a href="{{ route('packages.travel-orders.export-word', [$package, $travelOrder, 'surat-tugas-bupati']) }}" class="btn btn-warning btn-block mb-2"><i class="fas fa-file-word"></i> Surat Tugas</a>
+                    <a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'packages.travel-orders.export-word', [$package, $travelOrder, 'permohonan-bupati']) }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 w-full justify-center mb-2"><i class="fas fa-file-word"></i> Nota Dinas</a>
+                    <a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'packages.travel-orders.export-word', [$package, $travelOrder, 'surat-tugas-bupati']) }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 w-full justify-center mb-2"><i class="fas fa-file-word"></i> Surat Tugas</a>
                 @else
-                    <a href="{{ route('packages.travel-orders.export-word', [$package, $travelOrder, 'surat-tugas-kadis']) }}" class="btn btn-warning btn-block mb-2"><i class="fas fa-file-word"></i> Surat Tugas</a>
+                    <a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'packages.travel-orders.export-word', [$package, $travelOrder, 'surat-tugas-kadis']) }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 w-full justify-center mb-2"><i class="fas fa-file-word"></i> Surat Tugas</a>
                 @endif
-                <button onclick="printDocument('{{ route('packages.travel-orders.print-html', [$package, $travelOrder, 'sppd']) }}')" class="btn btn-success btn-block mb-2"><i class="fas fa-print"></i> Cetak SPPD</button>
+                <button onclick="printDocument('{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'packages.travel-orders.print-html', [$package, $travelOrder, 'sppd']) }}')" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 w-full justify-center mb-2"><i class="fas fa-print"></i> Cetak SPPD</button>
                 
                 <hr class="my-3">
                 <hr class="my-3">
 
-                <a href="{{ route('packages.travel-orders.edit', [$package, $travelOrder]) }}" class="btn btn-primary btn-block mb-2"><i class="fas fa-edit"></i> Edit</a>
-                <form action="{{ route('packages.travel-orders.destroy', [$package, $travelOrder]) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus perjalanan dinas ini?');">
+                <a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'packages.travel-orders.edit', [$package, $travelOrder]) }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 w-full justify-center mb-2"><i class="fas fa-edit"></i> Edit</a>
+                <form action="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'packages.travel-orders.destroy', [$package, $travelOrder]) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus perjalanan dinas ini?');">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="btn btn-danger btn-block mb-2"><i class="fas fa-trash"></i> Hapus</button>
+                    <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 w-full justify-center mb-2"><i class="fas fa-trash"></i> Hapus</button>
                 </form>
-                <a href="{{ route('procurement-packages.show', $package) }}" class="btn btn-secondary btn-block"><i class="fas fa-arrow-left"></i> Kembali</a>
+                <a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.show', $package) }}" class="inline-flex items-center px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 w-full justify-center"><i class="fas fa-arrow-left"></i> Kembali</a>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-md-12">
-        <div class="card mt-3">
-            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                <h3 class="card-title">Pelaksana Perjalanan Dinas</h3>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+    <div class="md:col-span-12">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mt-6">
+            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/50 bg-success text-white flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-slate-800 flex items-center">Pelaksana Perjalanan Dinas</h3>
             </div>
-            <div class="card-body p-0">
-                <table class="table table-striped mb-0">
+            <div class="p-6 p-0">
+                <table class="w-full text-left text-sm text-slate-600 divide-y divide-slate-200 mb-0">
                     <thead>
                         <tr>
                             <th>No</th>
@@ -128,11 +128,11 @@
                             <td>
                                 <strong>{{ $personnel->employee->nama }}</strong><br>
                                 {{ $personnel->employee->jabatan ?? '-' }}<br>
-                                <small class="text-muted">NIP. {{ $personnel->employee->nip ?? '-' }}</small><br>
-                                <small class="text-muted">Pangkat/Gol. : {{ $personnel->employee->golongan ?? '-' }}</small>
+                                <small class="text-slate-500">NIP. {{ $personnel->employee->nip ?? '-' }}</small><br>
+                                <small class="text-slate-500">Pangkat/Gol. : {{ $personnel->employee->golongan ?? '-' }}</small>
                             </td>
                             <td>
-                                <table class="table table-sm table-borderless mb-0" style="font-size: 0.85rem;">
+                                <table class="w-full text-left text-sm text-slate-600 divide-y divide-slate-200-sm w-full text-left text-sm text-slate-600 divide-y divide-slate-200-borderless mb-0" style="font-size: 0.85rem;">
                                     <tr><td class="p-0">U. Harian</td><td class="p-0 text-right">Rp {{ number_format($est['base_uang_harian'] ?? 0, 0, ',', '.') }}</td></tr>
                                     <tr><td class="p-0">Transport</td><td class="p-0 text-right">Rp {{ number_format($est['biaya_transport'] ?? 0, 0, ',', '.') }}</td></tr>
                                     @if($isLuarDaerah)
@@ -146,7 +146,7 @@
                                 </table>
                             </td>
                             <td>
-                                <table class="table table-sm table-borderless mb-0" style="font-size: 0.85rem;">
+                                <table class="w-full text-left text-sm text-slate-600 divide-y divide-slate-200-sm w-full text-left text-sm text-slate-600 divide-y divide-slate-200-borderless mb-0" style="font-size: 0.85rem;">
                                     <tr><td class="p-0 text-center">{{ $est['days'] ?? 0 }} Hari</td></tr>
                                     <tr><td class="p-0 text-center">1 Kali</td></tr>
                                     @if($isLuarDaerah)
@@ -160,7 +160,7 @@
                                 </table>
                             </td>
                             <td>
-                                <table class="table table-sm table-borderless mb-0" style="font-size: 0.85rem;">
+                                <table class="w-full text-left text-sm text-slate-600 divide-y divide-slate-200-sm w-full text-left text-sm text-slate-600 divide-y divide-slate-200-borderless mb-0" style="font-size: 0.85rem;">
                                     <tr><td class="p-0 text-right">Rp {{ number_format($est['uang_harian'], 0, ',', '.') }}</td></tr>
                                     <tr><td class="p-0 text-right">Rp {{ number_format($est['biaya_transport'], 0, ',', '.') }}</td></tr>
                                     @if($isLuarDaerah)
@@ -179,29 +179,29 @@
                                 </table>
                             </td>
                             <td>
-                                <table class="table table-sm table-borderless mb-0" style="font-size: 0.85rem;">
-                                    <tr><td class="p-0 text-right text-success">Rp {{ number_format($personnel->uang_harian, 0, ',', '.') }}</td></tr>
-                                    <tr><td class="p-0 text-right text-success">Rp {{ number_format($personnel->biaya_transport, 0, ',', '.') }}</td></tr>
+                                <table class="w-full text-left text-sm text-slate-600 divide-y divide-slate-200-sm w-full text-left text-sm text-slate-600 divide-y divide-slate-200-borderless mb-0" style="font-size: 0.85rem;">
+                                    <tr><td class="p-0 text-right text-emerald-600">Rp {{ number_format($personnel->uang_harian, 0, ',', '.') }}</td></tr>
+                                    <tr><td class="p-0 text-right text-emerald-600">Rp {{ number_format($personnel->biaya_transport, 0, ',', '.') }}</td></tr>
                                     @if($isLuarDaerah)
-                                    <tr><td class="p-0 text-right text-success">Rp {{ number_format($personnel->biaya_taksi ?? 0, 0, ',', '.') }}</td></tr>
+                                    <tr><td class="p-0 text-right text-emerald-600">Rp {{ number_format($personnel->biaya_taksi ?? 0, 0, ',', '.') }}</td></tr>
                                     @endif
-                                    <tr><td class="p-0 text-right text-success">Rp {{ number_format($personnel->biaya_penginapan, 0, ',', '.') }}</td></tr>
+                                    <tr><td class="p-0 text-right text-emerald-600">Rp {{ number_format($personnel->biaya_penginapan, 0, ',', '.') }}</td></tr>
                                     @if($isEselon2)
-                                    <tr><td class="p-0 text-right text-success">Rp {{ number_format($personnel->biaya_representasi, 0, ',', '.') }}</td></tr>
+                                    <tr><td class="p-0 text-right text-emerald-600">Rp {{ number_format($personnel->biaya_representasi, 0, ',', '.') }}</td></tr>
                                     @endif
                                     <tr class="border-top">
                                         @php
                                             if ($isLuarDaerah) $rampung += ($personnel->biaya_taksi ?? 0);
                                         @endphp
-                                        <td class="p-0 pt-1 text-right text-success"><strong>Rp {{ number_format($rampung, 0, ',', '.') }}</strong></td>
+                                        <td class="p-0 pt-1 text-right text-emerald-600"><strong>Rp {{ number_format($rampung, 0, ',', '.') }}</strong></td>
                                     </tr>
                                 </table>
                             </td>
                             <td class="align-middle">
-                                <button type="button" class="btn btn-sm btn-outline-primary mb-1 d-block w-100" data-toggle="modal" data-target="#editBiayaModal{{ $personnel->id }}">
+                                <button type="button" class="px-3 py-1.5 text-xs -outline-primary mb-1 block w-full" data-toggle="modal" data-target="#editBiayaModal{{ $personnel->id }}">
                                     <i class="fas fa-edit"></i> Edit Biaya
                                 </button>
-                                <button onclick="printDocument('{{ route('packages.travel-orders.personnels.print-kuitansi', [$package, $travelOrder, $personnel]) }}')" class="btn btn-sm btn-outline-success d-block w-100">
+                                <button onclick="printDocument('{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'packages.travel-orders.personnels.print-kuitansi', [$package, $travelOrder, $personnel]) }}')" class="px-3 py-1.5 text-xs inline-flex items-center px-4 py-2 border border-emerald-300 rounded-md shadow-sm text-sm font-medium text-emerald-700 bg-white hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 block w-full">
                                     <i class="fas fa-print"></i> Kuitansi
                                 </button>
                             </td>
@@ -216,7 +216,7 @@
                                     $totalRampung += $travelOrder->personnels->sum('biaya_taksi'); 
                                 }
                             @endphp
-                            <th class="text-success text-right" style="font-size: 1.25rem;">Rp {{ number_format($totalRampung, 0, ',', '.') }}</th>
+                            <th class="text-emerald-600 text-right" style="font-size: 1.25rem;">Rp {{ number_format($totalRampung, 0, ',', '.') }}</th>
                             <th></th>
                         </tr>
                     </tfoot>
@@ -226,7 +226,7 @@
         </div>
     </div>
 </div>
-@stop
+
 
 @push('js')
 <script>
@@ -263,7 +263,7 @@
 <!-- Modal Edit Biaya Rampung untuk {{ $personnel->employee->nama }} -->
 <div class="modal fade" id="editBiayaModal{{ $personnel->id }}" tabindex="-1" role="dialog" aria-labelledby="editBiayaModalLabel{{ $personnel->id }}" aria-hidden="true">
     <div class="modal-dialog" role="document">
-        <form action="{{ route('packages.travel-orders.personnels.update-biaya', [$package, $travelOrder, $personnel]) }}" method="POST">
+        <form action="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'packages.travel-orders.personnels.update-biaya', [$package, $travelOrder, $personnel]) }}" method="POST">
             @csrf
             @method('PUT')
             <div class="modal-content">
@@ -278,23 +278,23 @@
                         $isEselon2 = ($personnel->employee->kategori_biaya === 'Eselon II') || (stripos($personnel->employee->jabatan ?? '', 'kepala dinas') !== false);
                         $isLuarDaerah = (strtolower($travelOrder->tipe_perjalanan) === 'luar_daerah' || strtolower($travelOrder->tipe_perjalanan) === 'luar daerah');
                     @endphp
-                    <div class="form-group">
+                    <div class="mb-6">
                         <label>Uang Harian (Rp)</label>
-                        <input type="number" name="uang_harian" class="form-control" value="{{ $personnel->uang_harian }}" min="0" required>
+                        <input type="number" name="uang_harian" class="block w-full rounded-md border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm" value="{{ $personnel->uang_harian }}" min="0" required>
                     </div>
-                    <div class="form-group">
+                    <div class="mb-6">
                         <label>Biaya Transportasi (Rp)</label>
-                        <input type="number" name="biaya_transport" class="form-control" value="{{ $personnel->biaya_transport }}" min="0" required>
+                        <input type="number" name="biaya_transport" class="block w-full rounded-md border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm" value="{{ $personnel->biaya_transport }}" min="0" required>
                     </div>
                     @if($isLuarDaerah)
-                    <div class="form-group">
+                    <div class="mb-6">
                         <label>Biaya Taksi Bandara (Rp)</label>
-                        <input type="number" name="biaya_taksi" class="form-control" value="{{ $personnel->biaya_taksi ?? 0 }}" min="0" required>
+                        <input type="number" name="biaya_taksi" class="block w-full rounded-md border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm" value="{{ $personnel->biaya_taksi ?? 0 }}" min="0" required>
                     </div>
                     @else
                         <input type="hidden" name="biaya_taksi" value="0">
                     @endif
-                    <div class="form-group">
+                    <div class="mb-6">
                         <label>Biaya Penginapan (Rp)</label>
                         @php
                             $estModal = $personnel->getEstimatedCosts();
@@ -303,26 +303,28 @@
                         @if($stdPenginapan > 0)
                         <div class="custom-control custom-checkbox mb-2">
                             <input type="checkbox" class="custom-control-input checkbox-penginapan" id="chkPenginapan{{ $personnel->id }}" data-target="penginapan{{ $personnel->id }}" data-base="{{ $stdPenginapan }}">
-                            <label class="custom-control-label font-weight-normal text-muted" for="chkPenginapan{{ $personnel->id }}">Tidak Menginap (Dibayarkan 30% dari Standar: Rp {{ number_format($stdPenginapan * 0.3, 0, ',', '.') }})</label>
+                            <label class="custom-control-label font-weight-normal text-slate-500" for="chkPenginapan{{ $personnel->id }}">Tidak Menginap (Dibayarkan 30% dari Standar: Rp {{ number_format($stdPenginapan * 0.3, 0, ',', '.') }})</label>
                         </div>
                         @endif
-                        <input type="number" name="biaya_penginapan" id="penginapan{{ $personnel->id }}" class="form-control" value="{{ $personnel->biaya_penginapan }}" min="0" required>
+                        <input type="number" name="biaya_penginapan" id="penginapan{{ $personnel->id }}" class="block w-full rounded-md border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm" value="{{ $personnel->biaya_penginapan }}" min="0" required>
                     </div>
                     @if($isEselon2)
-                    <div class="form-group">
+                    <div class="mb-6">
                         <label>Biaya Representasi (Rp)</label>
-                        <input type="number" name="biaya_representasi" class="form-control" value="{{ $personnel->biaya_representasi }}" min="0" required>
+                        <input type="number" name="biaya_representasi" class="block w-full rounded-md border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm" value="{{ $personnel->biaya_representasi }}" min="0" required>
                     </div>
                     @else
                         <input type="hidden" name="biaya_representasi" value="0">
                     @endif
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
-                    <button type="submit" class="btn btn-primary">Simpan Biaya Rampung</button>
+                    <button type="button" class="inline-flex items-center px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500" data-dismiss="modal">Tutup</button>
+                    <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500">Simpan Biaya Rampung</button>
                 </div>
             </div>
         </form>
     </div>
 </div>
 @endforeach
+
+@endcomponent

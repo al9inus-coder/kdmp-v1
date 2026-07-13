@@ -1,14 +1,19 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
+        // SQLite tidak memiliki tipe ENUM maupun sintaks ALTER ... MODIFY.
+        // Kolom enum pada SQLite diperlakukan sebagai string, sehingga nilai
+        // "submitted" tetap dapat digunakan saat test tanpa perubahan skema.
+        if (DB::connection()->getDriverName() !== 'mysql') {
+            return;
+        }
+
         DB::statement("
             ALTER TABLE packages
             MODIFY status ENUM(
@@ -22,6 +27,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::connection()->getDriverName() !== 'mysql') {
+            return;
+        }
+
         DB::statement("
             ALTER TABLE packages
             MODIFY status ENUM(

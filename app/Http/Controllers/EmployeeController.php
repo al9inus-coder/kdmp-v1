@@ -53,7 +53,7 @@ class EmployeeController extends Controller
 
         \App\Models\Employee::create($validated);
 
-        return redirect()->route('employees.index')->with('success', 'Pegawai berhasil ditambahkan.');
+        return redirect()->route('admin.employees.index')->with('success', 'Pegawai berhasil ditambahkan.');
     }
 
     /**
@@ -88,7 +88,7 @@ class EmployeeController extends Controller
 
         $employee->update($validated);
 
-        return redirect()->route('employees.index')->with('success', 'Pegawai berhasil diperbarui.');
+        return redirect()->route('admin.employees.index')->with('success', 'Pegawai berhasil diperbarui.');
     }
 
     /**
@@ -97,6 +97,6 @@ class EmployeeController extends Controller
     public function destroy(\App\Models\Employee $employee)
     {
         $employee->delete();
-        return redirect()->route('employees.index')->with('success', 'Pegawai berhasil dihapus.');
+        return redirect()->route('admin.employees.index')->with('success', 'Pegawai berhasil dihapus.');
     }
 }

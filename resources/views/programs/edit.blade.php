@@ -9,12 +9,12 @@
             <i data-lucide="hash" class="w-3.5 h-3.5"></i>
             {{ $program->kode }}
         </span>
-        <x-ui.button variant="outline" size="md" href="{{ route('programs.index') }}">
+        <x-ui.button variant="outline" size="md" href="{{ route('admin.programs.index') }}">
             <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
         </x-ui.button>
     </x-slot:actions>
 
-    <form action="{{ route('programs.update', $program) }}" method="POST">
+    <form action="{{ route('admin.programs.update', $program) }}" method="POST">
         @csrf
         @method('PUT')
         @include('programs._form', ['submitLabel' => 'Perbarui'])

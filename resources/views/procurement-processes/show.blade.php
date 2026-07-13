@@ -1,174 +1,160 @@
-@extends('adminlte::page')
+@component('layouts.kdmp')
+    @section('title', 'Pemilihan Penyedia')
 
-@section('title', 'Proses Pengadaan')
+    <div class="space-y-6" x-data="{ step: {{ (int) session('panel', 1) }} }">
+        <x-ui.toast />
 
-@section('content_header')
-    <h1 class="mb-1 text-dark font-weight-bold">
-        <i class="fas fa-file-signature text-primary mr-2"></i> Proses Pengadaan (Surat Pesanan)
-    </h1>
-@stop
-
-@section('content')
-    @include('components.workflow-progress', ['procurementPackage' => $procurementPackage])
-
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show shadow-sm">
-            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-            <i class="icon fas fa-check mr-1"></i> {{ session('success') }}
+        {{-- Identitas Paket --}}
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex flex-wrap items-center gap-2">
+                <span
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-slate-700 bg-slate-100 border border-slate-200 rounded-lg">
+                    <i data-lucide="hash" class="w-3.5 h-3.5 text-blue-500"></i>
+                    {{ $procurementPackage->package->id_rup ?? '-' }}
+                </span>
+                <span
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-slate-700 bg-slate-100 border border-slate-200 rounded-lg">
+                    <i data-lucide="package" class="w-3.5 h-3.5 text-blue-500"></i>
+                    {{ $procurementPackage->package->nama_paket }}
+                </span>
+            </div>
+            <a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.show', $procurementPackage->package) }}"
+                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm shrink-0">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                Kembali ke Persiapan
+            </a>
         </div>
-    @endif
 
-    @if($errors->any())
-        <div class="alert alert-danger alert-dismissible fade show shadow-sm">
-            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-            <h5><i class="icon fas fa-ban"></i> Terjadi Kesalahan!</h5>
-            <ul class="mb-0">
-                @foreach($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+        {{-- Progress Workflow Pengadaan --}}
+        <x-kabid.workflow-progress :procurement-package="$procurementPackage" />
 
-    @php
-        $isComplete = $process->nomor_surat_pesanan && $process->nama_penyedia && $process->tanggal_surat_pesanan;
-    @endphp    <form action="{{ route('procurement-packages.procurement-process.update', $procurementPackage->package) }}" method="POST">
-        @csrf
-        @method('PUT')
-        
-        <div class="row">
-            <div class="col-md-8">
-                {{-- CARD A: Data Surat Pesanan --}}
-                <div class="card card-outline card-primary shadow-sm mb-4">
-                    <div class="card-header">
-                        <h3 class="card-title font-weight-bold">
-                            <i class="fas fa-file-alt text-primary mr-2"></i> Formulir Surat Pesanan
-                        </h3>
+        {{-- Konten (kiri) + Alur Pemilihan (kanan) --}}
+        <div class="flex flex-col-reverse lg:flex-row gap-6 items-start">
+
+            {{-- Kolom kiri: panel konten per langkah --}}
+            <div class="flex-1 w-full min-w-0">
+                <div
+                    class="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden flex flex-col min-h-[480px]">
+                    @php
+                        // Pemilihan terkunci setelah paket masuk tahap Pelaksanaan, atau jika user bukan Kabid (read-only).
+                        $locked = in_array($procurementPackage->workflow_status, [
+                            \App\Models\ProcurementPackage::WORKFLOW_EXECUTION,
+                            \App\Models\ProcurementPackage::WORKFLOW_PAYMENT_PROCESS,
+                            \App\Models\ProcurementPackage::WORKFLOW_COMPLETED,
+                        ]) || !auth()->user()->hasRole('Kabid');
+
+                        $panels = [
+                            1 => [
+                                'title' => 'Surat Pesanan',
+                                'icon' => 'file-text',
+                                'desc' => 'Nomor, tanggal, nilai kontrak, dan jadwal pengiriman.',
+                                'view' => 'kabid.procurement-processes.panels.surat-pesanan',
+                                'save_form' => 'form-surat-pesanan',
+                                'save_label' => 'Simpan',
+                                'lock_wrap' => true,
+                            ],
+                            2 => [
+                                'title' => 'Data Penyedia',
+                                'icon' => 'store',
+                                'desc' => 'Identitas, NPWP, wakil sah, dan rekening penyedia.',
+                                'view' => 'kabid.procurement-processes.panels.data-penyedia',
+                                'save_form' => 'form-data-penyedia',
+                                'save_label' => 'Simpan',
+                                'lock_wrap' => true,
+                            ],
+                            3 => [
+                                'title' => 'Dokumen SSUK & SSKK',
+                                'icon' => 'file-check-2',
+                                'desc' => 'Pratinjau dan cetak dokumen syarat umum & khusus kontrak.',
+                                'view' => 'kabid.procurement-processes.panels.dokumen',
+                            ],
+                            4 => [
+                                'title' => 'Selesaikan',
+                                'icon' => 'flag',
+                                'desc' => 'Periksa kelengkapan lalu mulai tahap pelaksanaan kontrak.',
+                                'view' => 'kabid.procurement-processes.panels.selesaikan',
+                            ],
+                        ];
+                    @endphp
+
+                    {{-- Banner kunci --}}
+                    @if ($locked)
+                        <div class="px-6 py-3 bg-amber-50/80 border-b border-amber-100 flex items-center gap-2.5">
+                            <i data-lucide="lock" class="w-4 h-4 text-amber-500 shrink-0"></i>
+                            <p class="text-xs text-amber-800 font-semibold">
+                                @if(!auth()->user()->hasRole('Kabid'))
+                                    Anda sedang melihat draf pemilihan penyedia (mode pratinjau).
+                                @else
+                                    Pemilihan penyedia sudah diselesaikan — data terkunci (hanya bisa dilihat). Hubungi Admin untuk membuka kembali.
+                                @endif
+                            </p>
+                        </div>
+                    @endif
+
+                    <div class="flex-1">
+                        @foreach ($panels as $no => $panel)
+                            <div x-show="step === {{ $no }}"
+                                @if ($no > 1) style="display: none;" @endif>
+                                <div
+                                    class="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3">
+                                    <div>
+                                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                            <i data-lucide="{{ $panel['icon'] }}" class="w-5 h-5 text-slate-400"></i>
+                                            {{ $panel['title'] }}
+                                        </h2>
+                                        <p class="text-sm text-slate-500 mt-1">{{ $panel['desc'] }}</p>
+                                    </div>
+                                    @if (isset($panel['save_form']) && !$locked)
+                                        <button type="submit" form="{{ $panel['save_form'] }}"
+                                            class="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-slate-900 hover:bg-black rounded-lg shadow-sm shadow-slate-300 transition-colors shrink-0">
+                                            <i data-lucide="save" class="w-4 h-4"></i>
+                                            {{ $panel['save_label'] }}
+                                        </button>
+                                    @endif
+                                </div>
+                                <div class="p-6">
+                                    @if ($locked && ($panel['lock_wrap'] ?? false))
+                                        <div class="pointer-events-none opacity-70 select-none" aria-disabled="true">
+                                            @include($panel['view'])
+                                        </div>
+                                    @else
+                                        @include($panel['view'])
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
                     </div>
-                    <div class="card-body">
-                        <h5 class="text-muted border-bottom pb-2 mb-3">A. Data Surat Pesanan</h5>
-                        <div class="row">
-                            <div class="col-md-6 form-group">
-                                <label>Nomor Surat Pesanan <span class="text-danger">*</span></label>
-                                <input type="text" name="nomor_surat_pesanan" class="form-control" value="{{ old('nomor_surat_pesanan', $process->nomor_surat_pesanan) }}" required placeholder="Contoh: 027/01/SP/2026">
-                            </div>
-                            <div class="col-md-6 form-group">
-                                <label>Tanggal Surat Pesanan <span class="text-danger">*</span></label>
-                                <input type="date" name="tanggal_surat_pesanan" class="form-control" value="{{ old('tanggal_surat_pesanan', optional($process->tanggal_surat_pesanan)->format('Y-m-d')) }}" required>
-                            </div>
-                        </div>
 
-                        <div class="row">
-                            <div class="col-md-6 form-group">
-                                <label>Nilai Kontrak (Rp) <span class="text-danger">*</span></label>
-                                <input type="text" name="nilai_kontrak" class="form-control currency-input" value="{{ number_format((float) old('nilai_kontrak', $process->nilai_kontrak ?? 0), 0, ',', '.') }}" required placeholder="0">
-                            </div>
-                            <div class="col-md-6 form-group">
-                                <label>Tanggal Barang Diterima <span class="text-danger">*</span></label>
-                                <input type="date" name="tanggal_barang_diterima" class="form-control" value="{{ old('tanggal_barang_diterima', optional($process->tanggal_barang_diterima)->format('Y-m-d')) }}" required>
-                            </div>
-                        </div>
-
-                        <div class="form-group mt-3">
-                            <label>Catatan Tambahan</label>
-                            <textarea name="catatan" class="form-control" rows="2" placeholder="Catatan operasional (Opsional)">{{ old('catatan', $process->catatan) }}</textarea>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- CARD B: Data Penyedia --}}
-                <div class="card card-outline card-secondary shadow-sm mb-4">
-                    <div class="card-body">
-                        <h5 class="text-muted border-bottom pb-2 mb-3">B. Data Penyedia</h5>
-                        <div class="form-group">
-                            <label>Nama Penyedia <span class="text-danger">*</span></label>
-                            <input type="text" name="nama_penyedia" class="form-control" value="{{ old('nama_penyedia', $process->nama_penyedia ?? $procurementPackage->procurementRequest?->nama_penyedia) }}" required placeholder="Contoh: PT. Maju Bersama">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Alamat Penyedia <span class="text-danger">*</span></label>
-                            <textarea name="alamat_penyedia" class="form-control" rows="3" required placeholder="Alamat lengkap penyedia">{{ old('alamat_penyedia', $process->alamat_penyedia) }}</textarea>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>NPWP Penyedia <span class="text-danger">*</span></label>
-                            <input type="text" name="npwp_penyedia" class="form-control" value="{{ old('npwp_penyedia', $process->npwp_penyedia) }}" required placeholder="Nomor Pokok Wajib Pajak">
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 form-group">
-                                <label>Nama PIC (Wakil Sah) <span class="text-danger">*</span></label>
-                                <input type="text" name="nama_pic" class="form-control" value="{{ old('nama_pic', $process->nama_pic) }}" required placeholder="Nama lengkap wakil sah penyedia">
-                            </div>
-                            <div class="col-md-6 form-group">
-                                <label>Jabatan PIC <span class="text-danger">*</span></label>
-                                <input type="text" name="jabatan_pic" class="form-control" value="{{ old('jabatan_pic', $process->jabatan_pic) }}" required placeholder="Contoh: Direktur Utama">
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 form-group">
-                                <label>Nama Bank <span class="text-danger">*</span></label>
-                                <input type="text" name="nama_bank" class="form-control" value="{{ old('nama_bank', $process->nama_bank) }}" required placeholder="Contoh: Bank Kalbar">
-                            </div>
-                            <div class="col-md-6 form-group">
-                                <label>Nomor Rekening <span class="text-danger">*</span></label>
-                                <input type="text" name="nomor_rekening" class="form-control" value="{{ old('nomor_rekening', $process->nomor_rekening) }}" required placeholder="Nomor Rekening Penyedia">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-footer bg-white text-right">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save mr-1"></i> Simpan Data
+                    {{-- Footer navigasi antar panel --}}
+                    <div class="border-t border-slate-200 p-4 bg-slate-50/50 flex justify-between items-center mt-auto">
+                        <button type="button" @click="step > 1 ? step-- : null" :disabled="step === 1"
+                            class="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i data-lucide="chevron-left" class="w-4 h-4"></i> Sebelumnya
+                        </button>
+                        <button type="button" @click="step < 4 ? step++ : null" :disabled="step === 4"
+                            class="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            Selanjutnya <i data-lucide="chevron-right" class="w-4 h-4"></i>
                         </button>
                     </div>
                 </div>
-                
-                <a href="{{ route('procurement-packages.show', $procurementPackage->package) }}" class="btn btn-default mb-4">
-                    <i class="fas fa-arrow-left mr-1"></i> Kembali ke Paket
-                </a>
             </div>
 
-            <div class="col-md-4">
-                <div class="sticky-top" style="top: 20px;">
-                    <div class="card card-outline card-success shadow-sm mb-4">
-                        <div class="card-header">
-                            <h3 class="card-title font-weight-bold">
-                                <i class="fas fa-print text-success mr-2"></i> Cetak Dokumen
-                            </h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle mr-1"></i> Tombol cetak akan aktif setelah Data Surat Pesanan lengkap tersimpan.
-                            </div>
-
-                            <a href="{{ $isComplete ? route('procurement-packages.procurement-process.preview-document', $procurementPackage->package) : '#' }}" 
-                               class="btn btn-primary btn-block mb-3 {{ !$isComplete ? 'disabled' : '' }}">
-                                <i class="fas fa-file-alt mr-2"></i> Buat SSKK & SSUK
-                            </a>
-                        </div>
-                    </div>
-
-                    <div class="card card-outline card-info shadow-sm">
-                        <div class="card-header">
-                            <h3 class="card-title font-weight-bold">
-                                <i class="fas fa-lightbulb text-info mr-2"></i> Petunjuk Pengisian
-                            </h3>
-                        </div>
-                        <div class="card-body">
-                            <ul class="pl-3 mb-0 text-muted" style="font-size: 0.9rem;">
-                                <li class="mb-2">Nomor surat pesanan dapat disesuaikan dengan nomor surat pesanan pada sistem e-Katalog.</li>
-                                <li class="mb-2"><strong>Waktu Pelaksanaan</strong> dihitung otomatis berdasarkan rentang Tanggal Surat Pesanan hingga Tanggal Barang Diterima.</li>
-                                <li class="mb-2">Pastikan <strong>Nama Bank</strong> dan <strong>Nomor Rekening</strong> penyedia sesuai dengan dokumen tagihan pembayaran.</li>
-                                <li class="mb-3"><strong>NPWP Penyedia</strong> adalah NPWP badan usaha apabila statusnya badan usaha, bukan NPWP Direktur. Apabila penyedia perorangan, gunakan NPWP Pribadi.</li>
-                                <li class="text-danger font-weight-bold" style="list-style-type: none; margin-left: -1rem;">
-                                    <i class="fas fa-exclamation-triangle mr-1"></i> PERINGATAN: Harap cek dan pastikan seluruh data yang diinput sudah benar satu persatu sebelum beralih ke tahap selanjutnya.
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            {{-- Kolom kanan: Alur Pemilihan (tanpa background, sticky) --}}
+            <aside class="w-full lg:w-60 shrink-0 lg:sticky lg:top-20">
+                <x-kabid.selection-nav :procurement-package="$procurementPackage" :process="$process" />
+            </aside>
         </div>
-    </form>
-@stop
+    </div>
+
+    <script>
+        document.addEventListener('alpine:initialized', () => {
+            Alpine.effect(() => {
+                setTimeout(() => {
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }, 50);
+            });
+        });
+    </script>
+@endcomponent

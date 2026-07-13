@@ -138,6 +138,25 @@ class DashboardController extends Controller
             ->get();
         $pendingSppdCount = \App\Models\TravelOrder::where('status', \App\Models\TravelOrder::STATUS_SUBMITTED)->count();
 
+        // SPJ (biaya rampung) yang menunggu review kabid: SPPD disetujui + SPJ diajukan.
+        $pendingSpjQuery = \App\Models\TravelOrder::where('status', \App\Models\TravelOrder::STATUS_APPROVED)
+            ->where('spj_status', \App\Models\TravelOrder::SPJ_SUBMITTED);
+        $pendingSpj = (clone $pendingSpjQuery)
+            ->with(['package.subActivity', 'creator', 'personnels.employee'])
+            ->orderBy('spj_submitted_at')
+            ->limit(5)
+            ->get();
+        $pendingSpjCount = (clone $pendingSpjQuery)->count();
+
+        // Gabungan pengajuan perjalanan dinas (SPPD baru + SPJ) untuk satu kartu inbox.
+        $pendingReview = $pendingSppd->map(fn ($to) => ['to' => $to, 'type' => 'sppd', 'time' => $to->submitted_at])
+            ->concat($pendingSpj->map(fn ($to) => ['to' => $to, 'type' => 'spj', 'time' => $to->spj_submitted_at]))
+            ->filter(fn ($r) => $r['time'])
+            ->sortByDesc('time')
+            ->take(5)
+            ->values();
+        $pendingReviewCount = $pendingSppdCount + $pendingSpjCount;
+
         // ── Anggaran: realisasi, sisa, serapan ─────────────────────────────
         $fiscalYearId = $activeFiscalYear?->id;
 
@@ -212,6 +231,15 @@ class DashboardController extends Controller
             ];
         }
 
+        if ($pendingSpjCount > 0) {
+            $reminders[] = [
+                'icon' => 'receipt-text', 'color' => 'blue',
+                'title' => $pendingSpjCount.' SPJ perjalanan dinas menunggu review',
+                'desc'  => 'Staf mengajukan biaya rampung — setujui atau minta revisi.',
+                'url'   => route('kabid.sppd.index', ['status' => 'spj_submitted']),
+            ];
+        }
+
         $dokKurangCount = ProcurementPackage::whereNotNull('dikecualikan_type')
             ->when($fiscalYearId, fn ($q) => $q->whereHas('package', fn ($p) => $p->where('fiscal_year_id', $fiscalYearId)))
             ->doesntHave('externalRecords')
@@ -224,6 +252,74 @@ class DashboardController extends Controller
                 'url'   => route('kabid.dikecualikan.index'),
             ];
         }
+
+        // ── Monitoring Perjalanan Dinas (Swakelola Perjalanan Dinas) ────────
+        $travelPackages = Package::where('fiscal_year_id', $fiscalYearId)
+            ->where('status', 'approved')
+            ->with(['subActivity', 'account', 'travelOrders.personnels'])
+            ->get()
+            ->filter(function ($pkg) {
+                $jenisPengadaan = str($pkg->jenis_pengadaan ?? '')->lower();
+                $accountName = str($pkg->account?->nama ?? '')->lower();
+                return $jenisPengadaan->contains('swakelola') && $accountName->contains('perjalanan dinas');
+            });
+
+        $travelSubActivities = [];
+        $totalTravelPagu = 0.0;
+        $totalTravelRealisasi = 0.0;
+
+        $colorsList = [
+            ['hex' => '#3b82f6', 'dot' => 'bg-blue-500'],
+            ['hex' => '#10b981', 'dot' => 'bg-emerald-500'],
+            ['hex' => '#f59e0b', 'dot' => 'bg-amber-500'],
+            ['hex' => '#f97316', 'dot' => 'bg-orange-500'],
+            ['hex' => '#8b5cf6', 'dot' => 'bg-violet-500'],
+            ['hex' => '#06b6d4', 'dot' => 'bg-cyan-500'],
+            ['hex' => '#ec4899', 'dot' => 'bg-pink-500'],
+            ['hex' => '#14b8a6', 'dot' => 'bg-teal-500'],
+        ];
+
+        $colorIdx = 0;
+        foreach ($travelPackages as $pkg) {
+            $subAct = $pkg->subActivity;
+            if (!$subAct) continue;
+            
+            if (!isset($travelSubActivities[$subAct->id])) {
+                $color = $colorsList[$colorIdx % count($colorsList)];
+                $colorIdx++;
+
+                $travelSubActivities[$subAct->id] = [
+                    'id' => $subAct->id,
+                    'kode' => $subAct->kode,
+                    'nama' => $subAct->nama,
+                    'pagu' => 0.0,
+                    'realisasi' => 0.0,
+                    'hex' => $color['hex'],
+                    'dot' => $color['dot'],
+                    'id_rup' => $pkg->id_rup,
+                ];
+            }
+            
+            $travelSubActivities[$subAct->id]['pagu'] += (float) $pkg->pagu;
+            $totalTravelPagu += (float) $pkg->pagu;
+            
+            $realisasi = 0.0;
+            foreach ($pkg->travelOrders ?? [] as $travelOrder) {
+                if ($travelOrder->spjStatus() !== \App\Models\TravelOrder::SPJ_APPROVED) { continue; }
+                foreach ($travelOrder->personnels ?? [] as $personnel) {
+                    $realisasi += (float) $personnel->uang_harian
+                        + (float) $personnel->biaya_penginapan
+                        + (float) $personnel->biaya_representasi
+                        + (float) $personnel->biaya_transport
+                        + (float) ($personnel->biaya_taksi ?? 0);
+                }
+            }
+            $travelSubActivities[$subAct->id]['realisasi'] += $realisasi;
+            $totalTravelRealisasi += $realisasi;
+        }
+
+        // Sort by pagu descending
+        usort($travelSubActivities, fn ($a, $b) => $b['pagu'] <=> $a['pagu']);
 
         // ── Riwayat aktivitas gabungan (persetujuan, SPPD, pengadaan) ──────
         $recentActivities = collect()
@@ -275,7 +371,9 @@ class DashboardController extends Controller
             'totalPaket', 'totalPagu', 'realisasi', 'sisaAnggaran', 'serapanPct',
             'needsReviewCount', 'draftCount', 'submittedCount', 'approvedCount',
             'submittedPagu', 'pendingPackages', 'pendingSppd', 'pendingSppdCount',
-            'workflowStats', 'reminders', 'recentActivities'
+            'pendingSpj', 'pendingSpjCount', 'pendingReview', 'pendingReviewCount',
+            'workflowStats', 'reminders', 'recentActivities',
+            'travelSubActivities', 'totalTravelPagu', 'totalTravelRealisasi'
         ));
     }
 
@@ -356,7 +454,7 @@ class DashboardController extends Controller
                         'title' => 'Impor RUP: '.$batch->file_name,
                         'desc'  => $batch->success_rows.' berhasil, '.$batch->failed_rows.' gagal',
                         'time'  => $batch->created_at,
-                        'url'   => route('packages.import.show', $batch),
+                        'url'   => route('staf.packages.import.show', $batch),
                     ])
             )
             ->concat(
@@ -404,3 +502,4 @@ class DashboardController extends Controller
         ));
     }
 }
+

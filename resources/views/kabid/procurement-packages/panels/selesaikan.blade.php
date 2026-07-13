@@ -43,11 +43,11 @@
 
     $dokumen = [
         ['label' => 'Spesifikasi Teknis', 'icon' => 'file-text',
-         'url' => $ts ? route('technical-specifications.print', $ts) : null],
+         'url' => $ts ? route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'technical-specifications.print', $ts) : null],
         ['label' => 'Referensi Harga', 'icon' => 'tags',
-         'url' => $refs->isNotEmpty() ? route('procurement-packages.price-references.print', $package) : null],
+         'url' => $refs->isNotEmpty() ? route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.price-references.print', $package) : null],
         ['label' => 'Surat Permohonan', 'icon' => 'mail',
-         'url' => $surat ? route('procurement-packages.procurement-request.print', $package) : null],
+         'url' => $surat ? route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.procurement-request.print', $package) : null],
     ];
 @endphp
 
@@ -295,7 +295,7 @@
                         class="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors whitespace-nowrap shrink-0">
                         Batal
                     </button>
-                    <form method="POST" action="{{ route('kabid.procurement-packages.complete', $package) }}" class="flex-1">
+                    <form method="POST" action="{{ route('kabid.procurement-packages.finish-preparation', $package) }}" class="flex-1">
                         @csrf
                         <button type="submit"
                             class="w-full h-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 rounded-xl shadow-md shadow-emerald-200 transition-all whitespace-nowrap">

@@ -175,7 +175,7 @@
 </div>
 
 <div class="flex flex-wrap items-center justify-end gap-3 mt-8 pt-6 border-t border-slate-100">
-    <x-ui.button variant="secondary" size="md" href="{{ route('skpds.index') }}">
+    <x-ui.button variant="secondary" size="md" href="{{ route('admin.skpds.index') }}">
         <i data-lucide="x" class="w-4 h-4 mr-2"></i> Batal
     </x-ui.button>
     <x-ui.button variant="primary" size="lg" type="submit">

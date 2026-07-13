@@ -46,8 +46,8 @@ class ProcurementPackageController extends Controller
             ->where('is_active', true)
             ->first();
 
-        if ($this->isTravelSwakelolaPackage($package)) {
-            $travelStats = $this->buildTravelStats($package);
+        if ($this->isTravelSwakelolaPackage($procurementPackage->package)) {
+            $travelStats = $this->buildTravelStats($procurementPackage->package);
 
             return view('kabid.procurement-packages.show-swakelola-travel', compact(
                 'procurementPackage',
@@ -56,8 +56,8 @@ class ProcurementPackageController extends Controller
             ));
         }
 
-        if ($this->isLemburSwakelolaPackage($package)) {
-            $lemburStats = $this->buildLemburStats($package);
+        if ($this->isLemburSwakelolaPackage($procurementPackage->package)) {
+            $lemburStats = $this->buildLemburStats($procurementPackage->package);
 
             return view('kabid.procurement-packages.show-swakelola-lembur', compact(
                 'procurementPackage',

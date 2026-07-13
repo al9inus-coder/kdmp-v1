@@ -59,8 +59,7 @@ public function create(Package $package): View|RedirectResponse
 
     if ($barangJasaOptions === []) {
         return redirect()
-            ->route(
-                'procurement-packages.price-references.index',
+            ->route('procurement-packages.price-references.index',
                 $package
             )
             ->with(
@@ -128,8 +127,7 @@ public function create(Package $package): View|RedirectResponse
         $procurementPackage = $package->procurementPackage;
 
         if ($priceReference->procurement_package_id !== $procurementPackage->id) {
-            return redirect()->route(
-                'procurement-packages.price-references.index',
+            return redirect()->route('procurement-packages.price-references.index',
                 $package
             );
         }
@@ -158,8 +156,7 @@ public function create(Package $package): View|RedirectResponse
     $procurementPackage = $package->procurementPackage;
 
     if ($priceReference->procurement_package_id !== $procurementPackage->id) {
-        return redirect()->route(
-            'procurement-packages.price-references.index',
+        return redirect()->route('procurement-packages.price-references.index',
             $package
         );
     }
@@ -207,8 +204,7 @@ public function create(Package $package): View|RedirectResponse
         $procurementPackage = $package->procurementPackage;
 
         if ($priceReference->procurement_package_id !== $procurementPackage->id) {
-            return redirect()->route(
-                'procurement-packages.price-references.index',
+            return redirect()->route('procurement-packages.price-references.index',
                 $package
             );
         }
@@ -216,8 +212,7 @@ public function create(Package $package): View|RedirectResponse
         $priceReference->delete();
 
         return redirect()
-            ->route(
-                'procurement-packages.price-references.index',
+            ->route('procurement-packages.price-references.index',
                 $package
             )
             ->with('success', 'Referensi Harga berhasil dihapus.');

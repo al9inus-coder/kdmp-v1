@@ -1,19 +1,19 @@
-@extends('adminlte::page')
+@component('layouts.kdmp')
 
 @section('title', 'Preview SSKK & SSUK')
 
-@section('content_header')
-    <div class="d-flex justify-content-between align-items-center">
-        <h1 class="font-weight-bold text-dark">
-            <i class="fas fa-file-pdf text-danger mr-2"></i> Preview Dokumen SSKK & SSUK
+@slot('header')
+    <div class="flex justify-between items-center">
+        <h1 class="font-bold text-slate-800">
+            <i class="fas fa-file-pdf text-red-600 mr-2"></i> Preview Dokumen SSKK & SSUK
         </h1>
         <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item"><a href="{{ route('procurement-packages.index') }}">Daftar Paket</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('procurement-packages.procurement-process.show', $procurementPackage->package) }}">{{ $procurementPackage->package->id_rup }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.index') }}">Daftar Paket</a></li>
+            <li class="breadcrumb-item"><a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.procurement-process.show', $procurementPackage->package) }}">{{ $procurementPackage->package->id_rup }}</a></li>
             <li class="breadcrumb-item active">Preview Dokumen</li>
         </ol>
     </div>
-@stop
+@endslot
     <style>
         @page {
             size: A4;
@@ -116,18 +116,18 @@
         .text-justify { text-align: justify; }
 
     </style>
-@section('content')
-<div class="row">
+
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
     <!-- Kolom Aksi (Kiri) -->
-    <div class="col-md-3">
-        <div class="card card-outline card-primary sticky-top" style="top: 20px;">
-            <div class="card-header">
-                <h3 class="card-title font-weight-bold">Aksi Dokumen</h3>
+    <div class="md:col-span-3">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden border-t-4 border-blue-500 sticky-top" style="top: 20px;">
+            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/50">
+                <h3 class="text-lg font-semibold text-slate-800 flex items-center font-bold">Aksi Dokumen</h3>
             </div>
-            <div class="card-body">
-                <p class="text-muted small mb-4">Pastikan tampilan dokumen di sebelah kanan sudah sesuai sebelum Anda mencetaknya.</p>
+            <div class="p-6">
+                <p class="text-slate-500 small mb-6">Pastikan tampilan dokumen di sebelah kanan sudah sesuai sebelum Anda mencetaknya.</p>
                 
-                <button onclick="printPdf('{{ route('procurement-packages.procurement-process.print-document', $procurementPackage->package) }}')" class="btn btn-danger btn-block btn-lg shadow-sm mb-3">
+                <button onclick="printPdf('{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.procurement-process.print-document', $procurementPackage->package) }}')" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 w-full justify-center -lg shadow-sm mb-6">
                     <i class="fas fa-print mr-2"></i> Cetak Dokumen PDF
                 </button>
 
@@ -137,28 +137,28 @@
                     \App\Models\ProcurementPackage::WORKFLOW_PAYMENT_PROCESS,
                     \App\Models\ProcurementPackage::WORKFLOW_COMPLETED
                 ]))
-                    <form action="{{ route('procurement-packages.execution.start', $procurementPackage->package) }}" method="POST" class="mb-3">
+                    <form action="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.execution.start', $procurementPackage->package) }}" method="POST" class="mb-6">
                         @csrf
-                        <button type="submit" class="btn btn-primary btn-block shadow-sm">
+                        <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 w-full justify-center shadow-sm">
                             <i class="fas fa-play mr-2"></i> Lanjut Pelaksanaan
                         </button>
                     </form>
                 @endif
                 
-                <a href="{{ route('procurement-packages.procurement-process.show', $procurementPackage->package) }}" class="btn btn-secondary btn-block">
+                <a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.procurement-process.show', $procurementPackage->package) }}" class="inline-flex items-center px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 w-full justify-center">
                     <i class="fas fa-arrow-left mr-2"></i> Kembali ke Surat Pesanan
                 </a>
             </div>
         </div>
         
-        <div class="card card-outline card-info mt-3">
-            <div class="card-header">
-                <h3 class="card-title font-weight-bold"><i class="fas fa-info-circle text-info mr-2"></i> Dokumen Tercetak</h3>
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden border-t-4 border-blue-400 mt-6">
+            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/50">
+                <h3 class="text-lg font-semibold text-slate-800 flex items-center font-bold"><i class="fas fa-info-circle text-blue-400 mr-2"></i> Dokumen Tercetak</h3>
             </div>
-            <div class="card-body p-0">
+            <div class="p-6 p-0">
                 <ul class="list-group list-group-flush small">
-                    <li class="list-group-item"><i class="fas fa-check text-success mr-2"></i> Syarat-Syarat Khusus Kontrak (SSKK)</li>
-                    <li class="list-group-item"><i class="fas fa-check text-success mr-2"></i> Syarat-Syarat Umum Kontrak (SSUK)</li>
+                    <li class="list-group-item"><i class="fas fa-check text-emerald-600 mr-2"></i> Syarat-Syarat Khusus Kontrak (SSKK)</li>
+                    <li class="list-group-item"><i class="fas fa-check text-emerald-600 mr-2"></i> Syarat-Syarat Umum Kontrak (SSUK)</li>
                 </ul>
             </div>
         </div>
@@ -166,17 +166,17 @@
 
     <!-- Kolom Preview (Kanan) -->
     <div class="col-md-9">
-        <div class="card shadow">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden shadow">
             @php
                 $skpd = \App\Models\Skpd::first();
             @endphp
-            <div class="card-header bg-dark text-white">
-                <h3 class="card-title"><i class="fas fa-eye mr-2"></i> Tampilan Pratinjau Halaman Cetak</h3>
+            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/50 bg-dark text-white">
+                <h3 class="text-lg font-semibold text-slate-800 flex items-center"><i class="fas fa-eye mr-2"></i> Tampilan Pratinjau Halaman Cetak</h3>
             </div>
-            <div class="card-body bg-light p-4" style="max-height: 800px; overflow-y: auto;">
+            <div class="p-6 bg-light p-6" style="max-height: 800px; overflow-y: auto;">
                 
                 {{-- Kertas 1: SSKK --}}
-                <div class="document-paper shadow-sm bg-white mb-5" style="padding: 2cm 2cm 2cm 2.5cm; width: 100%; border: 1px solid #ccc; font-family: 'Times New Roman', Times, serif; color: #000; position: relative;">
+                <div class="document-paper shadow-sm bg-white mb-8" style="padding: 2cm 2cm 2cm 2.5cm; width: 100%; border: 1px solid #ccc; font-family: 'Times New Roman', Times, serif; color: #000; position: relative;">
                     <div style="font-weight: bold; text-align: center; font-size: 14pt; margin-bottom: 20px;">
                         SYARAT-SYARAT KHUSUS KONTRAK (SSKK) PESANAN
                     </div>
@@ -208,7 +208,7 @@
 <!-- Iframe tersembunyi untuk mencetak PDF secara background -->
 <iframe id="print-iframe" style="display: none;"></iframe>
 
-@stop
+
 
 @push('js')
 <script>
@@ -223,3 +223,5 @@
     }
 </script>
 @endpush
+
+@endcomponent

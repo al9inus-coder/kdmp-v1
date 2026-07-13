@@ -37,7 +37,7 @@
     </div>
 @else
 <div x-data="{ previewLoading: true }"
-     x-init="$refs.docFrame.src = '{{ route('procurement-packages.procurement-process.print-document', $package) }}?embed=1&t=' + Date.now()">
+     x-init="$refs.docFrame.src = '{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.procurement-process.print-document', $package) }}?embed=1&t=' + Date.now()">
     <div class="border border-slate-200 rounded-xl overflow-hidden">
         <div class="px-4 py-3 bg-slate-50/70 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
             <p class="text-xs text-slate-500 flex items-center gap-1.5">
@@ -49,7 +49,7 @@
                     class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded-lg shadow-sm transition-colors">
                     <i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak PDF
                 </button>
-                <a href="{{ route('procurement-packages.procurement-process.print-document', $package) }}" target="_blank"
+                <a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.procurement-process.print-document', $package) }}" target="_blank"
                     class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg shadow-sm transition-colors">
                     <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Tab Baru
                 </a>

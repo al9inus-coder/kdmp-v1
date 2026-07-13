@@ -5,7 +5,7 @@
     $money   = fn ($v) => 'Rp ' . number_format((float) $v, 0, ',', '.');
     $formatM = fn ($v) => rupiahSingkat($v);
 
-    $totalInbox = $submittedCount + $pendingSppdCount;
+    $totalInbox = $submittedCount + $pendingSppdCount + $pendingSpjCount;
 
     $workflowMeta = [
         \App\Models\ProcurementPackage::WORKFLOW_DRAFT              => ['label' => 'Persiapan',   'hex' => '#94a3b8', 'dot' => 'bg-slate-400',   'status' => 'draft'],
@@ -182,6 +182,54 @@
                 </div>
             </div>
 
+            {{-- Monitoring Perjalanan Dinas --}}
+            <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                    <h3 class="font-bold text-slate-800 flex items-center gap-2 text-sm">
+                        <i data-lucide="plane" class="w-4 h-4 text-emerald-500"></i>
+                        Monitoring Perjalanan Dinas
+                    </h3>
+                    <a href="{{ route('kabid.swakelola.index') }}" class="text-xs font-semibold text-emerald-600 hover:text-emerald-800">
+                        Buka halaman →
+                    </a>
+                </div>
+                <div class="p-5 grid grid-cols-1 sm:grid-cols-[180px_minmax(0,1fr)] gap-6 items-center">
+                    <div class="relative w-40 h-40 mx-auto">
+                        <canvas id="travelChart"></canvas>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            @php
+                                $totalTravelSerapanPct = $totalTravelPagu > 0 ? round($totalTravelRealisasi / $totalTravelPagu * 100, 1) : 0;
+                            @endphp
+                            <span class="text-2xl font-black text-slate-800">{{ $totalTravelSerapanPct }}%</span>
+                            <span class="text-[10px] font-semibold text-slate-400 uppercase">serapan</span>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        @forelse($travelSubActivities as $subAct)
+                            @php
+                                $pct = $subAct['pagu'] > 0 ? round($subAct['realisasi'] / $subAct['pagu'] * 100, 1) : 0;
+                            @endphp
+                            <a href="{{ route('kabid.procurement-packages.show', $subAct['id_rup']) }}" class="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors group">
+                                <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: {{ $subAct['hex'] }};"></span>
+                                <span class="text-sm font-semibold text-slate-700 group-hover:text-slate-900 flex-1 truncate" title="{{ $subAct['nama'] }}">
+                                    {{ $subAct['nama'] }}
+                                </span>
+                                <div class="hidden md:block w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="h-full rounded-full" style="background-color: {{ $subAct['hex'] }}; width: {{ $pct }}%"></div>
+                                </div>
+                                <span class="text-xs text-slate-500 min-w-max text-right whitespace-nowrap ml-auto">{{ $formatM($subAct['realisasi']) }} / {{ $formatM($subAct['pagu']) }}</span>
+                                <span class="text-[11px] font-bold text-slate-700 w-10 text-right">{{ $pct }}%</span>
+                            </a>
+                        @empty
+                            <div class="text-center py-6 text-slate-400 text-sm">
+                                <i data-lucide="info" class="w-5 h-5 mx-auto mb-2 text-slate-300"></i>
+                                Belum ada data perjalanan dinas
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+
             {{-- Kotak Masuk --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
                 {{-- Paket menunggu persetujuan --}}
@@ -219,38 +267,68 @@
                     </div>
                 </div>
 
-                {{-- SPPD menunggu review --}}
+                {{-- Perjalanan dinas menunggu review: SPPD baru + SPJ (biaya rampung) --}}
                 <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
                     <div class="p-4 border-b border-slate-100 bg-sky-50/50 flex items-center justify-between">
                         <h3 class="font-bold text-slate-800 flex items-center gap-2 text-sm">
                             <i data-lucide="plane" class="w-4 h-4 text-sky-500"></i>
-                            Pengajuan SPPD
-                            @if($pendingSppdCount > 0)
-                                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-sky-600 text-white">{{ $pendingSppdCount }}</span>
+                            Perjalanan Dinas
+                            @if($pendingReviewCount > 0)
+                                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-sky-600 text-white">{{ $pendingReviewCount }}</span>
                             @endif
                         </h3>
-                        <a href="{{ route('kabid.sppd.index', ['status' => 'submitted']) }}" class="text-xs font-semibold text-sky-600 hover:text-sky-800">
+                        <a href="{{ route('kabid.sppd.index') }}" class="text-xs font-semibold text-sky-600 hover:text-sky-800">
                             Semua →
                         </a>
                     </div>
                     <div class="divide-y divide-slate-100 flex-1">
-                        @forelse($pendingSppd->take(4) as $to)
+                        @forelse($pendingReview as $row)
+                            @php
+                                $to = $row['to'];
+                                $isSpj = $row['type'] === 'spj';
+                                $tglBerangkat = $to->tanggal_berangkat;
+                                $tglKembali = $to->tanggal_kembali;
+                                $tglFormatted = '-';
+                                if ($tglBerangkat && $tglKembali) {
+                                    $tglBerangkat = \Illuminate\Support\Carbon::parse($tglBerangkat)->locale('id');
+                                    $tglKembali = \Illuminate\Support\Carbon::parse($tglKembali)->locale('id');
+                                    if ($tglBerangkat->format('Y-m-d') === $tglKembali->format('Y-m-d')) {
+                                        $tglFormatted = $tglBerangkat->translatedFormat('d M Y');
+                                    } elseif ($tglBerangkat->format('m-Y') === $tglKembali->format('m-Y')) {
+                                        $tglFormatted = $tglBerangkat->translatedFormat('d') . ' - ' . $tglKembali->translatedFormat('d M Y');
+                                    } else {
+                                        $tglFormatted = $tglBerangkat->translatedFormat('d M') . ' - ' . $tglKembali->translatedFormat('d M Y');
+                                    }
+                                }
+                            @endphp
                             <a href="{{ route('kabid.packages.travel-orders.show', [$to->package, $to]) }}" class="block px-4 py-3 hover:bg-slate-50 transition-colors group">
-                                <p class="text-sm font-semibold text-slate-800 group-hover:text-sky-600 truncate transition-colors">{{ $to->maksud_perjalanan }}</p>
-                                <p class="text-xs text-slate-400 mt-0.5 flex items-center justify-between gap-2">
+                                <div class="flex items-center justify-between gap-2">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <span class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wide {{ $isSpj ? 'bg-blue-100 text-blue-700' : 'bg-sky-100 text-sky-700' }}">
+                                            {{ $isSpj ? 'SPJ' : 'SPPD' }}
+                                        </span>
+                                        <p class="text-sm font-semibold text-slate-800 group-hover:text-sky-600 truncate transition-colors">{{ $to->personnels->map(fn($p) => $p->employee->nama ?? '-')->implode(', ') ?: '-' }}</p>
+                                    </div>
+                                    @if($row['time'])
+                                        <span class="text-[10px] font-bold text-slate-500 whitespace-nowrap shrink-0">{{ $row['time']->locale('id')->diffForHumans(null, true) }}</span>
+                                    @endif
+                                </div>
+                                <div class="text-[11px] text-slate-400 mt-1 flex items-center flex-wrap gap-x-2 gap-y-1 pl-0.5">
+                                    <span class="flex items-center gap-1 shrink-0">
+                                        <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i>
+                                        {{ $tglFormatted }}
+                                    </span>
+                                    <span class="text-slate-300">•</span>
                                     <span class="truncate flex items-center gap-1">
-                                        <i data-lucide="map-pin" class="w-3 h-3 shrink-0"></i>
+                                        <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400"></i>
                                         {{ $to->tempat_tujuan }}
                                     </span>
-                                    @if($to->tanggal_berangkat)
-                                        <span class="font-bold text-slate-600 whitespace-nowrap">{{ $to->tanggal_berangkat->locale('id')->translatedFormat('d M') }}</span>
-                                    @endif
-                                </p>
+                                </div>
                             </a>
                         @empty
                             <div class="h-full px-4 py-8 flex flex-col items-center justify-center text-center text-slate-400">
                                 <i data-lucide="check-circle" class="w-7 h-7 mb-2 text-emerald-400"></i>
-                                <p class="text-xs font-medium text-slate-500">Tidak ada pengajuan SPPD.</p>
+                                <p class="text-xs font-medium text-slate-500">Tidak ada pengajuan SPPD/SPJ.</p>
                             </div>
                         @endforelse
                     </div>
@@ -393,6 +471,37 @@
                 }
             }
         });
+
+        // Donut monitoring perjalanan dinas per sub-kegiatan (pagu)
+        const travelData = @json(array_column($travelSubActivities, 'pagu'));
+        const adaTravel = travelData.reduce((a, b) => a + b, 0) > 0;
+
+        new Chart(document.getElementById('travelChart'), {
+            type: 'doughnut',
+            data: {
+                labels: @json(array_column($travelSubActivities, 'nama')),
+                datasets: [{
+                    data: adaTravel ? travelData : [1],
+                    backgroundColor: adaTravel ? @json(array_column($travelSubActivities, 'hex')) : ['#e2e8f0'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff',
+                }]
+            },
+            options: {
+                cutout: '68%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        enabled: adaTravel,
+                        callbacks: {
+                            label: (ctx) => ctx.label + ': Rp ' + Number(ctx.raw).toLocaleString('id-ID'),
+                        }
+                    }
+                }
+            }
+        });
     });
 </script>
 @endcomponent
+
+

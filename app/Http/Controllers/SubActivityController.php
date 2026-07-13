@@ -65,7 +65,7 @@ class SubActivityController extends Controller
         SubActivity::create($request->validated());
 
         return redirect()
-            ->route('sub-activities.index')
+            ->route('admin.sub-activities.index')
             ->with('success', 'Sub Kegiatan berhasil ditambahkan.');
     }
 
@@ -83,7 +83,7 @@ class SubActivityController extends Controller
         $subActivity->update($request->validated());
 
         return redirect()
-            ->route('sub-activities.index')
+            ->route('admin.sub-activities.index')
             ->with('success', 'Sub Kegiatan berhasil diperbarui.');
     }
 }

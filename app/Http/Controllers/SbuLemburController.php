@@ -34,7 +34,7 @@ class SbuLemburController extends Controller
 
         SbuLembur::create($validated);
 
-        return redirect()->route('sbu-lemburs.index')->with('success', 'Standar Biaya Lembur berhasil ditambahkan.');
+        return redirect()->route('admin.sbu-lemburs.index')->with('success', 'Standar Biaya Lembur berhasil ditambahkan.');
     }
 
     /**
@@ -51,7 +51,7 @@ class SbuLemburController extends Controller
 
         $sbu_lembur->update($validated);
 
-        return redirect()->route('sbu-lemburs.index')->with('success', 'Standar Biaya Lembur berhasil diperbarui.');
+        return redirect()->route('admin.sbu-lemburs.index')->with('success', 'Standar Biaya Lembur berhasil diperbarui.');
     }
 
     /**
@@ -61,6 +61,6 @@ class SbuLemburController extends Controller
     {
         $sbu_lembur->delete();
 
-        return redirect()->route('sbu-lemburs.index')->with('success', 'Standar Biaya Lembur berhasil dihapus.');
+        return redirect()->route('admin.sbu-lemburs.index')->with('success', 'Standar Biaya Lembur berhasil dihapus.');
     }
 }

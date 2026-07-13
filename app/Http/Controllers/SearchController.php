@@ -64,7 +64,7 @@ class SearchController extends Controller
         }
 
         if ($user->hasAnyRole(['Admin', 'Super Admin'])) {
-            return 'admin.procurement-packages.show';
+            return (auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.show';
         }
 
         return null;

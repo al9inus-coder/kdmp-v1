@@ -1,21 +1,21 @@
-@extends('adminlte::page')
+@component('layouts.kdmp')
 
 @section('title', 'Preview Dokumen Pembayaran')
 
-@section('content_header')
-    <div class="d-flex justify-content-between align-items-center">
-        <h1 class="font-weight-bold text-dark">
-            <i class="fas fa-file-pdf text-danger mr-2"></i> Preview Dokumen Pembayaran
+@slot('header')
+    <div class="flex justify-between items-center">
+        <h1 class="font-bold text-slate-800">
+            <i class="fas fa-file-pdf text-red-600 mr-2"></i> Preview Dokumen Pembayaran
         </h1>
         <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item"><a href="{{ route('procurement-packages.index') }}">Daftar Paket</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('procurement-payments.show', $procurementPackage->package) }}">{{ $procurementPackage->package->id_rup }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.index') }}">Daftar Paket</a></li>
+            <li class="breadcrumb-item"><a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.payment.show', $procurementPackage->package) }}">{{ $procurementPackage->package->id_rup }}</a></li>
             <li class="breadcrumb-item active">Preview Dokumen</li>
         </ol>
     </div>
-@stop
+@endslot
 
-@section('content')
+
 @push('css')
 <style>
     .document-paper {
@@ -51,56 +51,56 @@
     }
 </style>
 @endpush
-<div class="row">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
     <!-- Kolom Aksi (Kiri) -->
-    <div class="col-md-3">
-        <div class="card card-outline card-primary sticky-top" style="top: 20px;">
-            <div class="card-header">
-                <h3 class="card-title font-weight-bold">Aksi Dokumen</h3>
+    <div class="md:col-span-3">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden border-t-4 border-blue-500 sticky-top" style="top: 20px;">
+            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/50">
+                <h3 class="text-lg font-semibold text-slate-800 flex items-center font-bold">Aksi Dokumen</h3>
             </div>
-            <div class="card-body">
-                <p class="text-muted small mb-4">Pastikan tampilan dokumen di sebelah kanan sudah sesuai sebelum Anda mencetaknya.</p>
-                <button onclick="printPdf('{{ route('procurement-payments.print-document', ['package' => $procurementPackage->package, 'type' => 'bap']) }}')" class="btn btn-outline-danger btn-block mb-2 text-left">
+            <div class="p-6">
+                <p class="text-slate-500 small mb-6">Pastikan tampilan dokumen di sebelah kanan sudah sesuai sebelum Anda mencetaknya.</p>
+                <button onclick="printPdf('{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.payment.print-document', ['package' => $procurementPackage->package, 'type' => 'bap']) }}')" class="inline-flex items-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 w-full justify-center mb-2 text-left">
                     <i class="fas fa-print mr-2"></i> Cetak BAP
                 </button>
-                <button onclick="printPdf('{{ route('procurement-payments.print-document', ['package' => $procurementPackage->package, 'type' => 'kwitansi']) }}')" class="btn btn-outline-danger btn-block mb-2 text-left">
+                <button onclick="printPdf('{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.payment.print-document', ['package' => $procurementPackage->package, 'type' => 'kwitansi']) }}')" class="inline-flex items-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 w-full justify-center mb-2 text-left">
                     <i class="fas fa-print mr-2"></i> Cetak Kwitansi
                 </button>
                 @if($payment->is_non_pkp)
-                <button onclick="printPdf('{{ route('procurement-payments.print-document', ['package' => $procurementPackage->package, 'type' => 'non-pkp']) }}')" class="btn btn-outline-danger btn-block mb-2 text-left">
+                <button onclick="printPdf('{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.payment.print-document', ['package' => $procurementPackage->package, 'type' => 'non-pkp']) }}')" class="inline-flex items-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 w-full justify-center mb-2 text-left">
                     <i class="fas fa-print mr-2"></i> Cetak Non-PKP
                 </button>
                 @endif
-                <button onclick="printPdf('{{ route('procurement-payments.print-document', ['package' => $procurementPackage->package, 'type' => 'ringkasan-kontrak']) }}')" class="btn btn-outline-danger btn-block mb-3 text-left">
+                <button onclick="printPdf('{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.payment.print-document', ['package' => $procurementPackage->package, 'type' => 'ringkasan-kontrak']) }}')" class="inline-flex items-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 w-full justify-center mb-6 text-left">
                     <i class="fas fa-print mr-2"></i> Cetak Ringkasan Kontrak
                 </button>
-                <a href="{{ route('procurement-payments.show', $procurementPackage->package) }}" class="btn btn-secondary btn-block">
+                <a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.payment.show', $procurementPackage->package) }}" class="inline-flex items-center px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 w-full justify-center">
                     <i class="fas fa-arrow-left mr-2"></i> Kembali ke Pembayaran
                 </a>
                 
-                <hr class="mt-4 mb-4">
+                <hr class="mt-6 mb-6">
                 
-                <form action="{{ route('procurement-payments.complete', $procurementPackage->package) }}" method="POST">
+                <form action="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.payment.complete', $procurementPackage->package) }}" method="POST">
                     @csrf
-                    <button type="submit" class="btn btn-success btn-block btn-lg shadow-sm" onclick="return confirm('Apakah Anda yakin semua dokumen sudah dicetak dan proses pengadaan telah selesai?')">
+                    <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 w-full justify-center -lg shadow-sm" onclick="return confirm('Apakah Anda yakin semua dokumen sudah dicetak dan proses pengadaan telah selesai?')">
                         <i class="fas fa-check-circle mr-2"></i> Selesaikan Proses
                     </button>
                 </form>
             </div>
         </div>
         
-        <div class="card card-outline card-info mt-3">
-            <div class="card-header">
-                <h3 class="card-title font-weight-bold"><i class="fas fa-info-circle text-info mr-2"></i> Dokumen Tercetak</h3>
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden border-t-4 border-blue-400 mt-6">
+            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/50">
+                <h3 class="text-lg font-semibold text-slate-800 flex items-center font-bold"><i class="fas fa-info-circle text-blue-400 mr-2"></i> Dokumen Tercetak</h3>
             </div>
-            <div class="card-body p-0">
+            <div class="p-6 p-0">
                 <ul class="list-group list-group-flush small">
-                    <li class="list-group-item"><i class="fas fa-check text-success mr-2"></i> Berita Acara Pembayaran (BAP)</li>
-                    <li class="list-group-item"><i class="fas fa-check text-success mr-2"></i> Kwitansi</li>
+                    <li class="list-group-item"><i class="fas fa-check text-emerald-600 mr-2"></i> Berita Acara Pembayaran (BAP)</li>
+                    <li class="list-group-item"><i class="fas fa-check text-emerald-600 mr-2"></i> Kwitansi</li>
                     @if($payment->is_non_pkp)
-                    <li class="list-group-item"><i class="fas fa-check text-success mr-2"></i> Surat Pernyataan Non-PKP</li>
+                    <li class="list-group-item"><i class="fas fa-check text-emerald-600 mr-2"></i> Surat Pernyataan Non-PKP</li>
                     @endif
-                    <li class="list-group-item"><i class="fas fa-check text-success mr-2"></i> Ringkasan Kontrak</li>
+                    <li class="list-group-item"><i class="fas fa-check text-emerald-600 mr-2"></i> Ringkasan Kontrak</li>
                 </ul>
             </div>
         </div>
@@ -108,40 +108,40 @@
 
     <!-- Kolom Preview (Kanan) -->
     <div class="col-md-9">
-        <div class="card shadow">
-            <div class="card-header bg-white p-3 border-bottom">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden shadow">
+            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/50 bg-white p-6 border-bottom">
                 <ul class="nav nav-tabs border-0" id="document-tabs" role="tablist">
                     <li class="nav-item">
-                        <a class="nav-link active font-weight-bold" id="tab-bap" data-toggle="tab" href="#content-bap" role="tab" style="padding: 12px 25px;"><i class="fas fa-file-signature mr-2"></i> BAP</a>
+                        <a class="nav-link active font-bold" id="tab-bap" data-toggle="tab" href="#content-bap" role="tab" style="padding: 12px 25px;"><i class="fas fa-file-signature mr-2"></i> BAP</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link font-weight-bold" id="tab-kwitansi" data-toggle="tab" href="#content-kwitansi" role="tab" style="padding: 12px 25px;"><i class="fas fa-file-invoice-dollar mr-2"></i> Kwitansi</a>
+                        <a class="nav-link font-bold" id="tab-kwitansi" data-toggle="tab" href="#content-kwitansi" role="tab" style="padding: 12px 25px;"><i class="fas fa-file-invoice-dollar mr-2"></i> Kwitansi</a>
                     </li>
                     @if($payment->is_non_pkp)
                     <li class="nav-item">
-                        <a class="nav-link font-weight-bold" id="tab-non-pkp" data-toggle="tab" href="#content-non-pkp" role="tab" style="padding: 12px 25px;"><i class="fas fa-file-contract mr-2"></i> Surat Non-PKP</a>
+                        <a class="nav-link font-bold" id="tab-non-pkp" data-toggle="tab" href="#content-non-pkp" role="tab" style="padding: 12px 25px;"><i class="fas fa-file-contract mr-2"></i> Surat Non-PKP</a>
                     </li>
                     @endif
                     <li class="nav-item">
-                        <a class="nav-link font-weight-bold" id="tab-ringkasan" data-toggle="tab" href="#content-ringkasan" role="tab" style="padding: 12px 25px;"><i class="fas fa-list-alt mr-2"></i> Ringkasan Kontrak</a>
+                        <a class="nav-link font-bold" id="tab-ringkasan" data-toggle="tab" href="#content-ringkasan" role="tab" style="padding: 12px 25px;"><i class="fas fa-list-alt mr-2"></i> Ringkasan Kontrak</a>
                     </li>
                 </ul>
             </div>
             @php
                 $skpd = \App\Models\Skpd::first();
             @endphp
-            <div class="card-body bg-light p-4" style="min-height: 100vh; overflow-x: auto;">
+            <div class="p-6 bg-light p-6" style="min-height: 100vh; overflow-x: auto;">
                 <div class="tab-content" id="document-tabsContent">
                     {{-- Kertas 1: BAP --}}
                     <div class="tab-pane fade show active" id="content-bap" role="tabpanel">
-                        <div class="document-paper mb-5">
+                        <div class="document-paper mb-8">
                             @include('procurement-payments.partials.bap', ['procurementPackage' => $procurementPackage, 'process' => $process, 'payment' => $payment, 'skpd' => $skpd])
                         </div>
                     </div>
 
                     {{-- Kertas 2: Kwitansi --}}
                     <div class="tab-pane fade" id="content-kwitansi" role="tabpanel">
-                        <div class="document-paper mb-5">
+                        <div class="document-paper mb-8">
                             @include('procurement-payments.partials.kwitansi', ['procurementPackage' => $procurementPackage, 'process' => $process, 'payment' => $payment, 'skpd' => $skpd])
                         </div>
                     </div>
@@ -149,7 +149,7 @@
                     {{-- Kertas 3: Non PKP (Jika Ya) --}}
                     @if($payment->is_non_pkp)
                     <div class="tab-pane fade" id="content-non-pkp" role="tabpanel">
-                        <div class="document-paper mb-5">
+                        <div class="document-paper mb-8">
                             @include('procurement-payments.partials.non-pkp', ['procurementPackage' => $procurementPackage, 'process' => $process, 'payment' => $payment, 'skpd' => $skpd])
                         </div>
                     </div>
@@ -157,7 +157,7 @@
 
                     {{-- Kertas 4: Ringkasan Kontrak --}}
                     <div class="tab-pane fade" id="content-ringkasan" role="tabpanel">
-                        <div class="document-paper mb-5">
+                        <div class="document-paper mb-8">
                             @include('procurement-payments.partials.ringkasan-kontrak', ['procurementPackage' => $procurementPackage, 'process' => $process, 'payment' => $payment, 'skpd' => $skpd])
                         </div>
                     </div>
@@ -170,7 +170,7 @@
 <!-- Iframe tersembunyi untuk mencetak PDF secara background -->
 <iframe id="print-iframe" style="display: none;"></iframe>
 
-@stop
+
 
 @push('js')
 <script>
@@ -185,3 +185,5 @@
     }
 </script>
 @endpush
+
+@endcomponent

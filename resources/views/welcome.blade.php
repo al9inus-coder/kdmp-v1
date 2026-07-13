@@ -53,7 +53,7 @@
                 </p>
 
                 <p class="text-white/70 mt-4 text-base leading-relaxed max-w-md">
-                    Platform terpadu untuk mengelola seluruh proses pengadaan, administrasi kegiatan, serta dokumentasi secara cepat, transparan dan terdokumentasi.
+                    Platform terpadu untuk mengelola seluruh proses pengadaan, administrasi kegiatan, serta dokumentasi secara cepat, transparan dan akuntabel.
                 </p>
 
                 <div class="flex flex-wrap gap-4 mt-10">
@@ -62,14 +62,21 @@
                         Masuk Sistem <span class="group-hover:ml-2 transition-all">→</span>
                     </a>
 
-                    <a href="#"
+                    <a href="{{ route('panduan') }}"
                        class="px-8 py-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white font-medium hover:bg-white/20 transition duration-300">
                         Pelajari Lebih Lanjut
                     </a>
                 </div>
 
-                <div class="mt-16 text-white/50 text-xs uppercase tracking-widest">
-                    © {{ date('Y') }} KDMP • Kelola Digital Manajemen Pengadaan
+                <div class="mt-16 space-y-2 text-white/50 text-xs">
+                    <div class="uppercase tracking-widest font-semibold">
+                        © {{ date('Y') }} KDMP • Kelola Digital Manajemen Pengadaan
+                    </div>
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span>Aplikasi dikembangkan oleh <strong class="text-white/80">sunigla</strong></span>
+                        <span>•</span>
+                        <a href="{{ route('disclaimer') }}" class="text-red-400 hover:text-red-300 underline transition-colors">Disclaimer</a>
+                    </div>
                 </div>
 
             </div>

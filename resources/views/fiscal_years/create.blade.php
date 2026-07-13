@@ -5,12 +5,12 @@
 
 <x-ui.workspace title="Tambah Tahun Anggaran" description="Tambahkan tahun anggaran baru ke sistem.">
     <x-slot:actions>
-        <x-ui.button variant="outline" size="md" href="{{ route('fiscal-years.index') }}">
+        <x-ui.button variant="outline" size="md" href="{{ route('admin.fiscal-years.index') }}">
             <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
         </x-ui.button>
     </x-slot:actions>
 
-    <form action="{{ route('fiscal-years.store') }}" method="POST">
+    <form action="{{ route('admin.fiscal-years.store') }}" method="POST">
         @csrf
 
         @if ($errors->any())
@@ -56,7 +56,7 @@
             </section>
 
             <div class="flex flex-wrap items-center justify-end gap-3 mt-6">
-                <x-ui.button variant="secondary" size="md" href="{{ route('fiscal-years.index') }}">
+                <x-ui.button variant="secondary" size="md" href="{{ route('admin.fiscal-years.index') }}">
                     <i data-lucide="x" class="w-4 h-4 mr-2"></i> Batal
                 </x-ui.button>
                 <x-ui.button variant="primary" size="lg" type="submit">

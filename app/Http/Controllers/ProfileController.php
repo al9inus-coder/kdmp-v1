@@ -33,9 +33,17 @@ class ProfileController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
         ]);
 
-        $user->fill($validated)->save();
+        $user->fill($validated);
 
-        return back()->with('success', 'Profil berhasil diperbarui.');
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+
+        $user->save();
+
+        return redirect()
+            ->route('profile.edit')
+            ->with('success', 'Profil berhasil diperbarui.');
     }
 
     /**
@@ -53,5 +61,25 @@ class ProfileController extends Controller
         ]);
 
         return back()->with('success', 'Password berhasil diganti.');
+    }
+
+    /**
+     * Hapus akun user yang sedang login setelah password dikonfirmasi.
+     */
+    public function destroy(Request $request): RedirectResponse
+    {
+        $request->validateWithBag('userDeletion', [
+            'password' => ['required', 'current_password'],
+        ]);
+
+        $user = $request->user();
+
+        Auth::logout();
+        $user->delete();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect('/');
     }
 }

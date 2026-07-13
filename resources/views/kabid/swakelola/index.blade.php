@@ -137,9 +137,9 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     @forelse($packages as $package)
-                        <tr class="hover:bg-slate-50/80 transition-colors">
+                        <tr class="hover:bg-slate-50/80 transition-colors group cursor-pointer" onclick="window.location.href='{{ route('kabid.packages.show', $package) }}'">
                             <td class="px-6 py-4 font-mono text-xs text-slate-500">{{ $package->id_rup ?? '-' }}</td>
-                            <td class="px-6 py-4 font-semibold text-slate-900 leading-snug">{{ $package->nama_paket }}</td>
+                            <td class="px-6 py-4 font-semibold text-slate-900 leading-snug group-hover:text-emerald-600 transition-colors">{{ $package->nama_paket }}</td>
                             <td class="px-6 py-4 text-slate-600">{{ $package->subActivity->nama ?? '-' }}</td>
                             <td class="px-6 py-4 text-right font-semibold text-emerald-700 tabular-nums whitespace-nowrap">Rp {{ number_format((float) $package->pagu, 0, ',', '.') }}</td>
                             <td class="px-6 py-4 text-slate-600 whitespace-nowrap">{{ $package->metode_pengadaan ?? '-' }}</td>
@@ -156,7 +156,7 @@
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center justify-center">
-                                    <a href="{{ route('kabid.packages.show', $package) }}"
+                                    <a href="{{ route('kabid.packages.show', $package) }}" onclick="event.stopPropagation()"
                                         class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-600 bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors" title="Detail">
                                         <i data-lucide="eye" class="w-3.5 h-3.5"></i>
                                     </a>

@@ -48,10 +48,10 @@
                             <td class="px-5 py-3.5">
                                 <div class="flex items-center justify-center gap-1.5">
                                     <button type="button" title="Edit" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-emerald-600 bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 transition-colors"
-                                        x-on:click="openEdit({ jenis: 'Uang Lembur', golongan: @js($item->golongan), satuan: @js($item->satuan), besaran: {{ $item->besaran }}, action: '{{ route('sbu-lemburs.update', $item) }}' })">
+                                        x-on:click="openEdit({ jenis: 'Uang Lembur', golongan: @js($item->golongan), satuan: @js($item->satuan), besaran: {{ $item->besaran }}, action: '{{ route('admin.sbu-lemburs.update', $item) }}' })">
                                         <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                                     </button>
-                                    <form action="{{ route('sbu-lemburs.destroy', $item) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus data ini?');">
+                                    <form action="{{ route('admin.sbu-lemburs.destroy', $item) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus data ini?');">
                                         @csrf @method('DELETE')
                                         <button type="submit" title="Hapus" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-100 transition-colors"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                                     </form>
@@ -89,10 +89,10 @@
                             <td class="px-5 py-3.5">
                                 <div class="flex items-center justify-center gap-1.5">
                                     <button type="button" title="Edit" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-emerald-600 bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 transition-colors"
-                                        x-on:click="openEdit({ jenis: 'Uang Makan Lembur', golongan: @js($item->golongan), satuan: @js($item->satuan), besaran: {{ $item->besaran }}, action: '{{ route('sbu-lemburs.update', $item) }}' })">
+                                        x-on:click="openEdit({ jenis: 'Uang Makan Lembur', golongan: @js($item->golongan), satuan: @js($item->satuan), besaran: {{ $item->besaran }}, action: '{{ route('admin.sbu-lemburs.update', $item) }}' })">
                                         <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                                     </button>
-                                    <form action="{{ route('sbu-lemburs.destroy', $item) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus data ini?');">
+                                    <form action="{{ route('admin.sbu-lemburs.destroy', $item) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus data ini?');">
                                         @csrf @method('DELETE')
                                         <button type="submit" title="Hapus" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-100 transition-colors"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                                     </form>
@@ -159,7 +159,7 @@
             form: { action: '', jenis: 'Uang Lembur', golongan: '', satuan: '', besaran: '' },
             openAdd() {
                 this.mode = 'add';
-                this.form = { action: '{{ route('sbu-lemburs.store') }}', jenis: 'Uang Lembur', golongan: '', satuan: '', besaran: '' };
+                this.form = { action: '{{ route('admin.sbu-lemburs.store') }}', jenis: 'Uang Lembur', golongan: '', satuan: '', besaran: '' };
                 this.open = true;
             },
             openEdit(data) {

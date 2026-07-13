@@ -21,8 +21,7 @@ class ProcurementRequestController extends Controller
         abort_if(!$procurementPackage, 404);
         if ($procurementPackage->procurementRequest) {
 
-            return redirect()->route(
-                'procurement-packages.procurement-request.show',
+            return redirect()->route('procurement-packages.procurement-request.show',
                 $package
             );
         }
@@ -58,8 +57,7 @@ class ProcurementRequestController extends Controller
 
         if ($procurementPackage->procurementRequest) {
 
-            return redirect()->route(
-                'procurement-packages.procurement-request.show',
+            return redirect()->route('procurement-packages.procurement-request.show',
                 $package
             )->with(
                 'warning',
@@ -84,8 +82,7 @@ class ProcurementRequestController extends Controller
             );
 
         return redirect()
-            ->route(
-                'procurement-packages.procurement-request.show',
+            ->route('procurement-packages.procurement-request.show',
                 $package
             )
             ->with(
@@ -109,8 +106,7 @@ class ProcurementRequestController extends Controller
     if (!$procurementRequest) {
 
         return redirect()
-            ->route(
-                'procurement-packages.procurement-request.create',
+            ->route('procurement-packages.procurement-request.create',
                 $package
             )
             ->with(
@@ -156,8 +152,7 @@ class ProcurementRequestController extends Controller
 
         if (!$procurementRequest) {
 
-            return redirect()->route(
-                'procurement-packages.procurement-request.create',
+            return redirect()->route('procurement-packages.procurement-request.create',
                 $package
             );
 
@@ -196,8 +191,7 @@ class ProcurementRequestController extends Controller
 
         if (!$procurementRequest) {
 
-            return redirect()->route(
-                'procurement-packages.procurement-request.create',
+            return redirect()->route('procurement-packages.procurement-request.create',
                 $package
             );
 
@@ -216,8 +210,7 @@ class ProcurementRequestController extends Controller
         );
 
         return redirect()
-            ->route(
-                'procurement-packages.procurement-request.show',
+            ->route('procurement-packages.procurement-request.show',
                 $package
             )
             ->with(

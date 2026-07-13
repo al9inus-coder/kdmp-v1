@@ -1,95 +1,95 @@
-@extends('adminlte::page')
+@component('layouts.kdmp')
 
 @section('title', 'Edit Perjalanan Dinas')
 @section('plugins.Select2', true)
 
-@section('content_header')
+@slot('header')
     <h1>Edit Perjalanan Dinas (Swakelola)</h1>
-@stop
+@endslot
 
-@section('content')
-<div class="row">
-    <div class="col-md-12">
-        <form action="{{ route('packages.travel-orders.update', [$package, $travelOrder]) }}" method="POST" id="travelOrderForm">
+
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+    <div class="md:col-span-12">
+        <form action="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'packages.travel-orders.update', [$package, $travelOrder]) }}" method="POST" id="travelOrderForm">
             @csrf
             @method('PUT')
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h3 class="card-title">Informasi Dasar</h3>
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/50 bg-primary text-white">
+                    <h3 class="text-lg font-semibold text-slate-800 flex items-center">Informasi Dasar</h3>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label>Tipe Perjalanan <span class="text-danger">*</span></label>
-                            <select name="tipe_perjalanan" id="tipe_perjalanan" class="form-control" required>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                        <div class="md:col-span-4 mb-6">
+                            <label>Tipe Perjalanan <span class="text-red-600">*</span></label>
+                            <select name="tipe_perjalanan" id="tipe_perjalanan" class="block w-full rounded-md border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm" required>
                                 <option value="Dalam Daerah" {{ strtolower($travelOrder->tipe_perjalanan) == 'dalam daerah' || $travelOrder->tipe_perjalanan == 'dalam_daerah' ? 'selected' : '' }}>Dalam Daerah (Wilayah Kab. Bengkayang)</option>
                                 <option value="Luar Daerah" {{ strtolower($travelOrder->tipe_perjalanan) == 'luar daerah' || $travelOrder->tipe_perjalanan == 'luar_daerah' ? 'selected' : '' }}>Luar Daerah</option>
                             </select>
                         </div>
-                        <div class="col-md-4 mb-3" id="kategori_tujuan_container" style="display: none;">
-                            <label>Kategori Tujuan <span class="text-danger">*</span></label>
-                            <select id="kategori_tujuan" class="form-control">
+                        <div class="md:col-span-4 mb-6" id="kategori_tujuan_container" style="display: none;">
+                            <label>Kategori Tujuan <span class="text-red-600">*</span></label>
+                            <select id="kategori_tujuan" class="block w-full rounded-md border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm">
                                 <option value="">Pilih Kategori...</option>
                                 <option value="Dalam Provinsi">Dalam Provinsi (Kalimantan Barat)</option>
                                 <option value="Luar Provinsi">Luar Provinsi</option>
                             </select>
                         </div>
-                        <div class="col-md-8 mb-3" id="tempat_tujuan_container">
-                            <label>Tempat Tujuan <span class="text-danger">*</span></label>
-                            <select name="tempat_tujuan" id="tempat_tujuan" class="form-control" required data-initial="{{ old('tempat_tujuan', $travelOrder->tempat_tujuan) }}">
+                        <div class="md:col-span-8 mb-6" id="tempat_tujuan_container">
+                            <label>Tempat Tujuan <span class="text-red-600">*</span></label>
+                            <select name="tempat_tujuan" id="tempat_tujuan" class="block w-full rounded-md border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm" required data-initial="{{ old('tempat_tujuan', $travelOrder->tempat_tujuan) }}">
                                 <!-- Populated by JS -->
                             </select>
                         </div>
                     </div>
                     
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label>Tanggal Berangkat <span class="text-danger">*</span></label>
-                            <input type="date" name="tanggal_berangkat" class="form-control" value="{{ old('tanggal_berangkat', $travelOrder->tanggal_berangkat->format('Y-m-d')) }}" required>
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                        <div class="md:col-span-4 mb-6">
+                            <label>Tanggal Berangkat <span class="text-red-600">*</span></label>
+                            <input type="date" name="tanggal_berangkat" class="block w-full rounded-md border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm" value="{{ old('tanggal_berangkat', $travelOrder->tanggal_berangkat->format('Y-m-d')) }}" required>
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label>Tanggal Kembali <span class="text-danger">*</span></label>
-                            <input type="date" name="tanggal_kembali" class="form-control" value="{{ old('tanggal_kembali', $travelOrder->tanggal_kembali->format('Y-m-d')) }}" required>
+                        <div class="md:col-span-4 mb-6">
+                            <label>Tanggal Kembali <span class="text-red-600">*</span></label>
+                            <input type="date" name="tanggal_kembali" class="block w-full rounded-md border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm" value="{{ old('tanggal_kembali', $travelOrder->tanggal_kembali->format('Y-m-d')) }}" required>
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label>Tanggal Surat <span class="text-danger">*</span></label>
-                            <input type="date" name="tanggal_surat" class="form-control" value="{{ old('tanggal_surat', $travelOrder->tanggal_surat ? $travelOrder->tanggal_surat->format('Y-m-d') : date('Y-m-d')) }}" required>
+                        <div class="md:col-span-4 mb-6">
+                            <label>Tanggal Surat <span class="text-red-600">*</span></label>
+                            <input type="date" name="tanggal_surat" class="block w-full rounded-md border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm" value="{{ old('tanggal_surat', $travelOrder->tanggal_surat ? $travelOrder->tanggal_surat->format('Y-m-d') : date('Y-m-d')) }}" required>
                         </div>
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                        <div class="md:col-span-6 mb-6">
                             <label>Dasar Pelaksanaan (Nomor Surat / DPA)</label>
-                            <textarea name="dasar_pelaksanaan" class="form-control" rows="3">{{ old('dasar_pelaksanaan', $travelOrder->dasar_pelaksanaan) }}</textarea>
+                            <textarea name="dasar_pelaksanaan" class="block w-full rounded-md border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm" rows="3">{{ old('dasar_pelaksanaan', $travelOrder->dasar_pelaksanaan) }}</textarea>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label>Maksud Perjalanan <span class="text-danger">*</span></label>
-                            <textarea name="maksud_perjalanan" class="form-control" rows="3" required>{{ old('maksud_perjalanan', $travelOrder->maksud_perjalanan) }}</textarea>
+                        <div class="md:col-span-6 mb-6">
+                            <label>Maksud Perjalanan <span class="text-red-600">*</span></label>
+                            <textarea name="maksud_perjalanan" class="block w-full rounded-md border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm" rows="3" required>{{ old('maksud_perjalanan', $travelOrder->maksud_perjalanan) }}</textarea>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card mt-3">
-                <div class="card-header bg-info text-white">
-                    <h3 class="card-title">Peserta Perjalanan Dinas (Drag & Drop)</h3>
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mt-6">
+                <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/50 bg-info text-white">
+                    <h3 class="text-lg font-semibold text-slate-800 flex items-center">Peserta Perjalanan Dinas (Drag & Drop)</h3>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                        <div class="md:col-span-6">
                             <h5>Daftar Pegawai (Tersedia)</h5>
                             <ul id="available-employees" class="list-group" style="min-height: 200px; border: 2px dashed #ccc; padding: 10px; background: #f9f9f9;">
                                 @foreach($employees as $emp)
                                     @if(!in_array($emp->id, $selectedEmployees))
                                     <li class="list-group-item cursor-move" data-id="{{ $emp->id }}">
-                                        <i class="fas fa-grip-vertical text-muted mr-2"></i>
+                                        <i class="fas fa-grip-vertical text-slate-500 mr-2"></i>
                                         <strong>{{ $emp->nama }}</strong><br>
-                                        <small class="text-muted">NIP: {{ $emp->nip ?? '-' }} | Gol: {{ $emp->golongan ?? '-' }}</small>
-                                        <div class="mt-2 kendaraan-select d-none w-100">
-                                            <div class="row">
+                                        <small class="text-slate-500">NIP: {{ $emp->nip ?? '-' }} | Gol: {{ $emp->golongan ?? '-' }}</small>
+                                        <div class="mt-2 kendaraan-select d-none w-full">
+                                            <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
                                                 <div class="col-sm-6">
                                                     <label><small>Transportasi Darat:</small></label>
-                                                    <select class="form-control form-control-sm transport-darat-select">
+                                                    <select class="block w-full rounded-md border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm block w-full rounded-md border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm-sm transport-darat-select">
                                                         <option value="mobil">Mobil</option>
                                                         <option value="motor">Motor</option>
                                                         <option value="pengikut">Pengikut / Penumpang (Rp 0)</option>
@@ -109,8 +109,8 @@
                                 @endforeach
                             </ul>
                         </div>
-                        <div class="col-md-6">
-                            <h5>Peserta Terpilih <span class="text-danger">*</span></h5>
+                        <div class="md:col-span-6">
+                            <h5>Peserta Terpilih <span class="text-red-600">*</span></h5>
                             <ul id="selected-employees" class="list-group" style="min-height: 200px; border: 2px dashed #28a745; padding: 10px; background: #e9ffe9;">
                                 @php
                                     $empKendaraan = [];
@@ -122,14 +122,14 @@
                                     @if(in_array($emp->id, $selectedEmployees))
                                     @php $k = $empKendaraan[$emp->id] ?? 'mobil'; @endphp
                                     <li class="list-group-item cursor-move" data-id="{{ $emp->id }}">
-                                        <i class="fas fa-grip-vertical text-muted mr-2"></i>
+                                        <i class="fas fa-grip-vertical text-slate-500 mr-2"></i>
                                         <strong>{{ $emp->nama }}</strong><br>
-                                        <small class="text-muted">NIP: {{ $emp->nip ?? '-' }} | Gol: {{ $emp->golongan ?? '-' }}</small>
-                                        <div class="mt-2 kendaraan-select w-100">
-                                            <div class="row">
+                                        <small class="text-slate-500">NIP: {{ $emp->nip ?? '-' }} | Gol: {{ $emp->golongan ?? '-' }}</small>
+                                        <div class="mt-2 kendaraan-select w-full">
+                                            <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
                                                 <div class="col-sm-6">
                                                     <label><small>Transportasi Darat:</small></label>
-                                                    <select class="form-control form-control-sm transport-darat-select">
+                                                    <select class="block w-full rounded-md border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm block w-full rounded-md border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm-sm transport-darat-select">
                                                         <option value="mobil" {{ $k == 'mobil' || $k == 'pesawat' ? 'selected' : '' }}>Mobil</option>
                                                         <option value="motor" {{ $k == 'motor' ? 'selected' : '' }}>Motor</option>
                                                         <option value="pengikut" {{ $k == 'pengikut' ? 'selected' : '' }}>Pengikut / Penumpang (Rp 0)</option>
@@ -149,16 +149,16 @@
                                 @endforeach
                             </ul>
                             @error('employees')
-                                <div class="text-danger mt-2">{{ $message }}</div>
+                                <div class="text-red-600 mt-2">{{ $message }}</div>
                             @enderror
                         </div>
                     </div>
                     
                     <div id="hidden-inputs"></div>
                 </div>
-                <div class="card-footer">
-                    <button type="submit" class="btn btn-primary" id="btnSubmit">Simpan Perubahan</button>
-                    <a href="{{ route('packages.travel-orders.show', [$package, $travelOrder]) }}" class="btn btn-secondary">Kembali</a>
+                <div class="px-6 py-4 bg-slate-50 border-t border-slate-200">
+                    <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500" id="btnSubmit">Simpan Perubahan</button>
+                    <a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'packages.travel-orders.show', [$package, $travelOrder]) }}" class="inline-flex items-center px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500">Kembali</a>
                 </div>
             </div>
         </form>
@@ -345,4 +345,5 @@
     .cursor-move { cursor: grab; }
     .cursor-move:active { cursor: grabbing; }
 </style>
-@stop
+
+@endcomponent

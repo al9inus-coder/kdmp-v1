@@ -17,9 +17,9 @@
             <div>
                 <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
                     <i data-lucide="calendar-days" class="w-6 h-6 text-emerald-600"></i>
-                    Kalender <span class="text-emerald-600">Kegiatan</span>
+                    Kalender <span class="text-emerald-600">Perjalanan Dinas</span>
                 </h1>
-                <p class="text-sm text-slate-500 mt-1">Jadwal perjalanan dinas dan hari libur. Klik ganda tanggal untuk membuat SPPD baru.</p>
+                <p class="text-sm text-slate-500 mt-1">Jadwal perjalanan dinas dan hari libur. Double klik atau klik & tahan tanggal untuk membuat SPD baru.</p>
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
@@ -115,13 +115,6 @@
                         </div>
                     </template>
                 </div>
-
-                <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mt-5 pt-4 border-t border-dashed border-slate-200">
-                    <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500"><span class="w-3 h-3 rounded-full ring-2 ring-inset ring-amber-400 bg-amber-50"></span> Hari ini</span>
-                    <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500"><span class="w-4 h-3 rounded bg-emerald-100 border border-emerald-200"></span> Perjalanan dinas</span>
-                    <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500"><i data-lucide="sun" class="w-3.5 h-3.5 text-rose-500"></i> Libur</span>
-                    <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-400"><i data-lucide="mouse-pointer-click" class="w-3.5 h-3.5"></i> Klik &amp; seret tanggal untuk buat SPPD</span>
-                </div>
             </div>
 
             {{-- Panel kanan --}}
@@ -130,10 +123,6 @@
                 <section class="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
                     <div class="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between gap-2">
                         <h2 class="text-xs font-black text-slate-500 uppercase tracking-widest">Agenda &middot; <span x-text="selectedLabel"></span></h2>
-                        <button type="button" @click="openCreateModal(selected)"
-                            class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors shrink-0">
-                            <i data-lucide="plus" class="w-3 h-3"></i> SPPD
-                        </button>
                     </div>
                     <div class="p-4 space-y-1">
                         <template x-if="agenda.length === 0">
@@ -157,8 +146,36 @@
                             </a>
                         </template>
                         <button type="button" @click="openCreateModal(selected)" class="mt-4 w-full px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-sm font-bold border border-indigo-200 rounded-lg transition-colors flex items-center justify-center gap-2">
-                            <i data-lucide="plus" class="w-4 h-4"></i> Buat SPPD
+                            <i data-lucide="plus" class="w-4 h-4"></i> Buat SPD
                         </button>
+                    </div>
+                </section>
+
+                {{-- Petunjuk & Legenda --}}
+                <section class="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 space-y-4">
+                    <h3 class="text-xs font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2 flex items-center gap-1.5">
+                        <i data-lucide="info" class="w-4 h-4 text-emerald-500"></i>
+                        Petunjuk &amp; Legenda
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-2.5 text-xs font-bold text-slate-600">
+                            <span class="w-3 h-3 rounded-full ring-2 ring-inset ring-amber-400 bg-amber-50 shrink-0"></span>
+                            <span>Hari Ini</span>
+                        </div>
+                        <div class="flex items-center gap-2.5 text-xs font-bold text-slate-600">
+                            <span class="w-4 h-3 rounded bg-emerald-100 border border-emerald-200 shrink-0"></span>
+                            <span>Perjalanan Dinas</span>
+                        </div>
+                        <div class="flex items-center gap-2.5 text-xs font-bold text-slate-600">
+                            <i data-lucide="sun" class="w-3.5 h-3.5 text-rose-500 shrink-0"></i>
+                            <span>Hari Libur / Tanggal Merah</span>
+                        </div>
+                        <div class="flex items-start gap-2.5 text-xs text-slate-500 border-t border-dashed border-slate-150 pt-3.5 mt-2">
+                            <i data-lucide="mouse-pointer-click" class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5"></i>
+                            <span class="leading-relaxed">
+                                <strong>Klik ganda (2x)</strong> pada tanggal, atau <strong>klik &amp; seret (drag)</strong> mouse lintas tanggal untuk membuat SPD baru.
+                            </span>
+                        </div>
                     </div>
                 </section>
             </aside>
@@ -171,7 +188,7 @@
             <div class="bg-white border border-slate-200 shadow-sm rounded-2xl p-5">
                 <div class="flex items-center justify-between mb-4">
                     <p class="text-sm font-extrabold text-slate-800">Kalender {{ $tahun }}</p>
-                    <p class="text-[11px] font-semibold text-slate-400">Klik ganda tanggal untuk membuat SPPD &middot; arahkan kursor untuk detail</p>
+                    <p class="text-[11px] font-semibold text-slate-400">Klik ganda tanggal untuk membuat SPD &middot; arahkan kursor untuk detail</p>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                     <template x-for="m in 12" :key="m">

@@ -193,7 +193,7 @@
 
                 @can('submit', $package)
                     @if($package->status === 'draft')
-                        <form action="{{ route('packages.submit', $package) }}" method="POST">
+                        <form action="{{ route('staf.packages.submit', $package) }}" method="POST">
                             @csrf
                             <button type="submit" class="inline-flex justify-center items-center gap-2 w-32 py-2.5 text-sm font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 shadow-sm shadow-indigo-200 transition-colors">
                                 <i data-lucide="send" class="w-4 h-4"></i>
@@ -204,7 +204,7 @@
                 @endcan
 
                 @can('delete', $package)
-                    <form action="{{ route('packages.destroy', $package) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus paket ini?');">
+                    <form action="{{ route('staf.packages.destroy', $package) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus paket ini?');">
                         @csrf
                         @method('DELETE')
                         <input type="hidden" name="source" value="staf">

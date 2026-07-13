@@ -44,7 +44,7 @@
     </div>
 
     <!-- Form Section -->
-    <form action="{{ route('packages.store') }}" method="POST">
+    <form action="{{ route('staf.packages.store') }}" method="POST">
         @csrf
         <input type="hidden" name="source" value="staf">
 

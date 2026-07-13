@@ -13,25 +13,27 @@ $steps = [
         'title' => 'Persiapan Pengadaan',
         'icon' => 'fas fa-file-alt',
         'status_key' => \App\Models\ProcurementPackage::WORKFLOW_DRAFT,
-        'url' => route('procurement-packages.show', $procurementPackage->package),
+        'url' => route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.show', $procurementPackage->package),
     ],
     [
         'title' => 'Pemilihan Penyedia',
         'icon' => 'fas fa-users',
         'status_key' => \App\Models\ProcurementPackage::WORKFLOW_PROVIDER_SELECTION,
-        'url' => route('procurement-packages.procurement-process.show', $procurementPackage->package),
+        'url' => route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.procurement-process.show', $procurementPackage->package),
     ],
     [
         'title' => 'Pelaksanaan',
         'icon' => 'fas fa-truck-loading',
         'status_key' => \App\Models\ProcurementPackage::WORKFLOW_EXECUTION,
-        'url' => route('procurement-packages.execution', $procurementPackage->package),
+        'url' => route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.execution.show', $procurementPackage->package),
     ],
     [
         'title' => 'Pembayaran',
         'icon' => 'fas fa-money-check-alt',
         'status_key' => \App\Models\ProcurementPackage::WORKFLOW_PAYMENT_PROCESS,
-        'url' => route('procurement-payments.show', $procurementPackage->package),
+        'url' => auth()->user()->hasRole(['Admin', 'Super Admin']) 
+            ? route('admin.procurement-packages.payment', $procurementPackage->package)
+            : route('kabid.procurement-packages.payment.show', $procurementPackage->package),
     ],
     [
         'title' => 'Selesai',
@@ -143,13 +145,13 @@ $percentage = min(100, max(0, ($currentStatusIndex / (count($steps) - 1)) * 100)
     }
 </style>
 
-<div class="card shadow-sm mb-4 border-0" style="border-radius: 10px;">
-    <div class="card-header bg-white border-0 pt-4 pb-0">
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden shadow-sm mb-4 border-0" style="border-radius: 10px;">
+    <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/50 bg-white border-0 pt-4 pb-0">
         <h5 class="mb-0 font-weight-bold text-dark">
             <i class="fas fa-project-diagram text-primary mr-2"></i> Status Pengadaan
         </h5>
     </div>
-    <div class="card-body pt-2 pb-4">
+    <div class="p-6 pt-2 pb-4">
         <div class="workflow-stepper">
             <div class="progress position-absolute workflow-progress-line" style="top: 24px; left: 10%; right: 10%; height: 4px; z-index: 0; background-color: #e9ecef; border-radius: 0;">
                 <div class="progress-bar bg-success" role="progressbar" style="width: {{ $percentage }}%;" aria-valuenow="{{ $percentage }}" aria-valuemin="0" aria-valuemax="100"></div>

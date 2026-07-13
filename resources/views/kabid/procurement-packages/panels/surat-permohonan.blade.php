@@ -8,7 +8,11 @@
         : null;
 
     // Kandidat penyedia dari hasil survei referensi harga + hitung berapa kali jadi penawar termurah
-    $refs = $procurementPackage->priceReferences->filter(fn($r) => filled($r->nama_pelaku_usaha));
+    // Query fresh dari database untuk memastikan data terbaru (hindari cache relasi eager-loaded)
+    $refs = \App\Models\PriceReference::where('procurement_package_id', $procurementPackage->id)
+        ->whereNotNull('nama_pelaku_usaha')
+        ->where('nama_pelaku_usaha', '!=', '')
+        ->get();
     $termurahPerItem = $refs->filter(fn($r) => (float) $r->harga_satuan > 0)
         ->groupBy('nama_barang_jasa')
         ->map(fn($g) => $g->sortBy('harga_satuan')->first()->nama_pelaku_usaha);
@@ -26,7 +30,7 @@
 @endphp
 
 <div x-data="kabidSuratPermohonan({
-        printUrl: '{{ route('procurement-packages.procurement-request.print', $package) }}?embed=1',
+        printUrl: '{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.procurement-request.print', $package) }}?embed=1',
         hasSurat: {{ $surat ? 'true' : 'false' }},
     })">
 
@@ -189,7 +193,7 @@
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded-lg shadow-sm transition-colors">
                         <i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak PDF
                     </button>
-                    <a href="{{ route('procurement-packages.procurement-request.print', $package) }}" target="_blank"
+                    <a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.procurement-request.print', $package) }}" target="_blank"
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg shadow-sm transition-colors">
                         <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Tab Baru
                     </a>

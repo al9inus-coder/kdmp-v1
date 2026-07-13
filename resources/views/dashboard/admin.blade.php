@@ -227,7 +227,7 @@
                                             <span class="text-xs font-semibold px-2 py-0.5 rounded-full {{ $p->procurementPackage?->workflow_status === 'draft' ? 'bg-slate-100 text-slate-600' : 'bg-amber-100 text-amber-700' }}">
                                                 {{ ucfirst($p->procurementPackage?->workflow_status ?? 'draft') }}
                                             </span>
-                                            <a href="{{ $p->procurementPackage ? route('procurement-packages.workspace', $p->procurementPackage) : route('procurement-packages.index') }}" class="text-xs font-bold text-blue-600 hover:text-blue-700">Tindak Lanjut &rarr;</a>
+                                            <a href="{{ $p->procurementPackage ? route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.show', $p) : route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.index') }}" class="text-xs font-bold text-blue-600 hover:text-blue-700">Tindak Lanjut &rarr;</a>
                                         </div>
                                     </div>
                                 </div>

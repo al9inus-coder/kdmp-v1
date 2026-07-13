@@ -30,7 +30,7 @@ class SkpdController extends Controller
         Skpd::create($request->all());
 
         return redirect()
-            ->route('skpds.index')
+            ->route('admin.skpds.index')
             ->with('success', 'SKPD berhasil ditambahkan');
     }
 
@@ -49,7 +49,7 @@ class SkpdController extends Controller
         $skpd->update($request->all());
 
         return redirect()
-            ->route('skpds.index')
+            ->route('admin.skpds.index')
             ->with('success', 'Data SKPD berhasil diperbarui');
     }
 
@@ -58,7 +58,7 @@ class SkpdController extends Controller
         $skpd->delete();
 
         return redirect()
-            ->route('skpds.index')
+            ->route('admin.skpds.index')
             ->with('success', 'Data SKPD berhasil dihapus');
     }
 }

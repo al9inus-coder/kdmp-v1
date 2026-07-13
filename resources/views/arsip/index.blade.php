@@ -11,7 +11,7 @@
                     <i data-lucide="folder-open" class="w-6 h-6 text-indigo-600"></i>
                     Arsip <span class="text-indigo-600">Dokumen</span>
                 </h1>
-                <p class="text-sm text-slate-500 mt-1">Semua dokumen yang dihasilkan aplikasi, tersusun per tahun anggaran dan jenis dokumen.</p>
+                <p class="text-sm text-slate-500 mt-1">Semua dokumen yang dihasilkan aplikasi, tersusun per tahun anggaran, lalu per perjalanan dinas / paket pengadaan.</p>
             </div>
         </div>
 
@@ -59,42 +59,86 @@
 
         {{-- Konten --}}
         <div class="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 min-h-[320px]">
+            {{-- VIEW: GOOGLE DRIVE (embedded) --}}
+            <template x-if="driveEmbed">
+                <div>
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <p class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <i data-lucide="hard-drive" class="w-4 h-4 text-emerald-600"></i>
+                            Google Drive
+                        </p>
+                        <div class="flex items-center gap-2">
+                            <a :href="driveRaw" target="_blank"
+                                class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 shadow-sm">
+                                <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Buka di Drive
+                            </a>
+                            <button type="button" @click="driveEmbed = null; refreshIcons()"
+                                class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 shadow-sm">
+                                <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Kembali
+                            </button>
+                        </div>
+                    </div>
+                    <iframe :src="driveEmbed" class="w-full rounded-xl border border-slate-200 bg-slate-50" style="height: 540px;" loading="lazy"></iframe>
+                    <p class="text-[11px] text-slate-400 mt-2 flex items-center gap-1.5">
+                        <i data-lucide="info" class="w-3 h-3"></i>
+                        Pratinjau read-only. Klik file untuk membukanya di Google Drive. Folder harus di-share "siapa saja yang memiliki link".
+                    </p>
+                </div>
+            </template>
+
             {{-- VIEW: FOLDERS --}}
-            <template x-if="!isFilesView()">
+            <template x-if="!driveEmbed && !isFilesView()">
                 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                     <template x-for="(value, key) in currentFolder()" :key="key">
-                        <button type="button" @click="openFolder(key)"
-                            class="group flex flex-col items-center text-center gap-2 p-5 rounded-2xl border border-slate-200 bg-white hover:border-indigo-200 hover:bg-indigo-50/30 hover:shadow-md transition-all">
-                            
-                            {{-- Ikon Dinamis Berdasarkan Level --}}
-                            <template x-if="path.length === 0">
-                                <span class="relative">
-                                    <i data-lucide="folder" class="w-14 h-14 text-amber-400 fill-amber-100 group-hover:scale-105 transition-transform"></i>
-                                </span>
+                        <div>
+                            {{-- Pintasan Google Drive (link, bukan folder) --}}
+                            <template x-if="key === '__gdrive__'">
+                                <button type="button" @click="openDrive(value)"
+                                    class="group w-full h-full flex flex-col items-center text-center gap-2 p-5 rounded-2xl border border-emerald-200 bg-emerald-50/40 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-md transition-all">
+                                    <span class="w-14 h-14 rounded-2xl border flex items-center justify-center bg-white border-emerald-100 text-emerald-600 group-hover:scale-105 transition-transform">
+                                        <i data-lucide="hard-drive" class="w-7 h-7"></i>
+                                    </span>
+                                    <span class="font-bold text-slate-800 text-sm leading-tight">Google Drive</span>
+                                    <span class="text-[11px] font-semibold text-emerald-600">Lihat isi folder</span>
+                                </button>
                             </template>
 
-                            <template x-if="path.length === 1">
-                                <span class="w-14 h-14 rounded-2xl border flex items-center justify-center bg-indigo-50 border-indigo-100 text-indigo-500 group-hover:scale-105 transition-transform">
-                                    <template x-if="key === 'SPD'"><i data-lucide="plane" class="w-7 h-7"></i></template>
-                                    <template x-if="key === 'PBJ'"><i data-lucide="briefcase" class="w-7 h-7"></i></template>
-                                </span>
-                            </template>
+                            {{-- Folder biasa --}}
+                            <template x-if="key !== '__gdrive__'">
+                                <button type="button" @click="openFolder(key)"
+                                    class="group w-full h-full flex flex-col items-center text-center gap-2 p-5 rounded-2xl border border-slate-200 bg-white hover:border-indigo-200 hover:bg-indigo-50/30 hover:shadow-md transition-all">
 
-                            <template x-if="path.length >= 2">
-                                <span class="w-14 h-14 rounded-2xl border flex items-center justify-center bg-slate-50 border-slate-100 text-slate-500 group-hover:scale-105 transition-transform">
-                                    <template x-if="path.length === 2">
-                                        <i data-lucide="folder-open" class="w-7 h-7"></i>
+                                    {{-- Ikon Dinamis Berdasarkan Level --}}
+                                    <template x-if="path.length === 0">
+                                        <span class="relative">
+                                            <i data-lucide="folder" class="w-14 h-14 text-amber-400 fill-amber-100 group-hover:scale-105 transition-transform"></i>
+                                        </span>
                                     </template>
-                                    <template x-if="path.length > 2">
-                                        <i data-lucide="package" class="w-7 h-7"></i>
+
+                                    <template x-if="path.length === 1">
+                                        <span class="w-14 h-14 rounded-2xl border flex items-center justify-center bg-indigo-50 border-indigo-100 text-indigo-500 group-hover:scale-105 transition-transform">
+                                            <template x-if="key === 'SPD'"><i data-lucide="plane" class="w-7 h-7"></i></template>
+                                            <template x-if="key === 'PBJ'"><i data-lucide="briefcase" class="w-7 h-7"></i></template>
+                                        </span>
                                     </template>
-                                </span>
+
+                                    <template x-if="path.length >= 2">
+                                        <span class="w-14 h-14 rounded-2xl border flex items-center justify-center bg-slate-50 border-slate-100 text-slate-500 group-hover:scale-105 transition-transform">
+                                            <template x-if="path.length === 2">
+                                                <i data-lucide="folder-open" class="w-7 h-7"></i>
+                                            </template>
+                                            <template x-if="path.length > 2">
+                                                <i data-lucide="package" class="w-7 h-7"></i>
+                                            </template>
+                                        </span>
+                                    </template>
+
+                                    <span class="font-bold text-slate-800 text-sm leading-tight line-clamp-2" x-text="key" :title="key"></span>
+
+                                    <span class="text-[11px] font-semibold text-slate-400" x-text="countItems(value) + (Array.isArray(value) && (value.length === 0 || value[0].url) ? ' dokumen' : ' item')"></span>
+                                </button>
                             </template>
-                            
-                            <span class="font-bold text-slate-800 text-sm leading-tight line-clamp-2" x-text="key" :title="key"></span>
-                            
-                            <span class="text-[11px] font-semibold text-slate-400" x-text="countItems(value) + (Array.isArray(value) && (value.length === 0 || value[0].url) ? ' dokumen' : ' item')"></span>
-                        </button>
+                        </div>
                     </template>
                     
                     {{-- Kosong --}}
@@ -110,7 +154,7 @@
             </template>
 
             {{-- VIEW: FILES --}}
-            <template x-if="isFilesView()">
+            <template x-if="!driveEmbed && isFilesView()">
                 <div class="divide-y divide-slate-100">
                     <template x-if="currentFolder().length === 0">
                         <div class="py-10 text-center text-slate-400 text-sm">
@@ -164,7 +208,26 @@
                 tree: @json($tree),
                 path: [],
                 q: '',
-                
+                driveEmbed: null,
+                driveRaw: '',
+
+                refreshIcons() {
+                    this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
+                },
+
+                // Ubah URL folder Drive (share link) -> embedded folder view.
+                toDriveEmbed(url) {
+                    const m = String(url).match(/folders\/([\w-]+)/);
+                    const id = m ? m[1] : '';
+                    return id ? ('https://drive.google.com/embeddedfolderview?id=' + id + '#grid') : url;
+                },
+                openDrive(url) {
+                    this.driveRaw = url;
+                    this.driveEmbed = this.toDriveEmbed(url);
+                    this.q = '';
+                    this.refreshIcons();
+                },
+
                 currentFolder() {
                     let node = this.tree;
                     for (let p of this.path) {
@@ -180,12 +243,14 @@
                 },
                 
                 openFolder(name) {
+                    this.driveEmbed = null;
                     this.path.push(name);
                     this.q = '';
                     this.$nextTick(() => lucide.createIcons());
                 },
-                
+
                 goTo(index) {
+                    this.driveEmbed = null;
                     if (index === -1) {
                         this.path = [];
                     } else {

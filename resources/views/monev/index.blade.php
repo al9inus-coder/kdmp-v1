@@ -149,7 +149,7 @@
                                             <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Kegiatan</p>
                                             <h3 class="text-sm font-bold text-slate-800 mt-1">{{ $activity->kode }} - {{ $activity->nama }}</h3>
                                         </div>
-                                        <button type="button" onclick="printHidden('{{ route('control-cards.print', $activity) }}')"
+                                        <button type="button" onclick="printHidden('{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'control-cards.print', $activity) }}')"
                                             class="inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm shrink-0">
                                             <i data-lucide="printer" class="w-3.5 h-3.5"></i>
                                             Cetak Kendali
@@ -191,7 +191,7 @@
                                                 ][$progressTone];
                                             @endphp
 
-                                            <a href="{{ route('monev.show', $subActivity) }}"
+                                            <a href="{{ route('admin.monev.show', $subActivity) }}"
                                                 class="group block rounded-2xl border border-slate-200 bg-white hover:border-emerald-200 hover:shadow-md transition-all overflow-hidden">
                                                 <div class="p-4">
                                                     <div class="flex items-start justify-between gap-3">

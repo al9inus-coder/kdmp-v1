@@ -9,14 +9,14 @@
             <i data-lucide="hash" class="w-4 h-4 text-emerald-500"></i>
             {{ $accounts->total() }} Rekening
         </div>
-        <x-ui.button variant="primary" size="md" href="{{ route('accounts.create') }}">
+        <x-ui.button variant="primary" size="md" href="{{ route('admin.accounts.create') }}">
             <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambah Rekening
         </x-ui.button>
     </x-slot:actions>
 
     {{-- Filter --}}
     <x-ui.card padding="none" class="mb-6">
-        <form method="GET" action="{{ route('accounts.index') }}" class="p-4 flex flex-col sm:flex-row gap-3">
+        <form method="GET" action="{{ route('admin.accounts.index') }}" class="p-4 flex flex-col sm:flex-row gap-3">
             <div class="relative flex-1">
                 <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
                     <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
@@ -33,7 +33,7 @@
                 <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-200">
                     <i data-lucide="search" class="w-4 h-4"></i> Filter
                 </button>
-                <a href="{{ route('accounts.index') }}" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+                <a href="{{ route('admin.accounts.index') }}" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
                     <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Reset
                 </a>
             </div>
@@ -78,7 +78,7 @@
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center justify-center">
-                                    <a href="{{ route('accounts.edit', $account) }}"
+                                    <a href="{{ route('admin.accounts.edit', $account) }}"
                                         class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-emerald-600 bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 transition-colors" title="Edit">
                                         <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                                     </a>
@@ -89,7 +89,7 @@
                         <tr>
                             <td colspan="5" class="px-6 py-10">
                                 <x-ui.empty-state icon="hash" title="Belum Ada Rekening Belanja" description="Klik tombol Tambah Rekening untuk menambahkan data pertama.">
-                                    <x-ui.button variant="primary" size="md" href="{{ route('accounts.create') }}">
+                                    <x-ui.button variant="primary" size="md" href="{{ route('admin.accounts.create') }}">
                                         <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambah Rekening
                                     </x-ui.button>
                                 </x-ui.empty-state>

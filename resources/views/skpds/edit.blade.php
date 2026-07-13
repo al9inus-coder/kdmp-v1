@@ -9,12 +9,12 @@
             <i data-lucide="hash" class="w-3.5 h-3.5"></i>
             {{ $skpd->kode }}
         </span>
-        <x-ui.button variant="outline" size="md" href="{{ route('skpds.index') }}">
+        <x-ui.button variant="outline" size="md" href="{{ route('admin.skpds.index') }}">
             <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
         </x-ui.button>
     </x-slot:actions>
 
-    <form action="{{ route('skpds.update', $skpd) }}" method="POST">
+    <form action="{{ route('admin.skpds.update', $skpd) }}" method="POST">
         @csrf
         @method('PUT')
         @include('skpds._form', ['skpd' => $skpd, 'submitLabel' => 'Update Data SKPD'])

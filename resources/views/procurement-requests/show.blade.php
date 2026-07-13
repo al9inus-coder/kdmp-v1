@@ -1,9 +1,9 @@
-@extends('adminlte::page')
+@component('layouts.kdmp')
 
 @section('title', 'Surat Permohonan Pengadaan')
 
-@section('content_header')
-@stop
+@slot('header')
+@endslot
 
 <style>
 /* TOMBOL MELENGKUNG (PILL) & EFEK HOVER */
@@ -193,14 +193,14 @@
     }
 </style>
 
-@section('content')
+
 
     @include('components.procurement-progress', [
         'procurementPackage' => $procurementPackage
     ])
 
     @if(session('success'))
-        <div class="alert alert-success">
+        <div class="p-6 mb-6 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-start">
             {{ session('success') }}
         </div>
     @endif
@@ -211,28 +211,28 @@
         <div class="viewer-sticky-actions">
             {{-- Bagian Kiri: Tombol Kembali --}}
             <div class="action-left">
-                <a href="{{ route('procurement-packages.show', $procurementPackage->package) }}" 
-                   class="btn btn-secondary btn-floating">
+                <a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.show', $procurementPackage->package) }}" 
+                   class="inline-flex items-center px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 -floating">
                     <i class="fas fa-arrow-left mr-1"></i> Kembali
                 </a>
             </div>
             {{-- Bagian Kanan: Tombol Edit & Cetak --}}
             <div class="action-right">
-                <a href="{{ route('procurement-packages.procurement-request.edit', $procurementPackage->package) }}"
-                   class="btn btn-warning btn-floating">
+                <a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.procurement-request.edit', $procurementPackage->package) }}"
+                   class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 -floating">
                     <i class="fas fa-edit mr-1"></i> Edit
                 </a>
 
                 <button type="button"
-                   class="btn btn-success btn-floating"
-                   onclick="printPdf('{{ route('procurement-packages.procurement-request.print', $procurementPackage->package) }}')">
+                   class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 -floating"
+                   onclick="printPdf('{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.procurement-request.print', $procurementPackage->package) }}')">
                     <i class="fas fa-print mr-1"></i> Cetak PDF
                 </button>
                 
                 @if($procurementPackage->workflow_status === \App\Models\ProcurementPackage::WORKFLOW_DRAFT)
                     <button type="button" 
                             id="btn-complete-preparation" 
-                            class="btn btn-primary btn-floating"
+                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 -floating"
                             style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border: none;">
                         <i class="fas fa-check-double mr-1"></i> Selesaikan Persiapan
                     </button>
@@ -241,7 +241,7 @@
         </div>
 
         <form id="complete-preparation-form"
-            action="{{ route('procurement-packages.complete-preparation', $procurementPackage->package) }}"
+            action="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.complete-preparation', $procurementPackage->package) }}"
             method="POST"
             style="display:none;">
             @csrf
@@ -252,7 +252,7 @@
 
         </div>
     </div>
-@stop
+
 
 @push('js')
 <script>
@@ -281,3 +281,4 @@ if (completeBtn) {
 }
 </script>
 @endpush
+@endcomponent

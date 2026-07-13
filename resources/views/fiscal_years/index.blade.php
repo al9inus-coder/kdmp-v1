@@ -9,7 +9,7 @@
             <i data-lucide="calendar" class="w-4 h-4 text-emerald-500"></i>
             {{ $years->count() }} Tahun
         </div>
-        <x-ui.button variant="primary" size="md" href="{{ route('fiscal-years.create') }}">
+        <x-ui.button variant="primary" size="md" href="{{ route('admin.fiscal-years.create') }}">
             <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambah Tahun
         </x-ui.button>
     </x-slot:actions>
@@ -48,7 +48,7 @@
                             <td class="px-6 py-4">
                                 <div class="flex items-center justify-center">
                                     @if(!$year->is_active)
-                                        <form action="{{ route('fiscal-years.activate', $year->id) }}" method="POST"
+                                        <form action="{{ route('admin.fiscal-years.activate', $year->id) }}" method="POST"
                                             onsubmit="return confirm('Jadikan tahun {{ $year->tahun }} sebagai tahun aktif?');">
                                             @csrf
                                             <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors">
@@ -65,7 +65,7 @@
                         <tr>
                             <td colspan="4" class="px-6 py-10">
                                 <x-ui.empty-state icon="calendar" title="Belum Ada Tahun Anggaran" description="Klik tombol Tambah Tahun untuk menambahkan data pertama.">
-                                    <x-ui.button variant="primary" size="md" href="{{ route('fiscal-years.create') }}">
+                                    <x-ui.button variant="primary" size="md" href="{{ route('admin.fiscal-years.create') }}">
                                         <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambah Tahun
                                     </x-ui.button>
                                 </x-ui.empty-state>

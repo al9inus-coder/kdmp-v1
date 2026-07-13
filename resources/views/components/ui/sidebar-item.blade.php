@@ -38,7 +38,10 @@
     if (isset($item['badge'])) {
         $badgeCount = match ($item['badge']) {
             'kabid_paket_pending' => \App\Models\Package::where('status', 'submitted')->count(),
-            'kabid_sppd_pending'  => \App\Models\TravelOrder::where('status', \App\Models\TravelOrder::STATUS_SUBMITTED)->count(),
+            // Butuh tindakan di halaman SPPD: pengajuan SPPD baru + pengajuan SPJ (biaya rampung).
+            'kabid_sppd_pending'  => \App\Models\TravelOrder::where('status', \App\Models\TravelOrder::STATUS_SUBMITTED)->count()
+                + \App\Models\TravelOrder::where('status', \App\Models\TravelOrder::STATUS_APPROVED)
+                    ->where('spj_status', \App\Models\TravelOrder::SPJ_SUBMITTED)->count(),
             default => null,
         };
     }

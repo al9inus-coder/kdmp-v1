@@ -9,7 +9,7 @@
             <i data-lucide="building-2" class="w-4 h-4 text-emerald-500"></i>
             {{ $skpds->count() }} SKPD
         </div>
-        <x-ui.button variant="primary" size="md" href="{{ route('skpds.create') }}">
+        <x-ui.button variant="primary" size="md" href="{{ route('admin.skpds.create') }}">
             <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambah SKPD
         </x-ui.button>
     </x-slot:actions>
@@ -83,12 +83,12 @@
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center justify-center gap-1.5">
-                                    <a href="{{ route('skpds.edit', $skpd) }}"
+                                    <a href="{{ route('admin.skpds.edit', $skpd) }}"
                                         class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-emerald-600 bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 transition-colors"
                                         title="Edit">
                                         <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                                     </a>
-                                    <form action="{{ route('skpds.destroy', $skpd) }}" method="POST"
+                                    <form action="{{ route('admin.skpds.destroy', $skpd) }}" method="POST"
                                         onsubmit="return confirm('Peringatan: Menghapus SKPD juga akan menghapus data Program, Kegiatan, Sub Kegiatan, dan Paket di bawahnya! Yakin ingin melanjutkan?');">
                                         @csrf
                                         @method('DELETE')
@@ -105,7 +105,7 @@
                         <tr>
                             <td colspan="7" class="px-6 py-10">
                                 <x-ui.empty-state icon="building-2" title="Belum Ada Data SKPD" description="Klik tombol Tambah SKPD untuk menambahkan data perangkat daerah pertama.">
-                                    <x-ui.button variant="primary" size="md" href="{{ route('skpds.create') }}">
+                                    <x-ui.button variant="primary" size="md" href="{{ route('admin.skpds.create') }}">
                                         <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambah SKPD
                                     </x-ui.button>
                                 </x-ui.empty-state>

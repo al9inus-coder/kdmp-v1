@@ -22,6 +22,7 @@
     $meta = $travelOrder->statusMeta();
     $isDiajukan = $travelOrder->status === \App\Models\TravelOrder::STATUS_SUBMITTED;
     $isApproved = $travelOrder->status === \App\Models\TravelOrder::STATUS_APPROVED;
+    $canReview = auth()->user()?->hasRole('Kabid');
 
     // Konteks review SPJ (biaya rampung).
     $spjMeta = $travelOrder->spjStatusMeta();
@@ -136,8 +137,22 @@
                 <h2 class="text-sm font-bold text-slate-900">Aksi</h2>
             </div>
             <div class="p-5 space-y-4">
+                {{-- Koreksi biaya rampung (khusus Admin) — human error tanpa ubah status --}}
+                @if(auth()->user()?->hasRole('Admin') && $travelOrder->spjStatus() !== \App\Models\TravelOrder::SPJ_DRAFT)
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Koreksi Admin</p>
+                        <a href="{{ route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'packages.travel-orders.koreksi-biaya.edit', [$package, $travelOrder]) }}"
+                            class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-xl hover:bg-amber-100 transition-colors">
+                            <i data-lucide="pencil-ruler" class="w-4 h-4"></i> Koreksi Biaya Rampung
+                        </a>
+                        @if($travelOrder->spj_koreksi_at)
+                            <p class="text-[11px] text-slate-400 mt-1.5">Dikoreksi terakhir {{ $travelOrder->spj_koreksi_at->locale('id')->diffForHumans() }}.</p>
+                        @endif
+                    </div>
+                @endif
+
                 {{-- Review pengajuan SPPD --}}
-                @if($isDiajukan)
+                @if($canReview && $isDiajukan)
                     <div>
                         <p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Tinjau Pengajuan SPPD</p>
                         <div class="space-y-2">
@@ -170,7 +185,7 @@
                 @endif
 
                 {{-- Review SPJ (biaya rampung) — setelah SPPD disetujui & SPJ diajukan --}}
-                @if($isSpjDiajukan)
+                @if($canReview && $isSpjDiajukan)
                     <div class="{{ $isDiajukan ? 'pt-4 border-t border-slate-100' : '' }}">
                         <p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Tinjau SPJ (Biaya Rampung)</p>
                         <div class="space-y-2">
@@ -390,7 +405,7 @@
     </div>
 
     {{-- Modal Revisi SPJ --}}
-    @if($isSpjDiajukan)
+    @if($canReview && $isSpjDiajukan)
         <div x-show="showRevisiSpj" style="display:none;" class="fixed inset-0 z-[70] flex items-center justify-center p-4"
             x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
             @keydown.escape.window="showRevisiSpj = false">

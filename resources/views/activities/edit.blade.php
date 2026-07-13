@@ -9,12 +9,12 @@
             <i data-lucide="hash" class="w-3.5 h-3.5"></i>
             {{ $activity->kode }}
         </span>
-        <x-ui.button variant="outline" size="md" href="{{ route('activities.index') }}">
+        <x-ui.button variant="outline" size="md" href="{{ route('admin.activities.index') }}">
             <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
         </x-ui.button>
     </x-slot:actions>
 
-    <form action="{{ route('activities.update', $activity) }}" method="POST">
+    <form action="{{ route('admin.activities.update', $activity) }}" method="POST">
         @csrf
         @method('PUT')
         @include('activities._form', ['submitLabel' => 'Perbarui'])

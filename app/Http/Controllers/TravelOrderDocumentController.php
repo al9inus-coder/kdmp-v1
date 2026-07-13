@@ -73,7 +73,7 @@ class TravelOrderDocumentController extends Controller
             'tgl_berangkat' => $tglBerangkatStr,
             'tgl_kembali' => $tglKembaliStr,
             'tgl_surat' => $tglSuratCarbon->translatedFormat('d F Y'),
-            'tanggal_naskah' => '                ' . $tglSuratCarbon->translatedFormat('F Y'),
+            'tanggal_naskah' => in_array($type, ['permohonan-bupati', 'surat-tugas-kadis']) ? '${tanggal_naskah}' : '                ' . $tglSuratCarbon->translatedFormat('F Y'),
             'tahun' => $tglSuratCarbon->translatedFormat('Y'),
             'nomor_surat' => '......../........./......./' . date('Y'), // Placeholder
             'nama_kadis' => 'NAMA KEPALA DINAS', // Placeholder

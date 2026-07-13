@@ -70,7 +70,7 @@
     </section>
 
     <div class="flex flex-wrap items-center justify-between gap-3 mt-6">
-        <x-ui.button variant="secondary" size="md" href="{{ route('procurement-packages.show', $procurementPackage->package) }}">
+        <x-ui.button variant="secondary" size="md" href="{{ route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.show', $procurementPackage->package) }}">
             <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
         </x-ui.button>
         <x-ui.button variant="primary" size="lg" type="submit">

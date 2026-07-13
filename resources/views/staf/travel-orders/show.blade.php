@@ -28,6 +28,7 @@
         $reporting = $isApproved && ($tripDone || $spjStatus !== $TO::SPJ_DRAFT || $travelOrder->spj_status !== null);
 
         $money = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
+        $rolePrefix = auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : (auth()->user()->hasRole('Kabid') ? 'kabid.' : 'staf.');
 
         // Komponen biaya per pelaksana (fase pelaporan): koefisien tetap (boleh 0,
         // mis. penginapan 0 malam saat perjalanan 1 hari), harga satuan bisa diedit
@@ -678,7 +679,7 @@
                     <div class="p-5 space-y-2">
                         @if ($isLuarDaerah)
                             @if ($isApproved)
-                                <a href="{{ route('packages.travel-orders.export-word', [$package, $travelOrder, 'permohonan-bupati']) }}"
+                                <a href="{{ route($rolePrefix . 'packages.travel-orders.export-word', [$package, $travelOrder, 'permohonan-bupati']) }}"
                                     class="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-bold text-slate-700">
                                     <span class="inline-flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-blue-500"></i> Surat Permohonan</span>
                                     <i data-lucide="download" class="w-4 h-4 text-slate-400"></i>
@@ -693,13 +694,13 @@
                         @endif
 
                         @if ($isApproved)
-                            <a href="{{ route('packages.travel-orders.export-word', [$package, $travelOrder, $isLuarDaerah ? 'surat-tugas-bupati' : 'surat-tugas-kadis']) }}"
+                            <a href="{{ route($rolePrefix . 'packages.travel-orders.export-word', [$package, $travelOrder, $isLuarDaerah ? 'surat-tugas-bupati' : 'surat-tugas-kadis']) }}"
                                 class="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-bold text-slate-700">
                                 <span class="inline-flex items-center gap-2"><i data-lucide="file-output" class="w-4 h-4 text-amber-500"></i> Surat Tugas</span>
                                 <i data-lucide="download" class="w-4 h-4 text-slate-400"></i>
                             </a>
                             <button type="button"
-                                onclick="window.open('{{ route('packages.travel-orders.print-html', [$package, $travelOrder, 'sppd']) }}', '_blank')"
+                                onclick="window.open('{{ route($rolePrefix . 'packages.travel-orders.print-html', [$package, $travelOrder, 'sppd']) }}', '_blank')"
                                 class="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-bold text-slate-700">
                                 <span class="inline-flex items-center gap-2"><i data-lucide="printer" class="w-4 h-4 text-emerald-500"></i> SPPD</span>
                                 <i data-lucide="external-link" class="w-4 h-4 text-slate-400"></i>
@@ -720,7 +721,7 @@
                         {{-- Laporan: terbuka setelah laporan digenerate/tersimpan --}}
                         @if ($travelOrder->report)
                             <button type="button"
-                                onclick="window.open('{{ route('packages.travel-orders.print-laporan', [$package, $travelOrder]) }}', 'cetak-laporan', 'width=900,height=700')"
+                                onclick="window.open('{{ route($rolePrefix . 'packages.travel-orders.print-laporan', [$package, $travelOrder]) }}', 'cetak-laporan', 'width=900,height=700')"
                                 class="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-bold text-slate-700">
                                 <span class="inline-flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-indigo-500"></i> Laporan</span>
                                 <i data-lucide="printer" class="w-4 h-4 text-slate-400"></i>
@@ -736,13 +737,13 @@
                         {{-- Kwitansi & Pengeluaran Riil: terbuka setelah SPJ disetujui --}}
                         @if ($spjApproved)
                             <button type="button"
-                                onclick="window.open('{{ route('packages.travel-orders.print-kuitansi', [$package, $travelOrder]) }}', 'cetak-kwitansi', 'width=900,height=700')"
+                                onclick="window.open('{{ route($rolePrefix . 'packages.travel-orders.print-kuitansi', [$package, $travelOrder]) }}', 'cetak-kwitansi', 'width=900,height=700')"
                                 class="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-bold text-slate-700">
                                 <span class="inline-flex items-center gap-2"><i data-lucide="receipt" class="w-4 h-4 text-rose-500"></i> Kwitansi</span>
                                 <i data-lucide="printer" class="w-4 h-4 text-slate-400"></i>
                             </button>
                             <button type="button"
-                                onclick="window.open('{{ route('packages.travel-orders.print-pengeluaran-riil', [$package, $travelOrder]) }}', 'cetak-pengeluaran-riil', 'width=900,height=700')"
+                                onclick="window.open('{{ route($rolePrefix . 'packages.travel-orders.print-pengeluaran-riil', [$package, $travelOrder]) }}', 'cetak-pengeluaran-riil', 'width=900,height=700')"
                                 class="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-bold text-slate-700">
                                 <span class="inline-flex items-center gap-2"><i data-lucide="receipt-text" class="w-4 h-4 text-violet-500"></i> Pengeluaran Riil</span>
                                 <i data-lucide="printer" class="w-4 h-4 text-slate-400"></i>

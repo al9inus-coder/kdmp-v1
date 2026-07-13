@@ -10,6 +10,7 @@
         ->values();
     $money = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
     $statusBudgetClass = $travelStats['sisa_anggaran'] < 0 ? 'text-rose-700 bg-rose-50 border-rose-100' : 'text-emerald-700 bg-emerald-50 border-emerald-100';
+    $rolePrefix = auth()->user()->hasRole('Admin') ? 'admin' : 'kabid';
 @endphp
 
 <div class="space-y-6">
@@ -31,7 +32,7 @@
             </span>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-            <a href="{{ route('kabid.swakelola.index') }}"
+            <a href="{{ route($rolePrefix . '.swakelola.index') }}"
                 class="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 shadow-sm">
                 <i data-lucide="arrow-left" class="w-4 h-4"></i>
                 Kembali
@@ -176,7 +177,7 @@
                                 </td>
                                 <td class="px-5 py-4 align-top">
                                     <div class="flex items-center justify-center gap-2">
-                                        <a href="{{ route('kabid.packages.travel-orders.show', [$package, $travelOrder]) }}"
+                                        <a href="{{ route($rolePrefix . '.packages.travel-orders.show', [$package, $travelOrder]) }}"
                                             class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                                             title="Lihat detail">
                                             <i data-lucide="eye" class="w-4 h-4"></i>

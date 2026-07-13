@@ -27,7 +27,7 @@ class ProcurementProcessController extends Controller
             'workflow_status' => ProcurementPackage::WORKFLOW_PROVIDER_SELECTION
         ]);
 
-        return redirect()->route('procurement-packages.show', $procurementPackage->package)
+        return redirect()->route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.show', $procurementPackage->package)
             ->with('success', 'Persiapan pengadaan telah selesai. Paket pengadaan kini terkunci dan siap untuk tahap selanjutnya.');
     }
 
@@ -38,7 +38,7 @@ class ProcurementProcessController extends Controller
 
         // Pastikan proses sudah melewati tahap draft
         if ($procurementPackage->workflow_status === ProcurementPackage::WORKFLOW_DRAFT) {
-            return redirect()->route('procurement-packages.show', $package)
+            return redirect()->route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.show', $package)
                 ->with('error', 'Selesaikan tahap Persiapan Pengadaan terlebih dahulu.');
         }
 
@@ -115,7 +115,8 @@ class ProcurementProcessController extends Controller
             'workflow_status' => ProcurementPackage::WORKFLOW_EXECUTION
         ]);
 
-        return redirect()->route('procurement-packages.execution', $package)
+        $prefix = auth()->user()->hasRole('Admin') ? 'admin' : 'kabid';
+        return redirect()->route($prefix . '.procurement-packages.execution.show', $package)
             ->with('success', 'Paket pengadaan telah masuk ke tahap Pelaksanaan Kontrak.');
     }
 

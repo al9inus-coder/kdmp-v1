@@ -288,7 +288,7 @@ class ImportBatchController extends Controller
         if ($isStaf) {
             return redirect()->route('staf.packages.import');
         }
-        return redirect()->route('packages.import.index');
+        return redirect()->route('admin.packages.import.index');
     }
 
     /**

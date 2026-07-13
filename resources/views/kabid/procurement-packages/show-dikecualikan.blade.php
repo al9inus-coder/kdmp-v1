@@ -7,6 +7,7 @@
     $locked = $procurementPackage->status === 'complete';
     $totalRealisasi = $procurementPackage->externalRecords->sum('nilai_kontrak');
     $tanggal = fn ($d) => $d ? \Carbon\Carbon::parse($d)->format('d/m/Y') : '-';
+    $rolePrefix = auth()->user()->hasRole('Admin') ? 'admin' : 'kabid';
 @endphp
 
 <div class="space-y-6"
@@ -28,7 +29,7 @@
                 </span>
             @endif
         </div>
-        <a href="{{ route('kabid.dikecualikan.index') }}"
+        <a href="{{ route($rolePrefix . '.dikecualikan.index') }}"
             class="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 shadow-sm">
             <i data-lucide="arrow-left" class="w-4 h-4"></i>Kembali
         </a>
@@ -72,7 +73,7 @@
             <p class="text-sm text-slate-500 mt-1">Pilih tipe pencatatan pengadaan yang dikecualikan.</p>
         </div>
         <div class="p-5">
-            <form method="POST" action="{{ route('procurement-packages.dikecualikan.update', $procurementPackage) }}" class="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
+            <form method="POST" action="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.dikecualikan.update', $procurementPackage) }}" class="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
                 @csrf
                 @method('PATCH')
                 <div class="flex-1">
@@ -132,7 +133,7 @@
                             <td class="px-4 py-3 text-right font-bold text-emerald-700 whitespace-nowrap">{{ $money($record->nilai_kontrak) }}</td>
                             @unless($locked)
                                 <td class="px-4 py-3 text-center">
-                                    <form action="{{ route('procurement-external-records.destroy', [$procurementPackage, $record]) }}" method="POST" onsubmit="return confirm('Hapus transaksi ini?');">
+                                    <form action="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-external-records.destroy', [$procurementPackage, $record]) }}" method="POST" onsubmit="return confirm('Hapus transaksi ini?');">
                                         @csrf @method('DELETE')
                                         <button type="submit" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition-colors" title="Hapus"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                                     </form>
@@ -191,12 +192,12 @@
                             <td class="px-4 py-3 text-right font-bold text-emerald-700 whitespace-nowrap">{{ $money($record->nilai_kontrak) }}</td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center justify-center gap-1">
-                                    <button type="button" onclick="printKwitansi('{{ route('procurement-external-records.print', [$procurementPackage, $record]) }}')"
+                                    <button type="button" onclick="printKwitansi('{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-external-records.print', [$procurementPackage, $record]) }}')"
                                         class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors" title="Cetak">
                                         <i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak
                                     </button>
                                     @unless($locked)
-                                        <form action="{{ route('procurement-external-records.destroy', [$procurementPackage, $record]) }}" method="POST" onsubmit="return confirm('Hapus kwitansi ini?');">
+                                        <form action="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-external-records.destroy', [$procurementPackage, $record]) }}" method="POST" onsubmit="return confirm('Hapus kwitansi ini?');">
                                             @csrf @method('DELETE')
                                             <button type="submit" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition-colors" title="Hapus"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                                         </form>
@@ -240,7 +241,7 @@
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showTx = false"></div>
         <div class="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col" style="max-height:90vh;"
             x-transition:enter="transition ease-out duration-200 delay-75" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
-            <form action="{{ route('procurement-external-records.store', $procurementPackage) }}" method="POST" class="flex flex-col min-h-0">
+            <form action="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-external-records.store', $procurementPackage) }}" method="POST" class="flex flex-col min-h-0">
                 @csrf
                 <div class="px-5 py-4 border-b border-slate-100 bg-blue-50/60 flex items-center justify-between shrink-0">
                     <h3 class="font-bold text-slate-800 flex items-center gap-2"><i data-lucide="plus-circle" class="w-4 h-4 text-blue-500"></i>Tambah Transaksi Eksternal</h3>
@@ -279,7 +280,7 @@
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showKw = false"></div>
         <div class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
             x-transition:enter="transition ease-out duration-200 delay-75" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
-            <form action="{{ route('procurement-external-records.store', $procurementPackage) }}" method="POST">
+            <form action="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-external-records.store', $procurementPackage) }}" method="POST">
                 @csrf
                 <div class="px-5 py-4 border-b border-slate-100 bg-emerald-50/60 flex items-center justify-between">
                     <h3 class="font-bold text-slate-800 flex items-center gap-2"><i data-lucide="receipt" class="w-4 h-4 text-emerald-500"></i>Buat Kwitansi Baru</h3>

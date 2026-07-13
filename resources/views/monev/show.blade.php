@@ -71,12 +71,12 @@
             </span>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-            <a href="{{ route('monev.index') }}"
+            <a href="{{ route('admin.monev.index') }}"
                 class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm">
                 <i data-lucide="arrow-left" class="w-4 h-4"></i>
                 Kembali
             </a>
-            <button type="button" onclick="printHidden('{{ route('monev.print', $subActivity) }}')"
+            <button type="button" onclick="printHidden('{{ route('admin.monev.print', $subActivity) }}')"
                 class="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-slate-900 rounded-xl hover:bg-black transition-colors shadow-sm">
                 <i data-lucide="printer" class="w-4 h-4"></i>
                 Cetak Kartu Kendali
@@ -189,8 +189,8 @@
                                     @php
                                         $pkgRealisasi = $packageRealisasi($pkg);
                                         $packageUrl = $pkg->procurementPackage
-                                            ? route('procurement-packages.show', $pkg)
-                                            : route('packages.show', $pkg);
+                                            ? route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.show', $pkg)
+                                            : route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'packages.show', $pkg);
                                     @endphp
                                     <tr class="hover:bg-slate-50/60 transition-colors">
                                         <td class="px-5 py-3"></td>

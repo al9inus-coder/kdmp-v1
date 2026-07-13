@@ -5,7 +5,7 @@
 
 <x-ui.workspace title="Referensi Harga" description="{{ $procurementPackage->package->nama_paket }}">
     <x-slot:actions>
-        <x-ui.button variant="outline" size="md" href="{{ route('procurement-packages.index') }}">
+        <x-ui.button variant="outline" size="md" href="{{ route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.index') }}">
             <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
         </x-ui.button>
     </x-slot:actions>
@@ -55,7 +55,7 @@
                     <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs bg-white border border-slate-200 text-slate-600">Volume: <strong class="text-slate-800">{{ number_format((float) $item->volume, 0, ',', '.') }} {{ $item->satuan }}</strong></span>
                     <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs bg-white border border-slate-200 text-slate-600">Harga Satuan DPA: <strong class="text-slate-800">Rp {{ number_format($item->harga_satuan_dpa ?? 0, 0, ',', '.') }}</strong></span>
                 </div>
-                <a href="{{ route('procurement-packages.price-references.create', ['package' => $procurementPackage->package, 'technical_specification_item_id' => $item->id]) }}"
+                <a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.price-references.create', ['package' => $procurementPackage->package, 'technical_specification_item_id' => $item->id]) }}"
                     class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-200">
                     <i data-lucide="plus" class="w-3.5 h-3.5"></i> Tambah Referensi
                 </a>
@@ -103,8 +103,8 @@
                                     </td>
                                     <td class="px-4 py-3">
                                         <div class="flex items-center justify-center gap-1.5">
-                                            <a href="{{ route('procurement-packages.price-references.edit', [$procurementPackage->package, $priceReference]) }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-emerald-600 bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 transition-colors" title="Edit"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></a>
-                                            <form action="{{ route('procurement-packages.price-references.destroy', [$procurementPackage->package, $priceReference]) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus referensi harga ini?');">
+                                            <a href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.price-references.edit', [$procurementPackage->package, $priceReference]) }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-emerald-600 bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 transition-colors" title="Edit"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></a>
+                                            <form action="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.price-references.destroy', [$procurementPackage->package, $priceReference]) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus referensi harga ini?');">
                                                 @csrf @method('DELETE')
                                                 <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-100 transition-colors" title="Hapus"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                                             </form>
@@ -139,19 +139,19 @@
 
     {{-- Navigasi bawah --}}
     <div class="flex flex-wrap items-center justify-between gap-3 mt-6">
-        <x-ui.button variant="secondary" size="md" href="{{ route('procurement-packages.index') }}">
+        <x-ui.button variant="secondary" size="md" href="{{ route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.index') }}">
             <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
         </x-ui.button>
         <div class="flex flex-wrap items-center gap-2">
-            <x-ui.button variant="secondary" size="md" type="button" onclick="printPdf('{{ route('procurement-packages.price-references.print', $procurementPackage->package) }}')">
+            <x-ui.button variant="secondary" size="md" type="button" onclick="printPdf('{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.price-references.print', $procurementPackage->package) }}')">
                 <i data-lucide="printer" class="w-4 h-4 mr-2"></i> Cetak Referensi Harga
             </x-ui.button>
             @if($procurementPackage->procurementRequest)
-                <x-ui.button variant="primary" size="md" href="{{ route('procurement-packages.procurement-request.show', $procurementPackage->package) }}">
+                <x-ui.button variant="primary" size="md" href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.procurement-request.show', $procurementPackage->package) }}">
                     <i data-lucide="file-text" class="w-4 h-4 mr-2"></i> Lihat Surat Permohonan
                 </x-ui.button>
             @else
-                <x-ui.button variant="success" size="md" href="{{ route('procurement-packages.procurement-request.create', $procurementPackage->package) }}">
+                <x-ui.button variant="success" size="md" href="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.procurement-request.create', $procurementPackage->package) }}">
                     Lanjut Surat Permohonan <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
                 </x-ui.button>
             @endif

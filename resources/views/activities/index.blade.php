@@ -9,13 +9,13 @@
             <i data-lucide="briefcase" class="w-4 h-4 text-emerald-500"></i>
             {{ $activities->total() }} kegiatan
         </div>
-        <x-ui.button variant="primary" size="md" href="{{ route('activities.create') }}">
+        <x-ui.button variant="primary" size="md" href="{{ route('admin.activities.create') }}">
             <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambah Kegiatan
         </x-ui.button>
     </x-slot:actions>
 
     <x-slot:toolbar>
-        <form action="{{ route('activities.index') }}" method="GET" class="w-full">
+        <form action="{{ route('admin.activities.index') }}" method="GET" class="w-full">
             <div class="flex flex-col lg:flex-row lg:items-center gap-3">
                 <div class="flex items-center gap-2 flex-1 max-w-xl">
                     <div class="relative flex-1">
@@ -33,7 +33,7 @@
                         Cari
                     </button>
                     @if($search || ($status !== null && $status !== ''))
-                        <a href="{{ route('activities.index') }}" class="inline-flex items-center p-2 text-slate-400 hover:text-rose-500 transition-colors shrink-0" title="Reset filter">
+                        <a href="{{ route('admin.activities.index') }}" class="inline-flex items-center p-2 text-slate-400 hover:text-rose-500 transition-colors shrink-0" title="Reset filter">
                             <i data-lucide="x" class="w-4 h-4"></i>
                         </a>
                     @endif
@@ -78,7 +78,7 @@
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center justify-center">
-                                    <a href="{{ route('activities.edit', $activity) }}"
+                                    <a href="{{ route('admin.activities.edit', $activity) }}"
                                         class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-emerald-600 bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 transition-colors"
                                         title="Edit">
                                         <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
@@ -90,7 +90,7 @@
                         <tr>
                             <td colspan="6" class="px-6 py-10">
                                 <x-ui.empty-state icon="briefcase" title="Belum Ada Data Kegiatan" description="Klik tombol Tambah Kegiatan untuk membuat data pertama.">
-                                    <x-ui.button variant="primary" size="md" href="{{ route('activities.create') }}">
+                                    <x-ui.button variant="primary" size="md" href="{{ route('admin.activities.create') }}">
                                         <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambah Kegiatan
                                     </x-ui.button>
                                 </x-ui.empty-state>
