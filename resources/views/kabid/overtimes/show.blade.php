@@ -11,6 +11,7 @@
     $firstDayOfMonth = sprintf('%04d-%02d-01', $year, $month);
     $money = fn ($v) => 'Rp ' . number_format((float) $v, 0, ',', '.');
     $userRole = auth()->user()->getRoleNames()->first() ?? '';
+    $rolePrefix = in_array($userRole, ['Admin', 'Super Admin']) ? 'admin' : 'kabid';
 @endphp
 
 <div class="space-y-6">
@@ -123,13 +124,13 @@
                         @endif
                     </div>
                     <div class="pt-2 border-t border-slate-100 space-y-2">
-                        <button onclick="printReport('{{ route('kabid.packages.overtimes.print', [$package, $overtime, 'rekap']) }}')" class="w-full inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors">
+                        <button onclick="printReport('{{ route($rolePrefix . '.packages.overtimes.print', [$package, $overtime, 'rekap']) }}')" class="w-full inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors">
                             <i data-lucide="table" class="w-4 h-4 text-blue-500"></i>Rekapitulasi
                         </button>
-                        <button onclick="printReport('{{ route('kabid.packages.overtimes.print', [$package, $overtime, 'tanda_terima']) }}')" class="w-full inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors">
+                        <button onclick="printReport('{{ route($rolePrefix . '.packages.overtimes.print', [$package, $overtime, 'tanda_terima']) }}')" class="w-full inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors">
                             <i data-lucide="file-check-2" class="w-4 h-4 text-emerald-500"></i>Tanda Terima
                         </button>
-                        <button onclick="printReport('{{ route('kabid.packages.overtimes.print', [$package, $overtime, 'kwitansi']) }}')" class="w-full inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors">
+                        <button onclick="printReport('{{ route($rolePrefix . '.packages.overtimes.print', [$package, $overtime, 'kwitansi']) }}')" class="w-full inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors">
                             <i data-lucide="receipt" class="w-4 h-4 text-slate-500"></i>Kwitansi
                         </button>
                     </div>
@@ -146,14 +147,14 @@
                     </div>
                     <div class="p-4">
                         @if(!$overtime->is_locked)
-                            <form action="{{ route('kabid.packages.overtimes.lock', [$package, $month]) }}" method="POST" onsubmit="return confirm('Yakin mengunci data lembur bulan ini? Setelah dikunci tidak bisa diubah.')">
+                            <form action="{{ route($rolePrefix . '.packages.overtimes.lock', [$package, $month]) }}" method="POST" onsubmit="return confirm('Yakin mengunci data lembur bulan ini? Setelah dikunci tidak bisa diubah.')">
                                 @csrf
                                 <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm transition-colors">
                                     <i data-lucide="lock" class="w-4 h-4"></i>Kunci Data SPJ
                                 </button>
                             </form>
                         @elseif($userRole === 'Admin')
-                            <form action="{{ route('kabid.packages.overtimes.unlock', [$package, $month]) }}" method="POST" onsubmit="return confirm('Buka kunci data? Data bisa diedit lagi.')">
+                            <form action="{{ route($rolePrefix . '.packages.overtimes.unlock', [$package, $month]) }}" method="POST" onsubmit="return confirm('Buka kunci data? Data bisa diedit lagi.')">
                                 @csrf
                                 <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-bold text-amber-700 bg-white border border-amber-200 hover:bg-amber-50 rounded-lg transition-colors">
                                     <i data-lucide="unlock" class="w-4 h-4"></i>Buka Kunci (Admin)
@@ -373,7 +374,7 @@
         $('#sbuEmployeeName').text($(btn).data('emp-name'));
         $('#inputRateLembur').val($(btn).data('val-lembur'));
         $('#inputRateMakan').val($(btn).data('val-makan'));
-        let formUrl = "{{ route('kabid.packages.overtimes.update_rates', ['package' => $package->id, 'overtime' => $overtime->id, 'detail' => ':detail']) }}";
+        let formUrl = "{{ route($rolePrefix . '.packages.overtimes.update_rates', ['package' => $package->id, 'overtime' => $overtime->id, 'detail' => ':detail']) }}";
         $('#formEditSbu').attr('action', formUrl.replace(':detail', detailId));
         $('#sbuModal').modal('show');
         if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -400,17 +401,17 @@
 @endphp
 
 <script>
-    const UPDATE_URL = "{{ route('kabid.packages.overtimes.updateAjax', [$package, $overtime]) }}";
-    const AUTOFILL_URL = "{{ route('kabid.packages.overtimes.autoFill', [$package, $overtime]) }}";
-    const RESET_URL = "{{ route('kabid.packages.overtimes.reset', [$package, $overtime]) }}";
+    const UPDATE_URL = "{{ route($rolePrefix . '.packages.overtimes.updateAjax', [$package, $overtime]) }}";
+    const AUTOFILL_URL = "{{ route($rolePrefix . '.packages.overtimes.autoFill', [$package, $overtime]) }}";
+    const RESET_URL = "{{ route($rolePrefix . '.packages.overtimes.reset', [$package, $overtime]) }}";
     const CSRF_TOKEN = "{{ csrf_token() }}";
     const INITIAL_EVENTS = @json($eventsData);
     const CURRENT_MONTH = "{{ $firstDayOfMonth }}";
     const IS_LOCKED = {{ $overtime->is_locked ? 'true' : 'false' }};
     let holidaysDataFull = @json($holidaysDataFull);
     let holidaysData = holidaysDataFull.map(h => h.date);
-    const PREV_MONTH_URL = "{{ $month > 1 ? route('kabid.packages.overtimes.show', [$package, $month - 1]) : '' }}";
-    const NEXT_MONTH_URL = "{{ $month < 12 ? route('kabid.packages.overtimes.show', [$package, $month + 1]) : '' }}";
+    const PREV_MONTH_URL = "{{ $month > 1 ? route($rolePrefix . '.packages.overtimes.show', [$package, $month - 1]) : '' }}";
+    const NEXT_MONTH_URL = "{{ $month < 12 ? route($rolePrefix . '.packages.overtimes.show', [$package, $month + 1]) : '' }}";
 
     $(document).ready(function () {
         const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });

@@ -136,7 +136,7 @@
                     $isFuture = $overtimeYear > $currentYear
                         || ($overtimeYear === $currentYear && $num > $currentMonth);
                 @endphp
-                <a @if(!$isFuture) href="{{ route('kabid.packages.overtimes.show', [$package, $num]) }}" @endif
+                <a @if(!$isFuture) href="{{ route($rolePrefix . '.packages.overtimes.show', [$package, $num]) }}" @endif
                     @if($isFuture) aria-disabled="true" title="Bulan belum berjalan" @endif
                     class="group relative flex flex-col rounded-2xl border p-4 transition-all
                         {{ $isFuture

@@ -151,6 +151,18 @@ Route::middleware('auth')->group(function () {
         Route::get('/packages/{package}/travel-orders/{travelOrder}/print-laporan', [\App\Http\Controllers\TravelOrderDocumentController::class, 'printLaporan'])->name('packages.travel-orders.print-laporan');
     };
 
+    $sharedOvertimeRoutes = function () {
+        Route::get('packages/{package}/overtimes/{month}', [\App\Http\Controllers\Kabid\OvertimeController::class, 'show'])->name('packages.overtimes.show');
+        Route::put('packages/{package}/overtimes/{overtime}', [\App\Http\Controllers\Kabid\OvertimeController::class, 'update'])->name('packages.overtimes.update');
+        Route::post('packages/{package}/overtimes/{overtime}/ajax', [\App\Http\Controllers\Kabid\OvertimeController::class, 'updateAjax'])->name('packages.overtimes.updateAjax');
+        Route::post('packages/{package}/overtimes/{overtime}/autofill', [\App\Http\Controllers\Kabid\OvertimeController::class, 'autoFill'])->name('packages.overtimes.autoFill');
+        Route::post('packages/{package}/overtimes/{overtime}/reset', [\App\Http\Controllers\Kabid\OvertimeController::class, 'resetMonth'])->name('packages.overtimes.reset');
+        Route::get('packages/{package}/overtimes/{overtime}/print/{type}', [\App\Http\Controllers\Kabid\OvertimeController::class, 'print'])->name('packages.overtimes.print');
+        Route::post('packages/{package}/overtimes/{month}/lock', [\App\Http\Controllers\Kabid\OvertimeController::class, 'lock'])->name('packages.overtimes.lock');
+        Route::post('packages/{package}/overtimes/{month}/unlock', [\App\Http\Controllers\Kabid\OvertimeController::class, 'unlock'])->name('packages.overtimes.unlock');
+        Route::post('packages/{package}/overtimes/{overtime}/details/{detail}/rates', [\App\Http\Controllers\Kabid\OvertimeController::class, 'updateRates'])->name('packages.overtimes.update_rates');
+    };
+
     // Staff Packages Module
     Route::middleware(['role:Staff'])->prefix('staf')->name('staf.')->group(function () {
         Route::get('packages', [\App\Http\Controllers\Staff\PackageController::class, 'index'])->name('packages.index');
@@ -202,9 +214,9 @@ Route::middleware('auth')->group(function () {
         // Arsip Dokumen
         Route::get('arsip', [\App\Http\Controllers\ArsipController::class, 'index'])->name('arsip.index');
     });
-    // Kabid Packages Module
-    Route::middleware(['role:Kabid|Admin|Super Admin'])->prefix('kabid')->name('kabid.')->group(function () use ($sharedProcurementRoutes) {
+    Route::middleware(['role:Kabid'])->prefix('kabid')->name('kabid.')->group(function () use ($sharedProcurementRoutes, $sharedOvertimeRoutes) {
         $sharedProcurementRoutes();
+        $sharedOvertimeRoutes();
         Route::get('packages', [\App\Http\Controllers\Kabid\PackageController::class, 'index'])->name('packages.index');
         Route::get('packages/{package}', [\App\Http\Controllers\Kabid\PackageController::class, 'show'])->name('packages.show');
         Route::get('monev', [\App\Http\Controllers\Kabid\MonevController::class, 'index'])->name('monev.index');
@@ -214,16 +226,6 @@ Route::middleware('auth')->group(function () {
         Route::get('dikecualikan', [\App\Http\Controllers\Kabid\DikecualikanController::class, 'index'])->name('dikecualikan.index');
         Route::get('penyedia', [\App\Http\Controllers\Kabid\PenyediaController::class, 'index'])->name('penyedia.index');
         Route::get('buku-register', [BukuRegisterController::class, 'index'])->name('buku-register.index');
-        // Lembur (Overtime) untuk Kabid
-        Route::get('packages/{package}/overtimes/{month}', [\App\Http\Controllers\Kabid\OvertimeController::class, 'show'])->name('packages.overtimes.show');
-        Route::put('packages/{package}/overtimes/{overtime}', [\App\Http\Controllers\Kabid\OvertimeController::class, 'update'])->name('packages.overtimes.update');
-        Route::post('packages/{package}/overtimes/{overtime}/ajax', [\App\Http\Controllers\Kabid\OvertimeController::class, 'updateAjax'])->name('packages.overtimes.updateAjax');
-        Route::post('packages/{package}/overtimes/{overtime}/autofill', [\App\Http\Controllers\Kabid\OvertimeController::class, 'autoFill'])->name('packages.overtimes.autoFill');
-        Route::post('packages/{package}/overtimes/{overtime}/reset', [\App\Http\Controllers\Kabid\OvertimeController::class, 'resetMonth'])->name('packages.overtimes.reset');
-        Route::get('packages/{package}/overtimes/{overtime}/print/{type}', [\App\Http\Controllers\Kabid\OvertimeController::class, 'print'])->name('packages.overtimes.print');
-        Route::post('packages/{package}/overtimes/{month}/lock', [\App\Http\Controllers\Kabid\OvertimeController::class, 'lock'])->name('packages.overtimes.lock');
-        Route::post('packages/{package}/overtimes/{month}/unlock', [\App\Http\Controllers\Kabid\OvertimeController::class, 'unlock'])->name('packages.overtimes.unlock');
-        Route::post('packages/{package}/overtimes/{overtime}/details/{detail}/rates', [\App\Http\Controllers\Kabid\OvertimeController::class, 'updateRates'])->name('packages.overtimes.update_rates');
         // Halaman gabungan lama — kini diarahkan ke daftar Penyedia (navigasi kabid per jenis pengadaan).
         Route::get('procurement-packages', fn () => redirect()->route('kabid.penyedia.index'))->name('procurement-packages.index');
         Route::get('procurement-packages/{package}', [\App\Http\Controllers\Kabid\ProcurementPackageController::class, 'show'])->name('procurement-packages.show');
@@ -263,8 +265,9 @@ Route::middleware('auth')->group(function () {
         Route::post('procurement-packages/{package}/payment/complete', [\App\Http\Controllers\Kabid\ProcurementPaymentController::class, 'complete'])->name('procurement-packages.payment.complete');
     });
     // Admin Procurement Packages Module
-    Route::middleware(['role:Admin|Super Admin'])->prefix('admin')->name('admin.')->group(function () use ($sharedProcurementRoutes) {
+    Route::middleware(['role:Admin|Super Admin'])->prefix('admin')->name('admin.')->group(function () use ($sharedProcurementRoutes, $sharedOvertimeRoutes) {
         $sharedProcurementRoutes();
+        $sharedOvertimeRoutes();
         // Import (admin)
         Route::get('packages/import', [\App\Http\Controllers\ImportBatchController::class, 'index'])->name('packages.import.index');
         Route::post('packages/import', [\App\Http\Controllers\ImportBatchController::class, 'store'])->name('packages.import.store');
@@ -302,9 +305,6 @@ Route::middleware('auth')->group(function () {
         Route::get('swakelola', [\App\Http\Controllers\Admin\SwakelolaController::class, 'index'])->name('swakelola.index');
         Route::get('dikecualikan', [\App\Http\Controllers\Admin\DikecualikanController::class, 'index'])->name('dikecualikan.index');
         Route::get('schedules', [\App\Http\Controllers\ScheduleController::class, 'index'])->name('schedules.index');
-
-        // Lembur (Admin Print)
-        Route::get('packages/{package}/overtimes/{overtime}/print/{type}', [\App\Http\Controllers\OvertimeController::class, 'print'])->name('packages.overtimes.print');
 
         // Buku Register
         Route::get('buku-register', [BukuRegisterController::class, 'index'])->name('buku-register.index');
