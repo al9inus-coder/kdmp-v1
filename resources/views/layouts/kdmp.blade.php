@@ -136,7 +136,7 @@
                 <!-- Profile Dropdown (Menggunakan Alpine.js) -->
                 <div class="relative" x-data="{ open: false }" @click.away="open = false" @close.stop="open = false">
                     <button @click="open = !open" type="button" class="flex items-center gap-2 focus:outline-none p-1 rounded-full hover:bg-slate-100 transition-colors">
-                        <img class="w-8 h-8 rounded-full border border-slate-200 object-cover" src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name ?? 'Admin') }}&color=2563EB&background=DBEAFE" alt="Profile">
+                        <img class="w-8 h-8 rounded-full border border-slate-200 object-cover bg-slate-50" src="{{ Auth::user()->avatar ? asset('storage/' . Auth::user()->avatar) : asset('storage/avatars/avatar.png') }}" alt="Profile">
                         <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 hidden sm:block"></i>
                     </button>
                     

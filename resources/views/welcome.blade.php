@@ -69,8 +69,8 @@
                 </div>
 
                 <div class="mt-16 space-y-2 text-white/50 text-xs">
-                    <div class="uppercase tracking-widest font-semibold">
-                        © {{ date('Y') }} KDMP • Kelola Digital Manajemen Pengadaan
+                    <div class="tracking-widest font-semibold">
+                        © {{ date('Y') }} KDMP v1.0.1
                     </div>
                     <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span>Aplikasi dikembangkan oleh <strong class="text-white/80">sunigla</strong></span>

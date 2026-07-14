@@ -45,10 +45,10 @@
             .page:not(:last-child) {
                 page-break-after: always;
             }
-            @page {
+            /* @page {
                 size: A4;
                 margin: 10mm;
-            }
+            } */
         }
     </style>
 </head>

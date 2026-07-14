@@ -68,6 +68,10 @@
                             value="{{ old('jabatan_pic', $process->jabatan_pic) }}"
                             placeholder="Contoh: Direktur Utama"
                             class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm">
+                        <p class="text-[11px] text-slate-500 mt-1.5 leading-snug">
+                            <i data-lucide="info" class="w-3 h-3 inline-block -mt-0.5"></i>
+                            Ketik <strong>Penyedia</strong> jika merupakan perorangan (bukan badan usaha).
+                        </p>
                     </div>
                 </div>
                 <div class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -1,5 +1,5 @@
 @component('layouts.kdmp')
-@section('title', 'Dashboard Kabid')
+@section('title', 'Dashboard Kepala Bidang')
 
 @php
     $money   = fn ($v) => 'Rp ' . number_format((float) $v, 0, ',', '.');

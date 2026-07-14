@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Kwitansi {{ $externalRecord->kwitansi_no }}</title>
+    <title>Kwitansi Uang Lembur</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
         /* @page {
@@ -69,9 +69,56 @@
         }
     </style>
 </head>
-<body>
+<body onload="window.print()" onafterprint="window.close()">
     @php
-        $tahun = $procurementPackage->package->fiscalYear->tahun ?? date('Y');
+        $months = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 
+            4 => 'April', 5 => 'Mei', 6 => 'Juni', 
+            7 => 'Juli', 8 => 'Agustus', 9 => 'September', 
+            10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+        $monthName = $months[$overtime->bulan];
+        $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $overtime->bulan, $overtime->tahun);
+        $totalKeseluruhan = 0;
+        $totalPph = 0;
+        
+        foreach($overtime->details as $detail) {
+            $emp = $detail->employee;
+            $golongan = $detail->golongan_fix ?? $emp->golongan ?? '-';
+            
+            $totalJam = 0;
+            for($d = 1; $d <= $daysInMonth; $d++) {
+                $val = isset($detail->daily_hours[$d]) ? (int)$detail->daily_hours[$d] : 0;
+                if($val >= 2) {
+                    $totalJam += $val;
+                }
+            }
+            if($totalJam == 0) continue;
+            
+            // Pemetaan golongan -> tarif SBU terpusat & toleran format (SbuLembur::pickRate).
+            if (!is_null($detail->rate_lembur_fix)) {
+                $valLembur = $detail->rate_lembur_fix;
+            } else {
+                $valLembur = \App\Models\SbuLembur::pickRate($sbuRates, 'Uang Lembur', $golongan)?->besaran ?? 0;
+            }
+            $uangLembur = $totalJam * $valLembur;
+            
+            // PPh calculation
+            $pphRate = 0;
+            if (str_contains(strtoupper($golongan), 'III')) {
+                $pphRate = 0.05;
+            } elseif (str_contains(strtoupper($golongan), 'IV')) {
+                $pphRate = 0.15;
+            }
+            $pph = $uangLembur * $pphRate;
+            $diterima = $uangLembur - $pph;
+
+            $totalPph += $pph;
+            // Total Keseluruhan (Bruto/Sebelum dipotong pajak)
+            $totalKeseluruhan += $uangLembur;
+        }
+
+        $tahun = $overtime->tahun;
         $namaPpk = $skpd->nama_ppk ?? '..................................';
         $nipPpk = $skpd->nip_ppk ?? '..................................';
         $namaPptk = $skpd->nama_pptk ?? '..................................';
@@ -84,11 +131,11 @@
 
     <div class="row align-items-center">
         <div class="col-2 text-center">
-            <img src="{{ asset('images/logo-bengkayang.png') }}" style="width:80px;">
+            <img src="{{ asset('images/logo-bengkayang.png') }}" style="width:80px;" onerror="this.style.display='none'">
         </div>
         <div class="col-10 text-center">
             <div class="kop-pemerintah">PEMERINTAH KABUPATEN BENGKAYANG</div>
-            <div class="kop-dinas">{{ strtoupper($skpd->nama ?? 'DINAS ..............................................') }}</div>
+            <div class="kop-dinas">{{ strtoupper($skpd->nama ?? 'DINAS PERUMAHAN RAKYAT DAN KAWASAN PERMUKIMAN, PERTANAHAN DAN LINGKUNGAN HIDUP') }}</div>
             <div class="kop-alamat">{{ $skpd->alamat ?? 'Jalan Guna Baru Trans Rangkang, Bengkayang, Kalimantan Barat' }}</div>
             <div class="kop-alamat">Situs : bengkayangkab.go.id</div>
         </div>
@@ -99,33 +146,33 @@
         <tr>
             <td style="width: 75%; padding: 15px; border-right: 1px solid #000;">
                 <div class="title">K W I T A N S I</div>
-                <div class="subtitle">Nomor : {{ $externalRecord->kwitansi_no ?? '..............................' }}</div>
+                <div class="subtitle">Nomor : ..............................</div>
 
                 <table style="width: 100%; margin-top: 10px;">
                     <tr>
-                        <td style="width: 20%; vertical-align: top;">Telah terima dari</td>
+                        <td style="width: 25%; vertical-align: top;">Telah terima dari</td>
                         <td style="width: 2%; vertical-align: top;">:</td>
-                        <td style="vertical-align: top;">BENDAHARA PENGELUARAN ({{ strtoupper($namaBendahara) }}) {{ strtoupper($skpd->nama ?? '..................................') }} KABUPATEN BENGKAYANG</td>
+                        <td style="vertical-align: top;">BENDAHARA PENGELUARAN {{ strtoupper($skpd->nama ?? 'DINAS PERUMAHAN RAKYAT DAN KAWASAN PERMUKIMAN, PERTANAHAN DAN LINGKUNGAN HIDUP') }} KABUPATEN BENGKAYANG</td>
                     </tr>
                     <tr>
                         <td>Kode Rekening</td>
                         <td>:</td>
-                        <td>{{ $procurementPackage->package->account->kode ?? '..............................' }}</td>
+                        <td>{{ $package->account->kode ?? '..............................' }}</td>
                     </tr>
                     <tr>
                         <td>Uang sejumlah</td>
                         <td>:</td>
-                        <td><b>Rp {{ number_format($externalRecord->nilai_kontrak, 0, ',', '.') }}</b></td>
+                        <td><b>Rp {{ number_format($totalKeseluruhan, 0, ',', '.') }}</b></td>
                     </tr>
                     <tr>
-                        <td>Terbilang</td>
-                        <td>:</td>
-                        <td style="font-style: italic; font-weight: bold;">{{ \App\Helpers\Terbilang::make($externalRecord->nilai_kontrak) }} Rupiah</td>
+                        <td style="vertical-align: top;">Terbilang</td>
+                        <td style="vertical-align: top;">:</td>
+                        <td style="font-style: italic; font-weight: bold; vertical-align: top;">{{ \App\Helpers\Terbilang::make($totalKeseluruhan) }} Rupiah</td>
                     </tr>
                     <tr>
-                        <td>Guna Membayar</td>
-                        <td>:</td>
-                        <td>{{ $procurementPackage->package->nama_paket ?? '..............................' }} Subkegiatan {{ $procurementPackage->package->subActivity->nama ?? '..............................' }} Tahun {{ $tahun }}</td>
+                        <td style="vertical-align: top;">Guna Membayar</td>
+                        <td style="vertical-align: top;">:</td>
+                        <td style="vertical-align: top;">Belanja Uang Lembur pada Kegiatan {{ $package->activity->nama ?? '..............................' }} Subkegiatan {{ $package->subActivity->nama ?? '..............................' }} Bulan {{ $monthName }} Tahun {{ $tahun }}</td>
                     </tr>
                 </table>
 
@@ -133,7 +180,7 @@
                     <tr>
                         <td style="width: 50%;"></td>
                         <td style="width: 50%; text-align: center;">
-                            Bengkayang, {{ $externalRecord->kwitansi_tgl ? \Carbon\Carbon::parse($externalRecord->kwitansi_tgl)->translatedFormat('d F Y') : '..................... '.date('Y') }}<br>
+                            Bengkayang, ..................... {{ $tahun }}<br>
                             Yang Menerima
                             <br><br><br><br>
                             <b>.................</b>
@@ -143,16 +190,16 @@
             </td>
             <td style="width: 25%; padding: 0;">
                 <div style="padding: 10px; border-bottom: 1px solid #000;">
-                    <div style="text-align: right; text-decoration: underline; margin-bottom: 5px;">Masuk Buku :</div>
+                    <div style="text-align: center; text-decoration: underline; margin-bottom: 5px;">Masuk Buku :</div>
                     Tanggal &nbsp;: ..........................<br><br>
                     No. BKU : ..........................
                 </div>
                 <div style="padding: 10px; border-bottom: 1px solid #000; line-height: 1.8;">
                     Perhitungan Pajak Yang<br>Harus Dibayar :<br>
-                    PPN &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: ..........................<br>
-                    PPh 21 &nbsp;&nbsp;&nbsp;: ..........................<br>
-                    PPh 22 &nbsp;&nbsp;&nbsp;: ..........................<br>
-                    PPh 23 &nbsp;&nbsp;&nbsp;: ..........................
+                    PPN &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: -<br>
+                    PPh 21 &nbsp;&nbsp;&nbsp;: Rp {{ number_format($totalPph, 0, ',', '.') }}<br>
+                    PPh 22 &nbsp;&nbsp;&nbsp;: -<br>
+                    PPh 23 &nbsp;&nbsp;&nbsp;: -
                 </div>
                 <div style="padding: 10px; text-align: center;">
                     Diperiksa Pada Tanggal :
@@ -191,11 +238,5 @@
             </td>
         </tr>
     </table>
-
-    <script>
-        window.onload = function() {
-            window.print();
-        }
-    </script>
 </body>
 </html>

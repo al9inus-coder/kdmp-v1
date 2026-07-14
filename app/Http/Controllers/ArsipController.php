@@ -97,80 +97,84 @@ class ArsipController extends Controller
             'payment', 'technicalSpecification', 'priceReferences',
         ];
 
-        // 2. KATEGORI PBJ -> Penyedia
-        $procurements = \App\Models\ProcurementPackage::with($procurementWith)
-            ->whereNull('dikecualikan_type')
-            ->whereHas('package', fn ($q) => $q->where('jenis_pengadaan', 'not like', '%swakelola%'))
-            ->where('workflow_status', '!=', \App\Models\ProcurementPackage::WORKFLOW_DRAFT)
-            ->get();
+        $isStaff = auth()->check() && auth()->user()->hasRole('Staff');
 
-        foreach ($procurements as $pp) {
-            if (!$pp->package) continue;
-            $year = $pp->package->fiscalYear?->tahun ?? 'Lainnya';
-            $folderName = Str::limit($pp->package->nama_paket, 80);
-            $tree[$year]['PBJ']['Penyedia'][$folderName] = $collectProcurementDocs($pp, 'Penyedia · ' . ($pp->package->jenis_pengadaan ?? ''));
-        }
+        if (!$isStaff) {
+            // 2. KATEGORI PBJ -> Penyedia
+            $procurements = \App\Models\ProcurementPackage::with($procurementWith)
+                ->whereNull('dikecualikan_type')
+                ->whereHas('package', fn ($q) => $q->where('jenis_pengadaan', 'not like', '%swakelola%'))
+                ->where('workflow_status', '!=', \App\Models\ProcurementPackage::WORKFLOW_DRAFT)
+                ->get();
 
-        // 3. KATEGORI PBJ -> Dikecualikan — dokumen berupa kwitansi (external records)
-        $dikecualikan = \App\Models\ProcurementPackage::with(['package.fiscalYear', 'externalRecords'])
-            ->whereNotNull('dikecualikan_type')
-            ->get();
-
-        foreach ($dikecualikan as $pp) {
-            if (!$pp->package) continue;
-            $year = $pp->package->fiscalYear?->tahun ?? 'Lainnya';
-            $folderName = Str::limit($pp->package->nama_paket, 80);
-            $typeLabel = $pp->dikecualikan_type === 'di_luar_sistem' ? 'Di luar sistem' : 'Di dalam sistem';
-
-            $tree[$year]['PBJ']['Dikecualikan'][$folderName] = $pp->externalRecords
-                ->sortByDesc('kwitansi_tgl')
-                ->map(function ($rec) use ($pp, $typeLabel, $rolePrefix) {
-                    $noKwitansi = $rec->kwitansi_no ?: ('#' . $rec->id);
-                    $tgl = $rec->kwitansi_tgl ? \Illuminate\Support\Carbon::parse($rec->kwitansi_tgl)->locale('id')->translatedFormat('d M Y') : null;
-                    $nilai = $rec->nilai_kontrak ? 'Rp ' . number_format((float) $rec->nilai_kontrak, 0, ',', '.') : null;
-                    $sub = collect([$typeLabel, $tgl, $nilai])->filter()->implode(' · ');
-
-                    return [
-                        'label' => 'Kwitansi ' . $noKwitansi,
-                        'sub' => $sub,
-                        'url' => route($rolePrefix . 'procurement-external-records.print', [$pp, $rec]),
-                        'action' => 'popup',
-                    ];
-                })
-                ->values()
-                ->all();
-        }
-
-        // 4. KATEGORI PBJ -> Swakelola (dokumen lembur per bulan yang sudah dikunci)
-        $bulanNama = [1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
-            7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'];
-
-        $swakelola = \App\Models\Package::where('jenis_pengadaan', 'Swakelola')
-            ->whereHas('overtimes', fn ($q) => $q->where('is_locked', true))
-            ->with([
-                'fiscalYear',
-                'overtimes' => fn ($q) => $q->where('is_locked', true)->orderBy('tahun')->orderBy('bulan'),
-            ])
-            ->get();
-
-        foreach ($swakelola as $package) {
-            $year = $package->fiscalYear?->tahun ?? 'Lainnya';
-            $folderName = Str::limit($package->nama_paket, 80);
-
-            foreach ($package->overtimes as $ot) {
-                $bln = ($bulanNama[$ot->bulan] ?? ('Bulan ' . $ot->bulan)) . ' ' . $ot->tahun;
-                $sub = 'Lembur · ' . $bln;
-                $tree[$year]['PBJ']['Swakelola'][$folderName][] = ['label' => 'Rekap Lembur ' . $bln, 'sub' => $sub, 'url' => route($rolePrefix . 'packages.overtimes.print', [$package, $ot, 'rekap']), 'action' => 'tab'];
-                $tree[$year]['PBJ']['Swakelola'][$folderName][] = ['label' => 'Tanda Terima ' . $bln, 'sub' => $sub, 'url' => route($rolePrefix . 'packages.overtimes.print', [$package, $ot, 'tanda_terima']), 'action' => 'tab'];
-                $tree[$year]['PBJ']['Swakelola'][$folderName][] = ['label' => 'Kwitansi Lembur ' . $bln, 'sub' => $sub, 'url' => route($rolePrefix . 'packages.overtimes.print', [$package, $ot, 'kwitansi']), 'action' => 'tab'];
+            foreach ($procurements as $pp) {
+                if (!$pp->package) continue;
+                $year = $pp->package->fiscalYear?->tahun ?? 'Lainnya';
+                $folderName = Str::limit($pp->package->nama_paket, 80);
+                $tree[$year]['PBJ']['Penyedia'][$folderName] = $collectProcurementDocs($pp, 'Penyedia · ' . ($pp->package->jenis_pengadaan ?? ''));
             }
-        }
 
-        // Pastikan ketiga subkategori PBJ selalu ada (tampil walau kosong).
-        foreach (array_keys($tree) as $year) {
-            if (!isset($tree[$year]['PBJ']['Penyedia'])) $tree[$year]['PBJ']['Penyedia'] = [];
-            if (!isset($tree[$year]['PBJ']['Swakelola'])) $tree[$year]['PBJ']['Swakelola'] = [];
-            if (!isset($tree[$year]['PBJ']['Dikecualikan'])) $tree[$year]['PBJ']['Dikecualikan'] = [];
+            // 3. KATEGORI PBJ -> Dikecualikan — dokumen berupa kwitansi (external records)
+            $dikecualikan = \App\Models\ProcurementPackage::with(['package.fiscalYear', 'externalRecords'])
+                ->whereNotNull('dikecualikan_type')
+                ->get();
+
+            foreach ($dikecualikan as $pp) {
+                if (!$pp->package) continue;
+                $year = $pp->package->fiscalYear?->tahun ?? 'Lainnya';
+                $folderName = Str::limit($pp->package->nama_paket, 80);
+                $typeLabel = $pp->dikecualikan_type === 'di_luar_sistem' ? 'Di luar sistem' : 'Di dalam sistem';
+
+                $tree[$year]['PBJ']['Dikecualikan'][$folderName] = $pp->externalRecords
+                    ->sortByDesc('kwitansi_tgl')
+                    ->map(function ($rec) use ($pp, $typeLabel, $rolePrefix) {
+                        $noKwitansi = $rec->kwitansi_no ?: ('#' . $rec->id);
+                        $tgl = $rec->kwitansi_tgl ? \Illuminate\Support\Carbon::parse($rec->kwitansi_tgl)->locale('id')->translatedFormat('d M Y') : null;
+                        $nilai = $rec->nilai_kontrak ? 'Rp ' . number_format((float) $rec->nilai_kontrak, 0, ',', '.') : null;
+                        $sub = collect([$typeLabel, $tgl, $nilai])->filter()->implode(' · ');
+
+                        return [
+                            'label' => 'Kwitansi ' . $noKwitansi,
+                            'sub' => $sub,
+                            'url' => route($rolePrefix . 'procurement-external-records.print', [$pp, $rec]),
+                            'action' => 'popup',
+                        ];
+                    })
+                    ->values()
+                    ->all();
+            }
+
+            // 4. KATEGORI PBJ -> Swakelola (dokumen lembur per bulan yang sudah dikunci)
+            $bulanNama = [1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
+                7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'];
+
+            $swakelola = \App\Models\Package::where('jenis_pengadaan', 'Swakelola')
+                ->whereHas('overtimes', fn ($q) => $q->where('is_locked', true))
+                ->with([
+                    'fiscalYear',
+                    'overtimes' => fn ($q) => $q->where('is_locked', true)->orderBy('tahun')->orderBy('bulan'),
+                ])
+                ->get();
+
+            foreach ($swakelola as $package) {
+                $year = $package->fiscalYear?->tahun ?? 'Lainnya';
+                $folderName = Str::limit($package->nama_paket, 80);
+
+                foreach ($package->overtimes as $ot) {
+                    $bln = ($bulanNama[$ot->bulan] ?? ('Bulan ' . $ot->bulan)) . ' ' . $ot->tahun;
+                    $sub = 'Lembur · ' . $bln;
+                    $tree[$year]['PBJ']['Swakelola'][$folderName][] = ['label' => 'Rekap Lembur ' . $bln, 'sub' => $sub, 'url' => route($rolePrefix . 'packages.overtimes.print', [$package, $ot, 'rekap']), 'action' => 'tab'];
+                    $tree[$year]['PBJ']['Swakelola'][$folderName][] = ['label' => 'Tanda Terima ' . $bln, 'sub' => $sub, 'url' => route($rolePrefix . 'packages.overtimes.print', [$package, $ot, 'tanda_terima']), 'action' => 'tab'];
+                    $tree[$year]['PBJ']['Swakelola'][$folderName][] = ['label' => 'Kwitansi Lembur ' . $bln, 'sub' => $sub, 'url' => route($rolePrefix . 'packages.overtimes.print', [$package, $ot, 'kwitansi']), 'action' => 'tab'];
+                }
+            }
+
+            // Pastikan ketiga subkategori PBJ selalu ada (tampil walau kosong).
+            foreach (array_keys($tree) as $year) {
+                if (!isset($tree[$year]['PBJ']['Penyedia'])) $tree[$year]['PBJ']['Penyedia'] = [];
+                if (!isset($tree[$year]['PBJ']['Swakelola'])) $tree[$year]['PBJ']['Swakelola'] = [];
+                if (!isset($tree[$year]['PBJ']['Dikecualikan'])) $tree[$year]['PBJ']['Dikecualikan'] = [];
+            }
         }
 
         krsort($tree);

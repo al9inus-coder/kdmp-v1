@@ -7,10 +7,10 @@
     $skpd = \App\Models\Skpd::first();
 @endphp
 <style>
-@page {
+/* @page {
     size: A4 landscape;
     margin: 15mm 10mm;
-}
+} */
 
 body {
     background: #f4f6f9;

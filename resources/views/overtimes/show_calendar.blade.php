@@ -31,7 +31,7 @@
                 </span>
             @endif
         </div>
-        <a href="{{ route('kabid.procurement-packages.show', $package) }}"
+        <a href="{{ route('procurement-packages.show', $package) }}"
             class="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 shadow-sm">
             <i data-lucide="arrow-left" class="w-4 h-4"></i>Kembali ke Paket
         </a>
@@ -123,13 +123,13 @@
                         @endif
                     </div>
                     <div class="pt-2 border-t border-slate-100 space-y-2">
-                        <button onclick="printReport('{{ route('kabid.packages.overtimes.print', [$package, $overtime, 'rekap']) }}')" class="w-full inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors">
+                        <button onclick="printReport('{{ route('packages.overtimes.print', [$package, $overtime, 'rekap']) }}')" class="w-full inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors">
                             <i data-lucide="table" class="w-4 h-4 text-blue-500"></i>Rekapitulasi
                         </button>
-                        <button onclick="printReport('{{ route('kabid.packages.overtimes.print', [$package, $overtime, 'tanda_terima']) }}')" class="w-full inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors">
+                        <button onclick="printReport('{{ route('packages.overtimes.print', [$package, $overtime, 'tanda_terima']) }}')" class="w-full inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors">
                             <i data-lucide="file-check-2" class="w-4 h-4 text-emerald-500"></i>Tanda Terima
                         </button>
-                        <button onclick="printReport('{{ route('kabid.packages.overtimes.print', [$package, $overtime, 'kwitansi']) }}')" class="w-full inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors">
+                        <button onclick="printReport('{{ route('packages.overtimes.print', [$package, $overtime, 'kwitansi']) }}')" class="w-full inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors">
                             <i data-lucide="receipt" class="w-4 h-4 text-slate-500"></i>Kwitansi
                         </button>
                     </div>
@@ -146,14 +146,14 @@
                     </div>
                     <div class="p-4">
                         @if(!$overtime->is_locked)
-                            <form action="{{ route('kabid.packages.overtimes.lock', [$package, $month]) }}" method="POST" onsubmit="return confirm('Yakin mengunci data lembur bulan ini? Setelah dikunci tidak bisa diubah.')">
+                            <form action="{{ route('packages.overtimes.lock', [$package, $month]) }}" method="POST" onsubmit="return confirm('Yakin mengunci data lembur bulan ini? Setelah dikunci tidak bisa diubah.')">
                                 @csrf
                                 <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm transition-colors">
                                     <i data-lucide="lock" class="w-4 h-4"></i>Kunci Data SPJ
                                 </button>
                             </form>
                         @elseif($userRole === 'Admin')
-                            <form action="{{ route('kabid.packages.overtimes.unlock', [$package, $month]) }}" method="POST" onsubmit="return confirm('Buka kunci data? Data bisa diedit lagi.')">
+                            <form action="{{ route('packages.overtimes.unlock', [$package, $month]) }}" method="POST" onsubmit="return confirm('Buka kunci data? Data bisa diedit lagi.')">
                                 @csrf
                                 <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-bold text-amber-700 bg-white border border-amber-200 hover:bg-amber-50 rounded-lg transition-colors">
                                     <i data-lucide="unlock" class="w-4 h-4"></i>Buka Kunci (Admin)
@@ -188,9 +188,15 @@
                         if($val >= 2) { $totalJam += $val; $daysWithOvertime++; }
                     }
                     if($totalJam == 0) continue;
-                    // Pemetaan golongan -> tarif SBU terpusat & toleran format (SbuLembur::pickRate).
+                    // Pemetaan golongan -> tarif SBU: terpusat & toleran format (SbuLembur::pickRate).
+                    $rateMissing = false;
                     if (!is_null($detail->rate_lembur_fix)) $valLembur = $detail->rate_lembur_fix;
-                    else $valLembur = \App\Models\SbuLembur::pickRate($sbuRates, 'Uang Lembur', $golongan)?->besaran ?? 0;
+                    else {
+                        $rateLembur = \App\Models\SbuLembur::pickRate($sbuRates, 'Uang Lembur', $golongan);
+                        $valLembur = $rateLembur?->besaran ?? 0;
+                        // Baris SBU golongan ini tidak ada — jangan tebak tarif lain, tandai agar terlihat.
+                        if (!$rateLembur) $rateMissing = true;
+                    }
                     if (!is_null($detail->rate_makan_fix)) $valMakan = $detail->rate_makan_fix;
                     else $valMakan = \App\Models\SbuLembur::pickRate($sbuRates, 'Uang Makan Lembur', $golongan)?->besaran ?? 0;
                     $uangLembur = $totalJam * $valLembur;
@@ -202,7 +208,7 @@
                     $pph = $uangLembur * $pphRate;
                     $totalDiterima = ($uangLembur - $pph) + $uangMakan;
                     $totalKeseluruhan += $totalDiterima; $sumUpahLembur += $uangLembur; $sumUangMakan += $uangMakan; $sumPajak += $pph;
-                    $processedDetails[] = compact('detail','emp','valLembur','valMakan','totalJam','uangLembur','uangMakan','pph','totalDiterima');
+                    $processedDetails[] = compact('detail','emp','valLembur','valMakan','totalJam','uangLembur','uangMakan','pph','totalDiterima','rateMissing');
                 }
             @endphp
             <section id="rekapSection" class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
@@ -232,6 +238,12 @@
                                     <td class="px-4 py-3 text-center text-slate-400">{{ $index + 1 }}</td>
                                     <td class="px-4 py-3 font-semibold text-slate-800">{{ $row['emp']->nama }}</td>
                                     <td class="px-4 py-3 text-right whitespace-nowrap">
+                                        @if($row['rateMissing'] ?? false)
+                                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold rounded bg-rose-50 text-rose-600 border border-rose-200 align-middle"
+                                                title="Tarif SBU untuk golongan pegawai ini tidak ditemukan — lengkapi Data SBU Lembur.">
+                                                <i data-lucide="alert-triangle" class="w-3 h-3"></i> SBU?
+                                            </span>
+                                        @endif
                                         {{ $money($row['valLembur']) }}
                                         @if(!$overtime->is_locked)
                                             <button type="button" class="ml-1 text-indigo-500 hover:text-indigo-700 btn-edit-sbu align-middle"
@@ -324,24 +336,7 @@
 </div>
 
 <style>
-    .fc-event {
-        cursor: pointer;
-        border-radius: 6px !important;
-        padding: 3px 8px !important;
-        font-size: 0.75rem !important;
-        font-weight: 600 !important;
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
-        margin: 2px 4px !important;
-        border: 1px solid #fcd34d !important;
-        background-color: #fef3c7 !important;
-        color: #78350f !important;
-        transition: all 0.2s ease !important;
-    }
-    .fc-event:hover {
-        transform: translateY(-1px) !important;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04) !important;
-        filter: brightness(0.97);
-    }
+    .fc-event { cursor: pointer; }
     #external-events .external-event:hover { background-color: #eef2ff !important; }
     .holiday-bg { background-color: #fff1f2 !important; }
     .weekend-bg { background-color: #f8fafc !important; }
@@ -373,7 +368,7 @@
         $('#sbuEmployeeName').text($(btn).data('emp-name'));
         $('#inputRateLembur').val($(btn).data('val-lembur'));
         $('#inputRateMakan').val($(btn).data('val-makan'));
-        let formUrl = "{{ route('kabid.packages.overtimes.update_rates', ['package' => $package->id, 'overtime' => $overtime->id, 'detail' => ':detail']) }}";
+        let formUrl = "{{ route('packages.overtimes.update_rates', ['package' => $package->id, 'overtime' => $overtime->id, 'detail' => ':detail']) }}";
         $('#formEditSbu').attr('action', formUrl.replace(':detail', detailId));
         $('#sbuModal').modal('show');
         if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -392,7 +387,7 @@
             if($detail->use_uang_makan) $title .= ' 🍽️';
             $eventsData[] = [
                 'id' => $emp->id . '_' . $d, 'title' => $title, 'start' => $dateStr, 'allDay' => true,
-                'backgroundColor' => '#fef3c7', 'borderColor' => '#fcd34d', 'textColor' => '#78350f',
+                'backgroundColor' => '#f59e0b', 'borderColor' => '#d97706', 'textColor' => '#fff',
                 'extendedProps' => ['employee_id' => $emp->id, 'employee_name' => $emp->nama, 'hours' => $hours, 'use_uang_makan' => $detail->use_uang_makan ? true : false, 'day' => $d],
             ];
         }
@@ -400,17 +395,17 @@
 @endphp
 
 <script>
-    const UPDATE_URL = "{{ route('kabid.packages.overtimes.updateAjax', [$package, $overtime]) }}";
-    const AUTOFILL_URL = "{{ route('kabid.packages.overtimes.autoFill', [$package, $overtime]) }}";
-    const RESET_URL = "{{ route('kabid.packages.overtimes.reset', [$package, $overtime]) }}";
+    const UPDATE_URL = "{{ route('packages.overtimes.updateAjax', [$package, $overtime]) }}";
+    const AUTOFILL_URL = "{{ route('packages.overtimes.autoFill', [$package, $overtime]) }}";
+    const RESET_URL = "{{ route('packages.overtimes.reset', [$package, $overtime]) }}";
     const CSRF_TOKEN = "{{ csrf_token() }}";
     const INITIAL_EVENTS = @json($eventsData);
     const CURRENT_MONTH = "{{ $firstDayOfMonth }}";
     const IS_LOCKED = {{ $overtime->is_locked ? 'true' : 'false' }};
     let holidaysDataFull = @json($holidaysDataFull);
     let holidaysData = holidaysDataFull.map(h => h.date);
-    const PREV_MONTH_URL = "{{ $month > 1 ? route('kabid.packages.overtimes.show', [$package, $month - 1]) : '' }}";
-    const NEXT_MONTH_URL = "{{ $month < 12 ? route('kabid.packages.overtimes.show', [$package, $month + 1]) : '' }}";
+    const PREV_MONTH_URL = "{{ $month > 1 ? route('packages.overtimes.show', [$package, $month - 1]) : '' }}";
+    const NEXT_MONTH_URL = "{{ $month < 12 ? route('packages.overtimes.show', [$package, $month + 1]) : '' }}";
 
     $(document).ready(function () {
         const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
@@ -420,7 +415,7 @@
         new FullCalendar.Draggable(document.getElementById('external-events'), {
             itemSelector: '.external-event',
             eventData: function (eventEl) {
-                return { title: eventEl.dataset.employeeName + ' (2 Jam)', backgroundColor: '#fef3c7', borderColor: '#fcd34d', textColor: '#78350f',
+                return { title: eventEl.dataset.employeeName + ' (2 Jam)', backgroundColor: '#f59e0b', borderColor: '#d97706', textColor: '#fff',
                     extendedProps: { employee_id: eventEl.dataset.employeeId, employee_name: eventEl.dataset.employeeName, hours: 2, use_uang_makan: false } };
             }
         });
@@ -444,11 +439,7 @@
                 saveEventAjax(employeeId, dateStr, defaultHours, false, 'update').then(res => {
                     if (res.success) {
                         event.setProp('id', targetId); event.setExtendedProp('day', day); event.setExtendedProp('hours', defaultHours);
-                        event.setProp('title', employeeName + ' (' + defaultHours + ' Jam)');
-                        event.setProp('backgroundColor', '#fef3c7');
-                        event.setProp('borderColor', '#fcd34d');
-                        event.setProp('textColor', '#78350f');
-                        Toast.fire({ icon: 'success', title: 'Disimpan' }); refreshRekap();
+                        event.setProp('title', employeeName + ' (' + defaultHours + ' Jam)'); Toast.fire({ icon: 'success', title: 'Disimpan' }); refreshRekap();
                     } else { event.remove(); Swal.fire('Error', res.message || 'Gagal menyimpan', 'error'); }
                 });
             },

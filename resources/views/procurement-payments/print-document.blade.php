@@ -16,15 +16,14 @@
             background-color: #fff;
         }
 
-        /* Page Layout */
-        @page {
+        /* @page {
             size: A4 portrait;
             @if(isset($type) && $type == 'ringkasan-kontrak')
-            margin: 0.5cm 0.5cm 1cm 0.5cm; /* Top, Right, Bottom, Left */
+            margin: 0.5cm 0.5cm 1cm 0.5cm;
             @else
-            margin: 1cm; /* Top, Right, Bottom, Left */
+            margin: 1cm;
             @endif
-        }
+        } */
 
         /* Print Specific Styles */
         @media print {
@@ -61,9 +60,27 @@
             border-collapse: collapse;
         }
 
+        .btn-print {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
+
+    @if(!request('embed'))
+        <button class="btn-print no-print" onclick="window.print()">Cetak</button>
+    @endif
 
     @php
         $type = $type ?? 'all';

@@ -8,10 +8,10 @@
         $skpd = \App\Models\Skpd::first();
     @endphp
     <style>
-        @page {
+        /* @page {
             size: A4;
             margin: 11mm 15mm 11mm 15mm;
-        }
+        } */
         body {
             font-family: Arial, sans-serif;
             font-size: 11pt;
@@ -108,9 +108,32 @@
         .mt-4 { margin-top: 20px; }
         .text-justify { text-align: justify; }
 
+        .btn-print {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body>
+
+    @if(!request('embed'))
+        <button class="btn-print no-print" onclick="window.print()">Cetak</button>
+    @endif
 
     {{-- PAGE 1: SSKK --}}
     <div class="document-paper">

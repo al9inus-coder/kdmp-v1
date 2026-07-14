@@ -700,10 +700,10 @@
                                 <i data-lucide="download" class="w-4 h-4 text-slate-400"></i>
                             </a>
                             <button type="button"
-                                onclick="window.open('{{ route($rolePrefix . 'packages.travel-orders.print-html', [$package, $travelOrder, 'sppd']) }}', '_blank')"
+                                onclick="printDocument('{{ route($rolePrefix . 'packages.travel-orders.print-html', [$package, $travelOrder, 'sppd']) }}')"
                                 class="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-bold text-slate-700">
                                 <span class="inline-flex items-center gap-2"><i data-lucide="printer" class="w-4 h-4 text-emerald-500"></i> SPPD</span>
-                                <i data-lucide="external-link" class="w-4 h-4 text-slate-400"></i>
+                                <i data-lucide="printer" class="w-4 h-4 text-slate-400"></i>
                             </button>
                         @else
                             <button type="button" disabled
@@ -721,7 +721,7 @@
                         {{-- Laporan: terbuka setelah laporan digenerate/tersimpan --}}
                         @if ($travelOrder->report)
                             <button type="button"
-                                onclick="window.open('{{ route($rolePrefix . 'packages.travel-orders.print-laporan', [$package, $travelOrder]) }}', 'cetak-laporan', 'width=900,height=700')"
+                                onclick="printDocument('{{ route($rolePrefix . 'packages.travel-orders.print-laporan', [$package, $travelOrder]) }}')"
                                 class="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-bold text-slate-700">
                                 <span class="inline-flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-indigo-500"></i> Laporan</span>
                                 <i data-lucide="printer" class="w-4 h-4 text-slate-400"></i>
@@ -737,13 +737,13 @@
                         {{-- Kwitansi & Pengeluaran Riil: terbuka setelah SPJ disetujui --}}
                         @if ($spjApproved)
                             <button type="button"
-                                onclick="window.open('{{ route($rolePrefix . 'packages.travel-orders.print-kuitansi', [$package, $travelOrder]) }}', 'cetak-kwitansi', 'width=900,height=700')"
+                                onclick="printDocument('{{ route($rolePrefix . 'packages.travel-orders.print-kuitansi', [$package, $travelOrder]) }}')"
                                 class="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-bold text-slate-700">
                                 <span class="inline-flex items-center gap-2"><i data-lucide="receipt" class="w-4 h-4 text-rose-500"></i> Kwitansi</span>
                                 <i data-lucide="printer" class="w-4 h-4 text-slate-400"></i>
                             </button>
                             <button type="button"
-                                onclick="window.open('{{ route($rolePrefix . 'packages.travel-orders.print-pengeluaran-riil', [$package, $travelOrder]) }}', 'cetak-pengeluaran-riil', 'width=900,height=700')"
+                                onclick="printDocument('{{ route($rolePrefix . 'packages.travel-orders.print-pengeluaran-riil', [$package, $travelOrder]) }}')"
                                 class="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-bold text-slate-700">
                                 <span class="inline-flex items-center gap-2"><i data-lucide="receipt-text" class="w-4 h-4 text-violet-500"></i> Pengeluaran Riil</span>
                                 <i data-lucide="printer" class="w-4 h-4 text-slate-400"></i>
@@ -918,4 +918,20 @@
             </aside>
         </div>
     </div>
+
+    <!-- Iframe tersembunyi untuk mencetak secara background -->
+    <iframe id="print_iframe" style="display: none;"></iframe>
+
+    <script>
+        function printDocument(url) {
+            let iframe = document.getElementById('print_iframe');
+            if (!iframe) {
+                iframe = document.createElement('iframe');
+                iframe.id = 'print_iframe';
+                iframe.style.display = 'none';
+                document.body.appendChild(iframe);
+            }
+            iframe.src = url;
+        }
+    </script>
 @endcomponent

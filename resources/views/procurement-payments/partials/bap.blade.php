@@ -93,7 +93,13 @@
             <td></td>
             <td style="vertical-align: top;">Jabatan</td>
             <td style="vertical-align: top;">:</td>
-            <td style="vertical-align: top;">{{ strtoupper($process->jabatan_pic ?? 'Pimpinan') }} pada {{ $process->nama_penyedia }}</td>
+            <td style="vertical-align: top;">
+                @if(strtolower(trim($process->jabatan_pic)) === 'penyedia')
+                    Penyedia
+                @else
+                    {{ strtoupper($process->jabatan_pic ?? 'Pimpinan') }} pada {{ $process->nama_penyedia }}
+                @endif
+            </td>
         </tr>
         <tr>
             <td></td>
@@ -252,10 +258,16 @@
         <tr>
             <td style="width: 50%; vertical-align: top;">
                 <strong>PIHAK KEDUA</strong><br>
-                {{ $process->nama_penyedia }}<br>
+                @if(strtolower(trim($process->jabatan_pic)) !== 'penyedia')
+                    {{ $process->nama_penyedia }}<br>
+                @else
+                    PENYEDIA<br>
+                @endif
                 <br><br><br><br>
                 <strong><u>{{ $process->nama_pic }}</u></strong><br>
-                {{ $process->jabatan_pic ?? 'Pimpinan' }}
+                @if(strtolower(trim($process->jabatan_pic)) !== 'penyedia')
+                    {{ $process->jabatan_pic ?? 'Pimpinan' }}
+                @endif
             </td>
             <td style="width: 50%; vertical-align: top;">
                 <strong>PIHAK PERTAMA</strong><br>

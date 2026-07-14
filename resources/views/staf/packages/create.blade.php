@@ -1,5 +1,5 @@
 @component('layouts.kdmp')
-@section('title', 'Tambah Paket Pengadaan (Staf)')
+@section('title', 'Tambah Paket Pengadaan')
 
 <div class="space-y-6">
 

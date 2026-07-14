@@ -1,5 +1,5 @@
 @component('layouts.kdmp')
-@section('title', 'Dashboard Staf - KDMP')
+@section('title', 'Dashboard - KDMP')
 
 @php
     // Kartu statistik berorientasi tindakan staf (klik untuk memfilter).

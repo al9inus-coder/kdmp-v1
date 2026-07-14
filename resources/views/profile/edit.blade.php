@@ -19,8 +19,8 @@
         {{-- Kartu ringkas akun --}}
         <x-ui.card variant="flat" padding="lg" class="lg:col-span-1 h-fit">
             <div class="flex flex-col items-center text-center">
-                <img class="w-24 h-24 rounded-full border border-slate-200 object-cover shadow-sm"
-                     src="https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&color=2563EB&background=DBEAFE&size=128" alt="Foto Profil">
+                <img class="w-24 h-24 rounded-full border border-slate-200 object-cover shadow-sm bg-slate-50"
+                     src="{{ $user->avatar ? asset('storage/' . $user->avatar) : asset('storage/avatars/avatar.png') }}" alt="Foto Profil">
                 <h2 class="mt-4 text-lg font-bold text-slate-900">{{ $user->name }}</h2>
                 <p class="text-sm text-slate-500">{{ $user->email }}</p>
 
@@ -57,9 +57,17 @@
                     </div>
                 </div>
 
-                <form method="POST" action="{{ route('profile.update') }}" class="space-y-4">
+                <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="space-y-4">
                     @csrf
                     @method('PATCH')
+
+                    <div>
+                        <label for="avatar" class="block text-xs font-semibold text-slate-600 mb-1.5">Foto Profil</label>
+                        <input id="avatar" name="avatar" type="file" accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 border border-slate-200 rounded-lg p-1.5 focus:border-indigo-500 focus:ring-indigo-500 @error('avatar') border-rose-500 @enderror" />
+                        @error('avatar')
+                            <p class="text-[11px] text-rose-600 font-semibold mt-1.5">{{ $message }}</p>
+                        @enderror
+                    </div>
 
                     <div>
                         <label for="name" class="block text-xs font-semibold text-slate-600 mb-1.5">Nama Lengkap</label>

@@ -80,6 +80,19 @@ return [
             ],
         ],
     ],
+    [
+        'title'  => 'LAPORAN',
+        'type'   => 'group',
+        'roles'  => ['Staff'],
+        'children' => [
+            [
+                'title' => 'Arsip Dokumen',
+                'route' => 'staf.arsip.index',
+                'icon'  => 'folder-open',
+                'roles' => ['Staff'],
+            ],
+        ],
+    ],
 
     // ─── KABID MENU ──────────────────────────────────────────────────────────
     [

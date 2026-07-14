@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <title>Surat Permohonan Pengadaan</title>
 <style>
-@page {
+/* @page {
     size: A4 portrait;
     margin: 10mm 10mm;
-}
+} */
 
 body {
     background: #f4f6f9;

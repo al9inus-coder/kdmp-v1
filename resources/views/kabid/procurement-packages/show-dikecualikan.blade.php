@@ -312,6 +312,6 @@
 </div>
 
 <script>
-    function printKwitansi(url) { document.getElementById('print_iframe').src = url; }
+    function printKwitansi(url) { document.getElementById('print_iframe').src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 't=' + new Date().getTime(); }
 </script>
 @endcomponent

@@ -63,10 +63,16 @@
                     </td>
                     <td style="vertical-align: top; padding-top: 20px;">
                         Penyedia<br>
-                        <strong>{{ strtoupper($process->nama_penyedia) }}</strong><br>
+                        @if(strtolower(trim($process->jabatan_pic)) !== 'penyedia')
+                            <strong>{{ strtoupper($process->nama_penyedia) }}</strong><br>
+                        @else
+                            <br>
+                        @endif
                         <br><br><br><br><br>
                         <u style="font-weight: bold;">{{ strtoupper($process->nama_pic) }}</u><br>
-                        {{ $process->jabatan_pic ?? 'Pemilik Toko' }}
+                        @if(strtolower(trim($process->jabatan_pic)) !== 'penyedia')
+                            {{ $process->jabatan_pic ?? 'Pemilik Toko' }}
+                        @endif
                     </td>
                 </tr>
                 <tr>

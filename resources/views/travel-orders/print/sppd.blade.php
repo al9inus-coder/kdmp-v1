@@ -48,10 +48,10 @@
                 background: initial;
                 page-break-after: always;
             }
-            @page {
+            /* @page {
                 size: A4;
                 margin: 8mm;
-            }
+            } */
         }
     </style>
 </head>
