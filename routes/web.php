@@ -203,7 +203,7 @@ Route::middleware('auth')->group(function () {
         Route::get('arsip', [\App\Http\Controllers\ArsipController::class, 'index'])->name('arsip.index');
     });
     // Kabid Packages Module
-    Route::middleware(['role:Kabid'])->prefix('kabid')->name('kabid.')->group(function () use ($sharedProcurementRoutes) {
+    Route::middleware(['role:Kabid|Admin|Super Admin'])->prefix('kabid')->name('kabid.')->group(function () use ($sharedProcurementRoutes) {
         $sharedProcurementRoutes();
         Route::get('packages', [\App\Http\Controllers\Kabid\PackageController::class, 'index'])->name('packages.index');
         Route::get('packages/{package}', [\App\Http\Controllers\Kabid\PackageController::class, 'show'])->name('packages.show');
