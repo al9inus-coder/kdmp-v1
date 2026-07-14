@@ -243,14 +243,14 @@
                 <tr>
                     <td style="border: none; padding: 0 5px 2px 0;">*)</td>
                     <td style="border: none; padding: 0 10px 2px 0;">Hari Bulan</td>
-                    <td rowspan="3" style="border: 1px solid #000; width: 25px; vertical-align: bottom;">
-                        <div style="height: 15px; border-bottom: 1px solid #000; background-color: #fff;"></div>
-                        <div class="bg-holiday" style="height: 15px;"></div>
-                    </td>
                 </tr>
                 <tr>
                     <td style="border: none; padding: 0 5px 2px 0;">**)</td>
                     <td style="border: none; padding: 0 10px 2px 0;">Hari Kerja</td>
+                    <td rowspan="2" style="border: 1px solid #000; width: 25px; vertical-align: bottom;">
+                        <div style="height: 15px; border-bottom: 1px solid #000; background-color: #fff;"></div>
+                        <div class="bg-holiday" style="height: 15px;"></div>
+                    </td>
                 </tr>
                 <tr>
                     <td style="border: none; padding: 0 5px 0 0;">***)</td>
