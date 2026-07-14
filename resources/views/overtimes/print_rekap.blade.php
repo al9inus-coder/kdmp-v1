@@ -52,6 +52,11 @@
         .bg-holiday {
             background-color: #e2e8f0 !important;
         }
+        .crossed-cell {
+            background-image: 
+                linear-gradient(to top right, transparent calc(50% - 0.5px), #000 calc(50% - 0.5px), #000 calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+                linear-gradient(to bottom right, transparent calc(50% - 0.5px), #000 calc(50% - 0.5px), #000 calc(50% + 0.5px), transparent calc(50% + 0.5px)) !important;
+        }
         @media print {
             * {
                 -webkit-print-color-adjust: exact !important;
@@ -205,16 +210,26 @@
                     @for($d = 1; $d <= $daysInMonth; $d++)
                         @php
                             $val = isset($detail->daily_hours[$d]) ? (int)$detail->daily_hours[$d] : 0;
-                            $display = ($val > 0) ? $val : 'X';
                         @endphp
-                        <td class="{{ $holidayColumns[$d] ? 'bg-holiday' : '' }}">{{ $display }}</td>
+                        @if($val > 0)
+                            <td class="{{ $holidayColumns[$d] ? 'bg-holiday' : '' }}">{{ $val }}</td>
+                        @else
+                            <td class="crossed-cell {{ $holidayColumns[$d] ? 'bg-holiday' : '' }}"></td>
+                        @endif
                     @endfor
                     
                     <td rowspan="2"><strong>{{ $totalJam }}</strong></td>
                 </tr>
                 <tr>
                     @for($d = 1; $d <= $daysInMonth; $d++)
-                        <td class="{{ $holidayColumns[$d] ? 'bg-holiday' : '' }}" style="height: 15px;"></td>
+                        @php
+                            $val = isset($detail->daily_hours[$d]) ? (int)$detail->daily_hours[$d] : 0;
+                        @endphp
+                        @if($val > 0)
+                            <td class="{{ $holidayColumns[$d] ? 'bg-holiday' : '' }}" style="height: 15px;"></td>
+                        @else
+                            <td class="crossed-cell {{ $holidayColumns[$d] ? 'bg-holiday' : '' }}" style="height: 15px;"></td>
+                        @endif
                     @endfor
                 </tr>
             @endforeach
