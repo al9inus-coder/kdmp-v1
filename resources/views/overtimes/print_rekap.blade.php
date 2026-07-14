@@ -53,9 +53,9 @@
             background-color: #e2e8f0 !important;
         }
         .crossed-cell {
-            background-image: 
-                linear-gradient(to top right, transparent calc(50% - 0.5px), #000 calc(50% - 0.5px), #000 calc(50% + 0.5px), transparent calc(50% + 0.5px)),
-                linear-gradient(to bottom right, transparent calc(50% - 0.5px), #000 calc(50% - 0.5px), #000 calc(50% + 0.5px), transparent calc(50% + 0.5px)) !important;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100%' height='100%'><line x1='0' y1='0' x2='100%' y2='100%' stroke='black' stroke-width='0.5'/><line x1='0' y1='100%' x2='100%' y2='0' stroke='black' stroke-width='0.5'/></svg>") !important;
+            background-size: 100% 100% !important;
+            background-repeat: no-repeat !important;
         }
         @media print {
             * {
