@@ -50,10 +50,7 @@
             display: table;
         }
         .bg-holiday {
-            background-color: #f2f2f2 !important;
-            /* Pola arsiran bintik yang lebih renggang dan ringan */
-            background-image: url("data:image/svg+xml,%3Csvg width='6' height='6' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1.5' cy='1.5' r='1' fill='%23999' /%3E%3C/svg%3E") !important;
-            background-repeat: repeat !important;
+            background-color: #e2e8f0 !important;
         }
         @media print {
             * {
@@ -65,7 +62,7 @@
         }
     </style>
 </head>
-<body onload="window.print()" onafterprint="window.close()">
+<body>
 
     @php
         $months = [
@@ -257,5 +254,15 @@
         </div>
     </div>
 
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                window.print();
+            }, 300);
+        });
+        window.onafterprint = () => {
+            window.close();
+        };
+    </script>
 </body>
 </html>
