@@ -54,8 +54,8 @@
         </tr>
         @endif
         <tr>
-            <td style="border: none; text-align: left; vertical-align: top;">Program</td>
-            <td style="border: none; text-align: left; vertical-align: top;">:</td>
+            <td style="border: none; text-align: left; width: 120px; vertical-align: top;">Program</td>
+            <td style="border: none; text-align: left; width: 10px; vertical-align: top;">:</td>
             <td style="border: none; text-align: left; vertical-align: top;">{{ $package->program->kode ?? '...' }} &nbsp;&nbsp;&nbsp;&nbsp; {{ $package->program->nama ?? '...' }}</td>
         </tr>
         <tr>

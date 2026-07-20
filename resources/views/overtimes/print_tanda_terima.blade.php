@@ -113,14 +113,14 @@
     <table class="info-table" style="width: 100%; margin-bottom: 15px;">
         @if($overtime->jenis_lembur !== 'kebersihan')
         <tr>
-            <td style="width: 150px; vertical-align: top;">DASAR SURAT</td>
+            <td style="width: 150px; vertical-align: top;">DASAR</td>
             <td style="width: 10px; vertical-align: top;">:</td>
             <td style="vertical-align: top;">{!! nl2br(e($overtime->dasar_pelaksanaan ?? '...................................................')) !!}</td>
         </tr>
         @endif
         <tr>
-            <td style="vertical-align: top;">PROGRAM</td>
-            <td style="vertical-align: top;">:</td>
+            <td style="width: 150px; vertical-align: top;">PROGRAM</td>
+            <td style="width: 10px; vertical-align: top;">:</td>
             <td style="vertical-align: top;">{{ strtoupper($package->program->nama ?? '') }}</td>
         </tr>
         <tr>
