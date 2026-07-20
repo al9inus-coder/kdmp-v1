@@ -106,7 +106,7 @@
     @endphp
 
     <div class="header">
-        <h4>DAFTAR TANDA TERIMA UANG LEMBUR PETUGAS PENGELOLAAN SAMPAH<br>
+        <h4>DAFTAR TANDA TERIMA UANG LEMBUR {{ strtoupper($overtime->jenis_lembur === 'kebersihan' ? 'PETUGAS PENGELOLAAN SAMPAH' : 'PEGAWAI') }}<br>
         {{ strtoupper($skpd->nama ?? 'DINAS PERUMAHAN RAKYAT DAN KAWASAN PERMUKIMAN, PERTANAHAN DAN LINGKUNGAN HIDUP KABUPATEN BENGKAYANG') }}</h4>
     </div>
 
