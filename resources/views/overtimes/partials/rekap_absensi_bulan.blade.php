@@ -193,7 +193,7 @@
 
         <div class="signature-box">
             <p>Bengkayang, .............................. {{ $overtime->tahun }}<br><br>
-            Pejabat Pelaksana Teknis Kegiatan (PPTK)</p>
+            Kepala Bidang Pengelolaan Persampahan dan Ruang Terbuka Hijau</p>
             <br><br><br>
             <p><strong><u>{{ $skpd->nama_pptk ?? '..........................' }}</u></strong><br>
             {{ $skpd->pangkat_pptk ?? '..........................' }}<br>
