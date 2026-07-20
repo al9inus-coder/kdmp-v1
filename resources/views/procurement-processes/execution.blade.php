@@ -8,6 +8,11 @@
     $akhir = $process->tanggal_barang_diterima?->copy()->startOfDay();
     $hariIni = now()->startOfDay();
 
+    $addendums = $procurementPackage->addendums->sortBy('created_at')->values();
+    if ($addendums->isNotEmpty()) {
+        $akhir = \Illuminate\Support\Carbon::parse($addendums->last()->tanggal_akhir_baru)->startOfDay();
+    }
+
     $totalHari = ($mulai && $akhir) ? $mulai->diffInDays($akhir) + 1 : 1;
 
     $finished = in_array($procurementPackage->workflow_status, [
@@ -47,7 +52,6 @@
 
     $kodeProgram = $package->program?->kode ?? '2.11.04';
 
-    $addendums = $procurementPackage->addendums->sortBy('created_at')->values();
     $adendumDates = $addendums->map(fn($a) => \Illuminate\Support\Carbon::parse($a->tanggal_akhir_baru)->format('Y-m-d'))->all();
 
     // ===== Alur Pelaksanaan (timeline) =====
