@@ -109,8 +109,8 @@
                 class="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 shadow-sm">
                 <i data-lucide="arrow-left" class="w-4 h-4"></i>Kembali
             </a>
-            {{-- Staf membuat SPJ dari halaman daftar /staf/lembur, bukan dari sini. --}}
-            @if($routePrefix !== 'staf')
+            {{-- Staf membuat SPJ dari halaman daftar /staf/lembur, Kabid cuma kunci saja. --}}
+            @if($routePrefix === 'admin')
                 <button type="button" id="btnSpj"
                     class="inline-flex items-center gap-2 px-3 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm">
                     <i data-lucide="printer" class="w-4 h-4"></i>Buat SPJ
