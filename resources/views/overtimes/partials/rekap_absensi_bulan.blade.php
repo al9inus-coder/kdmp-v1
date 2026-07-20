@@ -44,6 +44,7 @@
     </div>
 
     <table style="width: 100%; border: none; margin-bottom: 20px; font-size: 11px;">
+        @if($overtime->jenis_lembur !== 'kebersihan')
         <tr>
             <td style="border: none; text-align: left; width: 120px; vertical-align: top;">Dasar</td>
             <td style="border: none; text-align: left; width: 10px; vertical-align: top;">:</td>
@@ -51,6 +52,7 @@
                 {!! nl2br(e($overtime->dasar_pelaksanaan ?? '...................................................')) !!}
             </td>
         </tr>
+        @endif
         <tr>
             <td style="border: none; text-align: left; vertical-align: top;">Program</td>
             <td style="border: none; text-align: left; vertical-align: top;">:</td>
