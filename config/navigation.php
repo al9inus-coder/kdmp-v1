@@ -81,6 +81,19 @@ return [
         ],
     ],
     [
+        'title'  => 'LEMBUR',
+        'type'   => 'group',
+        'roles'  => ['Staff'],
+        'children' => [
+            [
+                'title' => 'Input Lembur',
+                'route' => 'staf.lembur.index',
+                'icon'  => 'calendar-clock',
+                'roles' => ['Staff'],
+            ],
+        ],
+    ],
+    [
         'title'  => 'LAPORAN',
         'type'   => 'group',
         'roles'  => ['Staff'],
@@ -322,6 +335,21 @@ return [
                 'route' => 'kabid.arsip.index',
                 'icon'  => 'folder-open',
                 'roles' => ['Kabid'],
+            ],
+        ],
+    ],
+
+    // ─── ADMINISTRASI (Admin only) ────────────────────────────────────────────
+    [
+        'title'  => 'ADMINISTRASI',
+        'type'   => 'group',
+        'roles'  => ['Admin'],
+        'children' => [
+            [
+                'title' => 'Koreksi Data',
+                'route' => 'admin.data-corrections.index',
+                'icon'  => 'file-pen-line',
+                'roles' => ['Admin'],
             ],
         ],
     ],

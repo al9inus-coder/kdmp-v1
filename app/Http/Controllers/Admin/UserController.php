@@ -7,10 +7,12 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Requests\UserPasswordRequest;
 use App\Models\User;
+use App\Support\SessionRevoker;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Role;
 
@@ -134,7 +136,10 @@ class UserController extends Controller
     {
         $user->update([
             'password' => Hash::make($request->validated()['password']),
+            'remember_token' => Str::random(60),
         ]);
+
+        SessionRevoker::revoke($user, $user->is($request->user()) ? $request->session()->getId() : null);
 
         $this->recordAudit('user.password_reset', $user);
 
@@ -149,6 +154,10 @@ class UserController extends Controller
         }
 
         $user->update(['is_active' => ! $user->is_active]);
+
+        if (! $user->is_active) {
+            SessionRevoker::revoke($user);
+        }
 
         $this->recordAudit($user->is_active ? 'user.activated' : 'user.deactivated', $user);
 

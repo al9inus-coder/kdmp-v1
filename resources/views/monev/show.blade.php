@@ -30,14 +30,41 @@
         return $total;
     };
 
+    // Nilai kontrak dalam proses: paket penyedia yang sudah kontrak (Pelaksanaan)
+    // atau sedang proses Pembayaran — belum berstatus Selesai.
+    $packageKomitmen = function ($pkg) {
+        $pp = $pkg->procurementPackage;
+        if (!$pp || ($pkg->metode_pengadaan ?? '') === 'Dikecualikan') {
+            return 0;
+        }
+        if (!in_array($pp->workflow_status, [
+            \App\Models\ProcurementPackage::WORKFLOW_EXECUTION,
+            \App\Models\ProcurementPackage::WORKFLOW_PAYMENT_PROCESS,
+        ], true)) {
+            return 0;
+        }
+        return (float) ($pp->procurementProcess->nilai_kontrak ?? 0);
+    };
+
     $totalPagu = 0;
     $totalRealisasi = 0;
+    $totalKontrak = 0;
+    $totalPembayaran = 0;
     $paketSwakelola = 0;
     $paketPenyedia = 0;
 
     foreach ($subActivity->packages as $pkg) {
         $totalPagu += (float) $pkg->pagu;
         $totalRealisasi += $packageRealisasi($pkg);
+
+        $komitmen = $packageKomitmen($pkg);
+        if ($komitmen > 0) {
+            if ($pkg->procurementPackage->workflow_status === \App\Models\ProcurementPackage::WORKFLOW_PAYMENT_PROCESS) {
+                $totalPembayaran += $komitmen;
+            } else {
+                $totalKontrak += $komitmen;
+            }
+        }
 
         $jenis = strtolower(($pkg->jenis_pengadaan ?? '') . ' ' . ($pkg->metode_pengadaan ?? ''));
         if (str_contains($jenis, 'swakelola')) {
@@ -115,7 +142,7 @@
         </div>
     </section>
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
         <x-ui.card padding="md">
             <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Pagu</p>
             <p class="text-2xl font-extrabold text-slate-900 mt-2">{{ $rupiah($totalPagu) }}</p>
@@ -123,6 +150,11 @@
         <x-ui.card padding="md">
             <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Realisasi</p>
             <p class="text-2xl font-extrabold text-emerald-600 mt-2">{{ $rupiah($totalRealisasi) }}</p>
+        </x-ui.card>
+        <x-ui.card padding="md">
+            <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Dalam Proses</p>
+            <p class="text-2xl font-extrabold text-amber-600 mt-2">{{ $rupiah($totalKontrak + $totalPembayaran) }}</p>
+            <p class="text-xs font-semibold text-slate-500 mt-2">Kontrak: {{ $rupiah($totalKontrak) }} &bull; Proses Pembayaran: {{ $rupiah($totalPembayaran) }}</p>
         </x-ui.card>
         <x-ui.card padding="md">
             <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Sisa Dana</p>
@@ -188,6 +220,7 @@
                                 @foreach($packages as $pkg)
                                     @php
                                         $pkgRealisasi = $packageRealisasi($pkg);
+                                        $pkgKomitmen = $packageKomitmen($pkg);
                                         $packageUrl = $pkg->procurementPackage
                                             ? route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'procurement-packages.show', $pkg)
                                             : route((auth()->user()->hasRole('Kabid') ? 'kabid.' : 'admin.') . 'packages.show', $pkg);
@@ -205,6 +238,13 @@
                                                     <span class="inline-flex items-center ml-2 px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
                                                         {{ $pkg->jenis_pengadaan ?? '-' }}
                                                     </span>
+                                                    @if($pkgKomitmen > 0)
+                                                        <span class="inline-flex items-center gap-1 ml-2 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200"
+                                                            title="Sudah terikat kontrak tetapi pengadaan belum berstatus Selesai — nilai kontrak belum dihitung sebagai realisasi.">
+                                                            <i data-lucide="hourglass" class="w-3 h-3"></i>
+                                                            {{ $pkg->procurementPackage->workflow_status === \App\Models\ProcurementPackage::WORKFLOW_PAYMENT_PROCESS ? 'Proses Pembayaran' : 'Kontrak' }} ({{ $rupiah($pkgKomitmen) }})
+                                                        </span>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </td>
@@ -262,6 +302,10 @@
                     <p class="flex items-start gap-2">
                         <i data-lucide="clock-3" class="w-4 h-4 text-amber-500 mt-0.5 shrink-0"></i>
                         Lembur yang sudah dikunci.
+                    </p>
+                    <p class="flex items-start gap-2 pt-2 border-t border-slate-100">
+                        <i data-lucide="hourglass" class="w-4 h-4 text-amber-500 mt-0.5 shrink-0"></i>
+                        <span>Paket berlabel <span class="font-bold text-amber-600">Kontrak</span> / <span class="font-bold text-amber-600">Proses Pembayaran</span> sudah terikat nilai kontrak dan akan masuk realisasi setelah pengadaan selesai.</span>
                     </p>
                 </div>
             </x-ui.card>

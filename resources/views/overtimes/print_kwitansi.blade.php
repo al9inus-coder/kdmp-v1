@@ -66,10 +66,23 @@
         }
         @media print {
             body { margin: 0; }
+            .no-print { display: none !important; }
         }
     </style>
 </head>
-<body onload="window.print()" onafterprint="window.close()">
+<body>
+
+    {{-- Tombol Aksi Pratinjau (Sembunyi saat cetak) --}}
+    <div class="no-print" style="margin-bottom: 20px; padding: 10px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; display: flex; align-items: center; justify-content: space-between;">
+        <span style="font-family: sans-serif; font-size: 12px; color: #334155; font-weight: bold; display: inline-flex; align-items: center; gap: 6px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #0284c7;"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+            Pratinjau Kwitansi Uang Lembur
+        </span>
+        <button type="button" onclick="window.print()" style="padding: 8px 18px; background: #10b981; color: #ffffff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px; font-family: sans-serif; display: inline-flex; align-items: center; gap: 6px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect width="12" height="8" x="6" y="14" rx="1"/></svg>
+            Cetak Dokumen
+        </button>
+    </div>
     @php
         $months = [
             1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 
@@ -78,45 +91,19 @@
             10 => 'Oktober', 11 => 'November', 12 => 'Desember'
         ];
         $monthName = $months[$overtime->bulan];
-        $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $overtime->bulan, $overtime->tahun);
-        $totalKeseluruhan = 0;
-        $totalPph = 0;
-        
-        foreach($overtime->details as $detail) {
-            $emp = $detail->employee;
-            $golongan = $detail->golongan_fix ?? $emp->golongan ?? '-';
-            
-            $totalJam = 0;
-            for($d = 1; $d <= $daysInMonth; $d++) {
-                $val = isset($detail->daily_hours[$d]) ? (int)$detail->daily_hours[$d] : 0;
-                if($val >= 2) {
-                    $totalJam += $val;
-                }
-            }
-            if($totalJam == 0) continue;
-            
-            // Pemetaan golongan -> tarif SBU terpusat & toleran format (SbuLembur::pickRate).
-            if (!is_null($detail->rate_lembur_fix)) {
-                $valLembur = $detail->rate_lembur_fix;
-            } else {
-                $valLembur = \App\Models\SbuLembur::pickRate($sbuRates, 'Uang Lembur', $golongan)?->besaran ?? 0;
-            }
-            $uangLembur = $totalJam * $valLembur;
-            
-            // PPh calculation
-            $pphRate = 0;
-            if (str_contains(strtoupper($golongan), 'III')) {
-                $pphRate = 0.05;
-            } elseif (str_contains(strtoupper($golongan), 'IV')) {
-                $pphRate = 0.15;
-            }
-            $pph = $uangLembur * $pphRate;
-            $diterima = $uangLembur - $pph;
 
-            $totalPph += $pph;
-            // Total Keseluruhan (Bruto/Sebelum dipotong pajak)
-            $totalKeseluruhan += $uangLembur;
+        // Perhitungan terpusat di Overtime::rekap() — kwitansi memakai
+        // total upah bruto & total PPh. Mode SPJ periode (multi-bulan)
+        // mengirim total gabungan + label periode dari controller.
+        if (!isset($spjTotalUpah)) {
+            $rekapData = $overtime->rekap($sbuRates);
+            $totalKeseluruhan = $rekapData['totalUpah'];
+            $totalPph = $rekapData['totalPajak'];
+        } else {
+            $totalKeseluruhan = $spjTotalUpah;
+            $totalPph = $spjTotalPajak;
         }
+        $labelPeriode = $periodeLabel ?? ('Bulan ' . $monthName . ' Tahun ' . $overtime->tahun);
 
         $tahun = $overtime->tahun;
         $namaPpk = $skpd->nama_ppk ?? '..................................';
@@ -172,7 +159,7 @@
                     <tr>
                         <td style="vertical-align: top;">Guna Membayar</td>
                         <td style="vertical-align: top;">:</td>
-                        <td style="vertical-align: top;">Belanja Uang Lembur pada Kegiatan {{ $package->activity->nama ?? '..............................' }} Subkegiatan {{ $package->subActivity->nama ?? '..............................' }} Bulan {{ $monthName }} Tahun {{ $tahun }}</td>
+                        <td style="vertical-align: top;">Belanja Uang Lembur pada Kegiatan {{ $package->activity->nama ?? '..............................' }} Subkegiatan {{ $package->subActivity->nama ?? '..............................' }} {{ $labelPeriode }}</td>
                     </tr>
                 </table>
 

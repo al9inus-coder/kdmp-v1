@@ -21,6 +21,18 @@ class ProfileTest extends TestCase
         $response->assertOk();
     }
 
+    public function test_inactive_user_is_logged_out_on_the_next_request(): void
+    {
+        $user = User::factory()->create(['is_active' => false]);
+
+        $response = $this
+            ->actingAs($user)
+            ->get('/profile');
+
+        $response->assertRedirect('/login');
+        $this->assertGuest();
+    }
+
     public function test_profile_information_can_be_updated(): void
     {
         $user = User::factory()->create();

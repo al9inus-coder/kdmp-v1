@@ -446,9 +446,9 @@
                                     stepTimer: null,
                                     typingKey: '',
                                     showPromptModal: false,
-                                    promptText: {!! json_encode($laporanPromptActive) !!},
-                                    promptDefault: {!! json_encode($laporanPromptDefault) !!},
-                                    f: {!! json_encode($laporanFields) !!},
+                                    promptText: {{ \Illuminate\Support\Js::from($laporanPromptActive) }},
+                                    promptDefault: {{ \Illuminate\Support\Js::from($laporanPromptDefault) }},
+                                    f: {{ \Illuminate\Support\Js::from($laporanFields) }},
 
                                     get progress() {
                                         return this.success ? 100 : Math.min(90, (this.stepIdx + 1) * 22);

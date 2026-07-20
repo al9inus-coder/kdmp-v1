@@ -19,10 +19,12 @@ class ArsipController extends Controller
     public function index(Request $request)
     {
         $tree = [];
+        $isStaff = auth()->check() && auth()->user()->hasRole('Staff');
 
         // 1. KATEGORI SPD (Dari TravelOrder)
         $orders = TravelOrder::query()
             ->whereNotNull('created_by')
+            ->when($isStaff, fn ($q) => $q->where('created_by', auth()->id()))
             ->where('status', TravelOrder::STATUS_APPROVED)
             ->with(['package.fiscalYear', 'personnels.employee', 'report'])
             ->orderByDesc('tanggal_berangkat')
@@ -96,8 +98,6 @@ class ArsipController extends Controller
             'package.fiscalYear', 'procurementRequest', 'procurementProcess',
             'payment', 'technicalSpecification', 'priceReferences',
         ];
-
-        $isStaff = auth()->check() && auth()->user()->hasRole('Staff');
 
         if (!$isStaff) {
             // 2. KATEGORI PBJ -> Penyedia

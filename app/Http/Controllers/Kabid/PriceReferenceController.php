@@ -30,10 +30,37 @@ class PriceReferenceController extends Controller
 
         $url = $validated['url'];
 
+        $parts = parse_url($url);
+        if (
+            ($parts['scheme'] ?? null) !== 'https'
+            || isset($parts['user'], $parts['pass'])
+            || (isset($parts['port']) && (int) $parts['port'] !== 443)
+        ) {
+            return response()->json(['message' => 'Link katalog harus menggunakan HTTPS standar.'], 422);
+        }
+
         // Batasi host untuk mencegah SSRF — hanya katalog resmi.
         $host = strtolower((string) parse_url($url, PHP_URL_HOST));
         if ($host !== 'katalog.inaproc.id') {
             return response()->json(['message' => 'Link harus dari katalog.inaproc.id.'], 422);
+        }
+
+        $resolvedIps = array_merge(
+            gethostbynamel($host) ?: [],
+            array_values(array_filter(array_map(
+                fn ($record) => $record['ipv6'] ?? null,
+                dns_get_record($host, DNS_AAAA) ?: []
+            )))
+        );
+
+        if (empty($resolvedIps) || collect($resolvedIps)->contains(
+            fn (string $ip) => filter_var(
+                $ip,
+                FILTER_VALIDATE_IP,
+                FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+            ) === false
+        )) {
+            return response()->json(['message' => 'Host katalog tidak dapat divalidasi dengan aman.'], 422);
         }
 
         try {
@@ -41,7 +68,10 @@ class PriceReferenceController extends Controller
                 'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
                 'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                 'Accept-Language' => 'id,en;q=0.9',
-            ])->timeout(15)->retry(1, 500)->get($url);
+            ])->withOptions([
+                'allow_redirects' => false,
+                'verify' => true,
+            ])->connectTimeout(5)->timeout(15)->retry(1, 500)->get($url);
         } catch (\Throwable $e) {
             return response()->json(['message' => 'Gagal mengakses katalog. Silakan coba lagi.'], 502);
         }

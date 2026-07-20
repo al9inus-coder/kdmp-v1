@@ -12,7 +12,7 @@ class PackagePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasAnyRole(['Kabid', 'Staff']);
+        return $user->hasAnyRole(['Admin', 'Super Admin', 'Kabid', 'Staff']);
     }
 
     /**
@@ -20,7 +20,7 @@ class PackagePolicy
      */
     public function view(User $user, Package $package): bool
     {
-        return $user->hasAnyRole(['Kabid', 'Staff']);
+        return $user->hasAnyRole(['Admin', 'Super Admin', 'Kabid', 'Staff']);
     }
 
     /**
@@ -28,7 +28,7 @@ class PackagePolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole('Staff');
+        return $user->hasAnyRole(['Admin', 'Super Admin', 'Staff']);
     }
 
     /**
@@ -36,7 +36,8 @@ class PackagePolicy
      */
     public function update(User $user, Package $package): bool
     {
-        return $user->hasRole('Staff');
+        return $user->hasAnyRole(['Admin', 'Super Admin'])
+            || ($user->hasRole('Staff') && in_array($package->status, ['draft', 'needs_review'], true));
     }
 
     /**
@@ -44,6 +45,10 @@ class PackagePolicy
      */
     public function delete(User $user, Package $package): bool
     {
+        if ($user->hasAnyRole(['Admin', 'Super Admin'])) {
+            return true;
+        }
+
         if ($user->hasRole('Staff')) {
             return in_array($package->status, ['draft', 'needs_review']);
         }
@@ -64,7 +69,7 @@ class PackagePolicy
      */
     public function approve(User $user, Package $package): bool
     {
-        return $user->hasRole('Kabid');
+        return $user->hasAnyRole(['Kabid', 'Admin', 'Super Admin']);
     }
 
     /**
@@ -72,6 +77,6 @@ class PackagePolicy
      */
     public function returnToDraft(User $user, Package $package): bool
     {
-        return $user->hasRole('Kabid');
+        return $user->hasAnyRole(['Kabid', 'Admin', 'Super Admin']);
     }
 }

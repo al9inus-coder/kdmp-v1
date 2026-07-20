@@ -61,6 +61,8 @@ class PackageController extends Controller
 
     public function show(\App\Models\Package $package)
     {
+        Gate::authorize('view', $package);
+
         $package->load([
             'fiscalYear',
             'program',
@@ -76,6 +78,8 @@ class PackageController extends Controller
 
     public function edit(\App\Models\Package $package)
     {
+        Gate::authorize('update', $package);
+
         $fiscalYears = \App\Models\FiscalYear::orderBy('tahun', 'desc')->get();
         $subActivities = \App\Models\SubActivity::orderBy('kode', 'asc')->get();
         $accounts = \App\Models\Account::orderBy('kode', 'asc')->get();

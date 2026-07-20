@@ -25,6 +25,7 @@ class TravelOrderController extends BaseTravelOrderController
     public function show(Package $package, TravelOrder $travelOrder): View
     {
         Gate::authorize('view', $package);
+        Gate::authorize('view', $travelOrder);
 
         abort_if((int) $travelOrder->package_id !== (int) $package->id, 404);
 
@@ -50,6 +51,7 @@ class TravelOrderController extends BaseTravelOrderController
     public function submit(Package $package, TravelOrder $travelOrder)
     {
         Gate::authorize('view', $package);
+        Gate::authorize('view', $travelOrder);
 
         abort_if((int) $travelOrder->package_id !== (int) $package->id, 404);
 
@@ -77,6 +79,7 @@ class TravelOrderController extends BaseTravelOrderController
     public function withdraw(Package $package, TravelOrder $travelOrder)
     {
         Gate::authorize('view', $package);
+        Gate::authorize('view', $travelOrder);
 
         abort_if((int) $travelOrder->package_id !== (int) $package->id, 404);
 
@@ -175,6 +178,7 @@ class TravelOrderController extends BaseTravelOrderController
     private function spjReviewTransition(Package $package, TravelOrder $travelOrder, string $status, string $message, ?string $catatan = null)
     {
         Gate::authorize('view', $package);
+        Gate::authorize('view', $travelOrder);
 
         abort_if((int) $travelOrder->package_id !== (int) $package->id, 404);
 
@@ -197,6 +201,7 @@ class TravelOrderController extends BaseTravelOrderController
     private function reviewTransition(Package $package, TravelOrder $travelOrder, string $status, string $message, ?string $catatan = null)
     {
         Gate::authorize('view', $package);
+        Gate::authorize('view', $travelOrder);
 
         abort_if((int) $travelOrder->package_id !== (int) $package->id, 404);
 

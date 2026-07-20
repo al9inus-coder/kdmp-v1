@@ -104,7 +104,13 @@ class ProcurementPackage extends Model
             return $this->externalRecords->sum('nilai_kontrak');
         }
 
-        // Jika metode E-Purchasing atau lainnya yang menggunakan procurementProcess
+        // Jika metode E-Purchasing atau lainnya yang menggunakan procurementProcess:
+        // nilai kontrak baru dihitung sebagai realisasi setelah pengadaan selesai,
+        // bukan saat baru kontrak atau masih proses pembayaran.
+        if ($this->workflow_status !== self::WORKFLOW_COMPLETED) {
+            return 0;
+        }
+
         return $this->procurementProcess ? $this->procurementProcess->nilai_kontrak : 0;
     }
 

@@ -50,4 +50,22 @@ class MonevController extends Controller
 
         return view('kabid.monev.show', compact('subActivity', 'sbuRates'));
     }
+
+    public function print(SubActivity $subActivity): View
+    {
+        $subActivity->load([
+            'activity.program',
+            'packages' => function ($query) {
+                $query->where('status', 'approved');
+            },
+            'packages.procurementPackage.procurementProcess',
+            'packages.procurementPackage.externalRecords',
+            'packages.travelOrders.personnels',
+            'packages.overtimes.details.employee',
+            'packages.account',
+            'packages.fiscalYear',
+        ]);
+
+        return view('monev.print', compact('subActivity'));
+    }
 }

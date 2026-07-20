@@ -6,11 +6,17 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use App\Models\SbuTransportRate;
 use App\Models\Employee;
+use Illuminate\Support\Facades\Gate;
 
 class TravelOrderController extends Controller
 {
     public function updateBiaya(Request $request, \App\Models\Package $package, \App\Models\TravelOrder $travelOrder, \App\Models\TravelPersonnel $personnel)
     {
+        Gate::authorize('view', $package);
+        Gate::authorize('view', $travelOrder);
+        abort_if((int) $travelOrder->package_id !== (int) $package->getKey(), 404);
+        abort_unless($travelOrder->personnels()->whereKey($personnel->getKey())->exists(), 404);
+
         $validated = $request->validate([
             'uang_harian' => 'required|numeric|min:0',
             'biaya_penginapan' => 'required|numeric|min:0',

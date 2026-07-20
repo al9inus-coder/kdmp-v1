@@ -14,10 +14,15 @@ class EmployeeController extends Controller
         $query = \App\Models\Employee::query();
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where('nama', 'like', "%{$search}%")
+            $query->where(function ($q) use ($search) {
+                $q->where('nama', 'like', "%{$search}%")
                   ->orWhere('nip', 'like', "%{$search}%");
+            });
         }
-        $employees = $query->orderBy('nama')->paginate(15);
+        if ($request->filled('tipe')) {
+            $query->where('tipe', $request->tipe);
+        }
+        $employees = $query->orderBy('nama')->paginate(15)->withQueryString();
         return view('employees.index', compact('employees'));
     }
 
@@ -49,6 +54,7 @@ class EmployeeController extends Controller
                     'Eselon IV, Gol. III kebawah, P3K, Jafung, Non ASN'
                 ]),
             ],
+            'tipe' => ['required', \Illuminate\Validation\Rule::in(['dinas', 'kebersihan'])],
         ]);
 
         \App\Models\Employee::create($validated);
@@ -84,6 +90,7 @@ class EmployeeController extends Controller
                     'Eselon IV, Gol. III kebawah, P3K, Jafung, Non ASN'
                 ]),
             ],
+            'tipe' => ['required', \Illuminate\Validation\Rule::in(['dinas', 'kebersihan'])],
         ]);
 
         $employee->update($validated);

@@ -24,6 +24,11 @@
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama / NIP..."
                     class="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
             </div>
+            <select name="tipe" class="px-3 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                <option value="">Semua Tipe</option>
+                <option value="dinas" @selected(request('tipe') === 'dinas')>Pegawai Dinas</option>
+                <option value="kebersihan" @selected(request('tipe') === 'kebersihan')>Petugas Kebersihan</option>
+            </select>
             <div class="flex items-center gap-2">
                 <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-200">
                     <i data-lucide="search" class="w-4 h-4"></i> Cari
@@ -53,7 +58,12 @@
                     @forelse($employees as $emp)
                         <tr class="hover:bg-slate-50/80 transition-colors">
                             <td class="px-6 py-4">
-                                <p class="font-semibold text-slate-900 leading-snug">{{ $emp->nama }}</p>
+                                <p class="font-semibold text-slate-900 leading-snug">
+                                    {{ $emp->nama }}
+                                    @if($emp->tipe === 'kebersihan')
+                                        <span class="inline-flex items-center ml-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">Petugas Kebersihan</span>
+                                    @endif
+                                </p>
                                 <p class="text-xs text-slate-500 flex items-center gap-1"><i data-lucide="id-card" class="w-3 h-3"></i> {{ $emp->nip ?? '-' }}</p>
                             </td>
                             <td class="px-6 py-4 text-slate-600">{{ $emp->golongan ?? '-' }}</td>

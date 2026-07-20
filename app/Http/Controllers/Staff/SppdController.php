@@ -20,6 +20,7 @@ class SppdController extends Controller
         // Hanya SPPD hasil pengajuan (dibuat lewat alur staf).
         $base = TravelOrder::query()
             ->whereNotNull('created_by')
+            ->where('created_by', auth()->id())
             ->with(['package.subActivity', 'personnels.employee', 'reviewer']);
 
         $statusCounts = (clone $base)

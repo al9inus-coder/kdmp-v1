@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Employee extends Model
 {
+    public const TIPE_DINAS = 'dinas';
+    public const TIPE_KEBERSIHAN = 'kebersihan';
+
     protected $fillable = [
         'nama',
         'nip',
@@ -13,6 +16,7 @@ class Employee extends Model
         'jabatan',
         'tanggal_lahir',
         'kategori_biaya',
+        'tipe',
     ];
 
     protected $casts = [

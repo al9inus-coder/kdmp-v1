@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 /**
@@ -24,6 +25,8 @@ class TravelOrderController extends Controller
      */
     public function show(Package $package, TravelOrder $travelOrder): View
     {
+        Gate::authorize('view', $package);
+        Gate::authorize('view', $travelOrder);
         abort_if((int) $travelOrder->package_id !== (int) $package->id, 404);
 
         $package->load('account', 'program', 'activity', 'subActivity', 'fiscalYear');
@@ -39,6 +42,8 @@ class TravelOrderController extends Controller
 
     public function editBiaya(Package $package, TravelOrder $travelOrder)
     {
+        Gate::authorize('view', $package);
+        Gate::authorize('view', $travelOrder);
         abort_if((int) $travelOrder->package_id !== (int) $package->id, 404);
 
         // Koreksi hanya relevan bila biaya rampung sudah pernah diisi.
@@ -57,6 +62,8 @@ class TravelOrderController extends Controller
 
     public function updateBiaya(Request $request, Package $package, TravelOrder $travelOrder): RedirectResponse
     {
+        Gate::authorize('view', $package);
+        Gate::authorize('view', $travelOrder);
         abort_if((int) $travelOrder->package_id !== (int) $package->id, 404);
         abort_if($travelOrder->spjStatus() === TravelOrder::SPJ_DRAFT, 404);
 

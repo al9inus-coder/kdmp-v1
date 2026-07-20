@@ -30,16 +30,7 @@ class OvertimeController extends BaseOvertimeController
             'tahun' => $year,
         ]);
 
-        if ($overtime->details()->count() == 0) {
-            foreach (Employee::all() as $employee) {
-                OvertimeDetail::create([
-                    'overtime_id' => $overtime->id,
-                    'employee_id' => $employee->id,
-                    'daily_hours' => [],
-                    'use_uang_makan' => false,
-                ]);
-            }
-        }
+        $mode = $this->resolveMode($package, $overtime);
 
         $sbuRates = SbuLembur::all();
 
@@ -53,8 +44,39 @@ class OvertimeController extends BaseOvertimeController
 
         $overtime->load('details.employee');
 
+        // Mode kebersihan memakai tampilan khusus: input oleh staf/admin,
+        // kabid hanya melihat + mengunci.
+        if ($mode === 'kebersihan') {
+            $userRole = auth()->user()->getRoleNames()->first() ?? '';
+            $isAdmin = in_array($userRole, ['Admin', 'Super Admin']);
+            $routePrefix = $isAdmin ? 'admin' : 'kabid';
+
+            $lockedMonths = Overtime::where('package_id', $package->id)
+                ->where('tahun', $year)
+                ->where('is_locked', true)
+                ->pluck('bulan')->map(fn ($b) => (int) $b)->all();
+
+            return view('overtimes.kebersihan', [
+                'lockedMonths' => $lockedMonths,
+                'package' => $package,
+                'overtime' => $overtime,
+                'month' => (int) $month,
+                'year' => (int) $year,
+                'sbuRates' => $sbuRates,
+                'holidaysDataFull' => $holidaysDataFull,
+                'routePrefix' => $routePrefix,
+                'canInput' => $isAdmin,
+                'canLock' => true,
+                'canUnlock' => $isAdmin,
+                'canEditSbu' => $isAdmin,
+                'canChangeMode' => true,
+                'dinasEmployees' => Employee::where('tipe', Employee::TIPE_DINAS)->orderBy('nama')->get(),
+                'backUrl' => route($routePrefix . '.procurement-packages.show', $package),
+            ]);
+        }
+
         return view('kabid.overtimes.show', compact(
-            'package', 'overtime', 'month', 'year', 'sbuRates', 'holidaysDataFull'
+            'package', 'overtime', 'month', 'year', 'sbuRates', 'holidaysDataFull', 'mode'
         ));
     }
 }

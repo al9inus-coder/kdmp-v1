@@ -75,6 +75,16 @@
             </div>
 
             <div>
+                <label for="tipe" class="block text-sm font-semibold text-slate-700 mb-1.5">Tipe Pegawai</label>
+                <x-ui.select name="tipe" id="tipe" :invalid="$hasError('tipe')">
+                    <option value="dinas" @selected(old('tipe', $employee?->tipe ?? 'dinas') === 'dinas')>Pegawai Dinas</option>
+                    <option value="kebersihan" @selected(old('tipe', $employee?->tipe) === 'kebersihan')>Petugas Kebersihan</option>
+                </x-ui.select>
+                <p class="mt-1 text-xs text-slate-400">Petugas kebersihan tidak muncul di roster lembur pegawai dinas.</p>
+                @error('tipe') <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
+            </div>
+
+            <div>
                 <label for="kategori_biaya" class="block text-sm font-semibold text-slate-700 mb-1.5">Kategori Biaya Perjalanan (SBU)</label>
                 <x-ui.select name="kategori_biaya" id="kategori_biaya" :invalid="$hasError('kategori_biaya')">
                     <option value="">— Otomatis berdasarkan Jabatan/Golongan —</option>

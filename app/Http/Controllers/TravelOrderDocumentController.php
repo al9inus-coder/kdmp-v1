@@ -6,6 +6,7 @@ use App\Models\Package;
 use App\Models\TravelOrder;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use PhpOffice\PhpWord\TemplateProcessor;
 
 class TravelOrderDocumentController extends Controller
@@ -15,6 +16,7 @@ class TravelOrderDocumentController extends Controller
      */
     public function exportWord(Package $package, TravelOrder $travelOrder, $type)
     {
+        $this->authorizeAccess($package, $travelOrder);
         $travelOrder->load('personnels.employee');
         
         $basePath = storage_path('app/templates/travel-orders');
@@ -131,6 +133,7 @@ class TravelOrderDocumentController extends Controller
      */
     public function printHtml(Package $package, TravelOrder $travelOrder, $type)
     {
+        $this->authorizeAccess($package, $travelOrder);
         $travelOrder->load('personnels.employee');
         
         if ($type === 'surat-tugas-bupati') {
@@ -147,6 +150,8 @@ class TravelOrderDocumentController extends Controller
      */
     public function printKuitansi(Package $package, TravelOrder $travelOrder, \App\Models\TravelPersonnel $personnel)
     {
+        $this->authorizeAccess($package, $travelOrder);
+        abort_unless($travelOrder->personnels()->whereKey($personnel->getKey())->exists(), 404);
         $travelOrder->load('personnels.employee');
         $personnel->load('employee');
 
@@ -158,6 +163,7 @@ class TravelOrderDocumentController extends Controller
      */
     public function printKuitansiAll(Package $package, TravelOrder $travelOrder)
     {
+        $this->authorizeAccess($package, $travelOrder);
         $travelOrder->load('personnels.employee');
         $personnels = $travelOrder->personnels;
 
@@ -169,6 +175,7 @@ class TravelOrderDocumentController extends Controller
      */
     public function printPengeluaranRiil(Package $package, TravelOrder $travelOrder)
     {
+        $this->authorizeAccess($package, $travelOrder);
         $travelOrder->load('personnels.employee', 'report');
         $personnels = $travelOrder->personnels;
 
@@ -180,6 +187,7 @@ class TravelOrderDocumentController extends Controller
      */
     public function printLaporan(Package $package, TravelOrder $travelOrder)
     {
+        $this->authorizeAccess($package, $travelOrder);
         $travelOrder->load('personnels.employee', 'report');
 
         abort_if(!$travelOrder->report, 404, 'Laporan belum dibuat.');
@@ -189,5 +197,12 @@ class TravelOrderDocumentController extends Controller
             'travelOrder' => $travelOrder,
             'report' => $travelOrder->report,
         ]);
+    }
+
+    private function authorizeAccess(Package $package, TravelOrder $travelOrder): void
+    {
+        Gate::authorize('view', $package);
+        Gate::authorize('view', $travelOrder);
+        abort_if((int) $travelOrder->package_id !== (int) $package->getKey(), 404);
     }
 }

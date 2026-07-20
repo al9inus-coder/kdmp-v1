@@ -20,6 +20,7 @@ class TravelSpjController extends Controller
     public function store(StoreTravelSpjRequest $request, Package $package, TravelOrder $travelOrder): RedirectResponse
     {
         Gate::authorize('view', $package);
+        Gate::authorize('view', $travelOrder);
         abort_if((int) $travelOrder->package_id !== (int) $package->id, 404);
 
         if ($travelOrder->status !== TravelOrder::STATUS_APPROVED) {
@@ -83,6 +84,7 @@ class TravelSpjController extends Controller
     public function submit(Package $package, TravelOrder $travelOrder): RedirectResponse
     {
         Gate::authorize('view', $package);
+        Gate::authorize('view', $travelOrder);
         abort_if((int) $travelOrder->package_id !== (int) $package->id, 404);
 
         if ($travelOrder->status !== TravelOrder::STATUS_APPROVED) {
@@ -109,6 +111,7 @@ class TravelSpjController extends Controller
     public function withdraw(Package $package, TravelOrder $travelOrder): RedirectResponse
     {
         Gate::authorize('view', $package);
+        Gate::authorize('view', $travelOrder);
         abort_if((int) $travelOrder->package_id !== (int) $package->id, 404);
 
         if ($travelOrder->spjStatus() !== TravelOrder::SPJ_SUBMITTED) {

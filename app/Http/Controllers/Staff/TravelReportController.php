@@ -38,6 +38,7 @@ class TravelReportController extends Controller
     public function store(Request $request, Package $package, TravelOrder $travelOrder): RedirectResponse
     {
         Gate::authorize('view', $package);
+        Gate::authorize('view', $travelOrder);
         abort_if((int) $travelOrder->package_id !== (int) $package->id, 404);
 
         $validated = $request->validate(self::FIELDS);
@@ -52,6 +53,7 @@ class TravelReportController extends Controller
     public function generate(Request $request, Package $package, TravelOrder $travelOrder, OpenAIService $openai): JsonResponse
     {
         Gate::authorize('view', $package);
+        Gate::authorize('view', $travelOrder);
         abort_if((int) $travelOrder->package_id !== (int) $package->id, 404);
 
         $validated = $request->validate(array_merge(self::FIELDS, [
@@ -110,6 +112,7 @@ class TravelReportController extends Controller
     public function updatePrompt(Request $request, Package $package, TravelOrder $travelOrder): RedirectResponse
     {
         Gate::authorize('view', $package);
+        Gate::authorize('view', $travelOrder);
         abort_if((int) $travelOrder->package_id !== (int) $package->id, 404);
 
         $request->validate(['prompt' => 'required|string|max:20000']);

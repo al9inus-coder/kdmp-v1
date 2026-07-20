@@ -27,6 +27,10 @@ class ImportBatchController extends Controller
 
         $batches = ImportBatch::query()
             ->with(['fiscalYear', 'creator'])
+            ->when(
+                auth()->user()->hasRole('Staff'),
+                fn ($query) => $query->where('created_by', auth()->id())
+            )
             ->whereIn('status', [
                 'completed',
                 'completed_with_errors'

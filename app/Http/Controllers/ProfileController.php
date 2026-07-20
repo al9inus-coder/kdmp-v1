@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use App\Support\SessionRevoker;
 
 class ProfileController extends Controller
 {
@@ -67,6 +68,9 @@ class ProfileController extends Controller
         $request->user()->update([
             'password' => $validated['password'],
         ]);
+
+        Auth::logoutOtherDevices($validated['password']);
+        SessionRevoker::revoke($request->user(), $request->session()->getId());
 
         return back()->with('success', 'Password berhasil diganti.');
     }

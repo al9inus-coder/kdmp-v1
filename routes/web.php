@@ -27,7 +27,7 @@ Route::view('/panduan', 'panduan')->name('panduan');
 Route::view('/disclaimer', 'disclaimer')->name('disclaimer');
 
 // Route dengan Middleware Auth
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'active'])->group(function () {
 
     // Pencarian cepat paket (header)
     Route::get('/search', [\App\Http\Controllers\SearchController::class, 'index'])->name('search');
@@ -118,6 +118,7 @@ Route::middleware('auth')->group(function () {
 
         // AI Generate Draft Route
         Route::post('/procurement-packages/{procurementPackage}/generate-draft', [\App\Http\Controllers\ProcurementPackageController::class, 'generateDraft'])
+            ->middleware('throttle:10,1')
             ->name('procurement-packages.generate-draft');
         Route::post('/procurement-packages/{procurementPackage}/update-prompt', [\App\Http\Controllers\ProcurementPackageController::class, 'updatePrompt'])
             ->name('procurement-packages.update-prompt');
@@ -153,6 +154,12 @@ Route::middleware('auth')->group(function () {
 
     $sharedOvertimeRoutes = function () {
         Route::get('packages/{package}/overtimes/{month}', [\App\Http\Controllers\Kabid\OvertimeController::class, 'show'])->name('packages.overtimes.show');
+        Route::post('packages/{package}/overtimes/{overtime}/choose-mode', [\App\Http\Controllers\Kabid\OvertimeController::class, 'chooseMode'])->name('packages.overtimes.choose-mode');
+        Route::post('packages/{package}/overtimes/{overtime}/reset-mode', [\App\Http\Controllers\Kabid\OvertimeController::class, 'resetMode'])->name('packages.overtimes.reset-mode');
+        Route::post('packages/{package}/overtimes/{overtime}/import-attendance', [\App\Http\Controllers\Kabid\OvertimeController::class, 'importAttendance'])->name('packages.overtimes.import-attendance');
+        Route::post('packages/{package}/overtimes/{overtime}/add-attendance', [\App\Http\Controllers\Kabid\OvertimeController::class, 'addAttendance'])->name('packages.overtimes.add-attendance');
+        Route::get('packages/{package}/overtimes/{overtime}/import-template', [\App\Http\Controllers\Kabid\OvertimeController::class, 'importTemplate'])->name('packages.overtimes.import-template');
+        Route::get('packages/{package}/spj-lembur/{type}', [\App\Http\Controllers\Kabid\OvertimeController::class, 'printSpj'])->name('packages.overtimes.spj');
         Route::put('packages/{package}/overtimes/{overtime}', [\App\Http\Controllers\Kabid\OvertimeController::class, 'update'])->name('packages.overtimes.update');
         Route::post('packages/{package}/overtimes/{overtime}/ajax', [\App\Http\Controllers\Kabid\OvertimeController::class, 'updateAjax'])->name('packages.overtimes.updateAjax');
         Route::post('packages/{package}/overtimes/{overtime}/autofill', [\App\Http\Controllers\Kabid\OvertimeController::class, 'autoFill'])->name('packages.overtimes.autoFill');
@@ -196,7 +203,9 @@ Route::middleware('auth')->group(function () {
         Route::post('packages/{package}/travel-orders/{travelOrder}/spj/submit', [\App\Http\Controllers\Staff\TravelSpjController::class, 'submit'])->name('packages.travel-orders.spj.submit');
         Route::post('packages/{package}/travel-orders/{travelOrder}/spj/withdraw', [\App\Http\Controllers\Staff\TravelSpjController::class, 'withdraw'])->name('packages.travel-orders.spj.withdraw');
         Route::post('packages/{package}/travel-orders/{travelOrder}/laporan', [\App\Http\Controllers\Staff\TravelReportController::class, 'store'])->name('packages.travel-orders.laporan.store');
-        Route::post('packages/{package}/travel-orders/{travelOrder}/laporan/generate', [\App\Http\Controllers\Staff\TravelReportController::class, 'generate'])->name('packages.travel-orders.laporan.generate');
+        Route::post('packages/{package}/travel-orders/{travelOrder}/laporan/generate', [\App\Http\Controllers\Staff\TravelReportController::class, 'generate'])
+            ->middleware('throttle:10,1')
+            ->name('packages.travel-orders.laporan.generate');
         Route::post('packages/{package}/travel-orders/{travelOrder}/laporan/prompt', [\App\Http\Controllers\Staff\TravelReportController::class, 'updatePrompt'])->name('packages.travel-orders.laporan.prompt');
         Route::get('packages/{package}/travel-orders/{travelOrder}', [\App\Http\Controllers\Staff\TravelOrderController::class, 'show'])->name('packages.travel-orders.show');
 
@@ -208,7 +217,14 @@ Route::middleware('auth')->group(function () {
         Route::get('packages/{package}/travel-orders/{travelOrder}/print-pengeluaran-riil', [\App\Http\Controllers\TravelOrderDocumentController::class, 'printPengeluaranRiil'])->name('packages.travel-orders.print-pengeluaran-riil');
         Route::get('packages/{package}/travel-orders/{travelOrder}/print-laporan', [\App\Http\Controllers\TravelOrderDocumentController::class, 'printLaporan'])->name('packages.travel-orders.print-laporan');
 
-        // Lembur (Staff Print)
+        // Lembur (Staf: input kehadiran petugas kebersihan; mode dipilih kabid/admin)
+        Route::get('lembur', [\App\Http\Controllers\Staff\OvertimeController::class, 'lemburIndex'])->name('lembur.index');
+        Route::get('packages/{package}/overtimes/{month}', [\App\Http\Controllers\Staff\OvertimeController::class, 'show'])->name('packages.overtimes.show');
+        Route::post('packages/{package}/overtimes/{overtime}/ajax', [\App\Http\Controllers\Staff\OvertimeController::class, 'updateAjax'])->name('packages.overtimes.updateAjax');
+        Route::post('packages/{package}/overtimes/{overtime}/import-attendance', [\App\Http\Controllers\Staff\OvertimeController::class, 'importAttendance'])->name('packages.overtimes.import-attendance');
+        Route::post('packages/{package}/overtimes/{overtime}/add-attendance', [\App\Http\Controllers\Staff\OvertimeController::class, 'addAttendance'])->name('packages.overtimes.add-attendance');
+        Route::get('packages/{package}/overtimes/{overtime}/import-template', [\App\Http\Controllers\Staff\OvertimeController::class, 'importTemplate'])->name('packages.overtimes.import-template');
+        Route::get('packages/{package}/spj-lembur/{type}', [\App\Http\Controllers\Staff\OvertimeController::class, 'printSpj'])->name('packages.overtimes.spj');
         Route::get('packages/{package}/overtimes/{overtime}/print/{type}', [\App\Http\Controllers\OvertimeController::class, 'print'])->name('packages.overtimes.print');
 
         // Arsip Dokumen
@@ -221,6 +237,7 @@ Route::middleware('auth')->group(function () {
         Route::get('packages/{package}', [\App\Http\Controllers\Kabid\PackageController::class, 'show'])->name('packages.show');
         Route::get('monev', [\App\Http\Controllers\Kabid\MonevController::class, 'index'])->name('monev.index');
         Route::get('monev/{subActivity}', [\App\Http\Controllers\Kabid\MonevController::class, 'show'])->name('monev.show');
+        Route::get('monev/{subActivity}/print', [\App\Http\Controllers\Kabid\MonevController::class, 'print'])->name('monev.print');
         Route::get('sppd', [\App\Http\Controllers\Kabid\SppdController::class, 'index'])->name('sppd.index');
         Route::get('swakelola', [\App\Http\Controllers\Kabid\SwakelolaController::class, 'index'])->name('swakelola.index');
         Route::get('dikecualikan', [\App\Http\Controllers\Kabid\DikecualikanController::class, 'index'])->name('dikecualikan.index');
@@ -247,7 +264,9 @@ Route::middleware('auth')->group(function () {
         Route::put('procurement-packages/{package}/specification', [\App\Http\Controllers\Kabid\ProcurementPackageController::class, 'updateSpecification'])->name('procurement-packages.specification.update');
         Route::post('procurement-packages/{package}/specification/generate', [\App\Http\Controllers\Kabid\ProcurementPackageController::class, 'generateSpecification'])->name('procurement-packages.specification.generate');
         Route::post('procurement-packages/{package}/specification/prompt', [\App\Http\Controllers\Kabid\ProcurementPackageController::class, 'updatePrompt'])->name('procurement-packages.specification.prompt');
-        Route::post('procurement-packages/{package}/price-references/fetch', [\App\Http\Controllers\Kabid\PriceReferenceController::class, 'fetchFromCatalog'])->name('procurement-packages.price-references.fetch');
+        Route::post('procurement-packages/{package}/price-references/fetch', [\App\Http\Controllers\Kabid\PriceReferenceController::class, 'fetchFromCatalog'])
+            ->middleware('throttle:10,1')
+            ->name('procurement-packages.price-references.fetch');
         Route::post('procurement-packages/{package}/price-references', [\App\Http\Controllers\Kabid\PriceReferenceController::class, 'store'])->name('procurement-packages.price-references.store');
         Route::put('procurement-packages/{package}/price-references/{priceReference}', [\App\Http\Controllers\Kabid\PriceReferenceController::class, 'update'])->name('procurement-packages.price-references.update');
         Route::delete('procurement-packages/{package}/price-references/{priceReference}', [\App\Http\Controllers\Kabid\PriceReferenceController::class, 'destroy'])->name('procurement-packages.price-references.destroy');
@@ -312,6 +331,14 @@ Route::middleware('auth')->group(function () {
         // Arsip Dokumen
         Route::get('arsip', [\App\Http\Controllers\ArsipController::class, 'index'])->name('arsip.index');
 
+        // Data Correction Center — koreksi data bisnis terkunci tanpa menyentuh workflow
+        Route::get('koreksi-data', [\App\Http\Controllers\Admin\DataCorrectionController::class, 'index'])->name('data-corrections.index');
+        Route::get('koreksi-data/search', [\App\Http\Controllers\Admin\DataCorrectionController::class, 'search'])->name('data-corrections.search');
+        Route::get('koreksi-data/{type}/{id}', [\App\Http\Controllers\Admin\DataCorrectionController::class, 'edit'])->name('data-corrections.edit');
+        Route::put('koreksi-data/{type}/{id}', [\App\Http\Controllers\Admin\DataCorrectionController::class, 'update'])->name('data-corrections.update');
+        Route::get('koreksi-data/{type}/{id}/riwayat', [\App\Http\Controllers\Admin\DataCorrectionController::class, 'history'])->name('data-corrections.history');
+        Route::get('koreksi-data/{type}/{id}/lampiran/{correction}', [\App\Http\Controllers\Admin\DataCorrectionController::class, 'downloadAttachment'])->name('data-corrections.attachment');
+
         // Manajemen User
         Route::get('users/{user}/reset-password', [\App\Http\Controllers\Admin\UserController::class, 'editPassword'])->name('users.reset-password');
         Route::put('users/{user}/reset-password', [\App\Http\Controllers\Admin\UserController::class, 'updatePassword'])->name('users.update-password');
@@ -368,6 +395,3 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
-
-
-

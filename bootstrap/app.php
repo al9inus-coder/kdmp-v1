@@ -11,11 +11,18 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Percayai reverse proxy internal (Cloudflare tunnel) agar Laravel
-        // membaca X-Forwarded-Proto/For dengan benar (https & IP asli klien).
-        $middleware->trustProxies(at: '10.0.0.0/8');
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+
+        // Daftar proxy harus eksplisit. Jangan mempercayai seluruh private range
+        // karena header X-Forwarded-* dapat dipalsukan dari jaringan internal.
+        $trustedProxies = array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('TRUSTED_PROXIES', ''))
+        )));
+        $middleware->trustProxies(at: $trustedProxies ?: null);
 
         $middleware->alias([
+            'active' => \App\Http\Middleware\EnsureUserIsActive::class,
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,

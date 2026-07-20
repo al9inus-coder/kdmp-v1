@@ -64,6 +64,7 @@ class TravelOrderController extends KabidTravelOrderController
     public function edit(Package $package, TravelOrder $travelOrder): View|\Illuminate\Http\RedirectResponse
     {
         Gate::authorize('view', $package);
+        Gate::authorize('view', $travelOrder);
 
         abort_if((int) $travelOrder->package_id !== (int) $package->id, 404);
 
@@ -140,7 +141,14 @@ class TravelOrderController extends KabidTravelOrderController
         $submissionFlow = $this->submissionFlow;
 
         $newPackageId = $request->input('package_id', $package->id);
-        $targetPackage = $newPackageId != $package->id ? \App\Models\Package::findOrFail($newPackageId) : $package;
+        $targetPackage = $newPackageId != $package->id
+            ? Package::query()
+                ->whereKey($newPackageId)
+                ->where('status', 'approved')
+                ->whereHas('account', fn ($q) => $q->where('nama', 'like', '%perjalanan dinas%'))
+                ->firstOrFail()
+            : $package;
+        Gate::authorize('view', $targetPackage);
 
         $travelOrder = DB::transaction(function () use ($targetPackage, $validated, $submissionFlow) {
             $extra = $submissionFlow
@@ -182,6 +190,7 @@ class TravelOrderController extends KabidTravelOrderController
     public function update(Request $request, Package $package, TravelOrder $travelOrder)
     {
         Gate::authorize('view', $package);
+        Gate::authorize('view', $travelOrder);
 
         abort_if((int) $travelOrder->package_id !== (int) $package->id, 404);
 
@@ -211,7 +220,14 @@ class TravelOrderController extends KabidTravelOrderController
 
         $newPackageId = $request->input('package_id', $package->id);
         $packageChanged = (int) $newPackageId !== (int) $package->id;
-        $newPackage = $packageChanged ? Package::findOrFail($newPackageId) : $package;
+        $newPackage = $packageChanged
+            ? Package::query()
+                ->whereKey($newPackageId)
+                ->where('status', 'approved')
+                ->whereHas('account', fn ($q) => $q->where('nama', 'like', '%perjalanan dinas%'))
+                ->firstOrFail()
+            : $package;
+        Gate::authorize('view', $newPackage);
 
         DB::transaction(function () use ($travelOrder, $validated, $newPackageId) {
             $travelOrder->update(

@@ -26,6 +26,11 @@
             <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-100 rounded-lg">
                 <i data-lucide="calendar-clock" class="w-3.5 h-3.5"></i>Lembur {{ $monthName }} {{ $year }}
             </span>
+            @if($mode === 'dinas')
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg">
+                    <i data-lucide="users" class="w-3.5 h-3.5"></i>Pegawai Dinas
+                </span>
+            @endif
             @if($overtime->is_locked)
                 <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg">
                     <i data-lucide="lock" class="w-3.5 h-3.5"></i>Terkunci
@@ -38,11 +43,40 @@
         </a>
     </div>
 
+    @if(!$mode)
+        {{-- Layar pilihan mode lembur (muncul saat mode belum dipilih untuk paket ini) --}}
+        <section class="max-w-3xl mx-auto py-6">
+            <div class="text-center mb-6">
+                <h2 class="text-lg font-black text-slate-900">Pilih Jenis Lembur</h2>
+                <p class="text-sm text-slate-500 mt-1">Pilihan ini disimpan untuk seluruh bulan pada paket ini, dan dapat diubah kembali nanti.</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <form method="POST" action="{{ route($rolePrefix . '.packages.overtimes.choose-mode', [$package, $overtime]) }}">
+                    @csrf
+                    <input type="hidden" name="mode" value="dinas">
+                    <button type="submit" class="w-full h-full text-left p-6 bg-white border-2 border-slate-200 hover:border-indigo-400 rounded-2xl shadow-sm transition-colors">
+                        <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4"><i data-lucide="users" class="w-6 h-6"></i></div>
+                        <h3 class="font-black text-slate-900">Lembur Pegawai Dinas</h3>
+                        <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">Daftar pegawai dinas terisi otomatis. Atur jam lembur lewat kalender — seret nama atau isi otomatis satu bulan.</p>
+                    </button>
+                </form>
+                <form method="POST" action="{{ route($rolePrefix . '.packages.overtimes.choose-mode', [$package, $overtime]) }}">
+                    @csrf
+                    <input type="hidden" name="mode" value="kebersihan">
+                    <button type="submit" class="w-full h-full text-left p-6 bg-white border-2 border-slate-200 hover:border-sky-400 rounded-2xl shadow-sm transition-colors">
+                        <div class="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center mb-4"><i data-lucide="spray-can" class="w-6 h-6"></i></div>
+                        <h3 class="font-black text-slate-900">Lembur Petugas Kebersihan</h3>
+                        <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">Daftar dikosongkan. Isi kehadiran per tanggal dengan mengunggah file Excel/CSV berisi nama-nama petugas yang lembur hari itu.</p>
+                    </button>
+                </form>
+            </div>
+        </section>
+    @else
     <div class="grid grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)] gap-6 items-start">
 
         {{-- Kolom kiri --}}
         <div class="space-y-5">
-            {{-- Daftar pegawai --}}
+            {{-- Daftar pegawai (seret nama ke kalender) --}}
             <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                 <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
                     <h2 class="text-sm font-black text-slate-900 flex items-center gap-2">
@@ -168,6 +202,17 @@
                     </div>
                 </section>
             @endif
+
+            {{-- Ubah mode lembur (batalkan / ganti jenis) --}}
+            @if(!$overtime->is_locked)
+                <form action="{{ route($rolePrefix . '.packages.overtimes.reset-mode', [$package, $overtime]) }}" method="POST"
+                    onsubmit="return confirm('Ubah mode lembur paket ini? Seluruh roster dan jam lembur pada bulan-bulan yang belum dikunci akan dihapus, lalu Anda memilih mode ulang.')">
+                    @csrf
+                    <button type="submit" class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-700 rounded-lg transition-colors">
+                        <i data-lucide="repeat" class="w-3.5 h-3.5"></i>Ubah Mode Lembur
+                    </button>
+                </form>
+            @endif
         </div>
 
         {{-- Kolom kanan --}}
@@ -178,33 +223,15 @@
 
             {{-- Rekap --}}
             @php
-                $totalKeseluruhan = 0; $sumUpahLembur = 0; $sumUangMakan = 0; $sumPajak = 0;
-                $hasUangMakanBulanIni = false; $processedDetails = [];
-                foreach($overtime->details as $detail) {
-                    $emp = $detail->employee;
-                    $golongan = $detail->golongan_fix ?? $emp->golongan ?? 'P3K Paruh Waktu';
-                    $totalJam = 0; $daysWithOvertime = 0;
-                    for($d = 1; $d <= $daysInMonth; $d++) {
-                        $val = isset($detail->daily_hours[$d]) ? (int)$detail->daily_hours[$d] : 0;
-                        if($val >= 2) { $totalJam += $val; $daysWithOvertime++; }
-                    }
-                    if($totalJam == 0) continue;
-                    // Pemetaan golongan -> tarif SBU terpusat & toleran format (SbuLembur::pickRate).
-                    if (!is_null($detail->rate_lembur_fix)) $valLembur = $detail->rate_lembur_fix;
-                    else $valLembur = \App\Models\SbuLembur::pickRate($sbuRates, 'Uang Lembur', $golongan)?->besaran ?? 0;
-                    if (!is_null($detail->rate_makan_fix)) $valMakan = $detail->rate_makan_fix;
-                    else $valMakan = \App\Models\SbuLembur::pickRate($sbuRates, 'Uang Makan Lembur', $golongan)?->besaran ?? 0;
-                    $uangLembur = $totalJam * $valLembur;
-                    $uangMakan = $detail->use_uang_makan ? ($daysWithOvertime * $valMakan) : 0;
-                    if($uangMakan > 0) $hasUangMakanBulanIni = true;
-                    $pphRate = 0;
-                    if (str_contains(strtoupper($golongan), 'III')) $pphRate = 0.05;
-                    elseif (str_contains(strtoupper($golongan), 'IV')) $pphRate = 0.15;
-                    $pph = $uangLembur * $pphRate;
-                    $totalDiterima = ($uangLembur - $pph) + $uangMakan;
-                    $totalKeseluruhan += $totalDiterima; $sumUpahLembur += $uangLembur; $sumUangMakan += $uangMakan; $sumPajak += $pph;
-                    $processedDetails[] = compact('detail','emp','valLembur','valMakan','totalJam','uangLembur','uangMakan','pph','totalDiterima');
-                }
+                // Perhitungan terpusat di Overtime::rekap() — sumber angka yang sama
+                // dengan monev dan dokumen cetak.
+                $rekapData = $overtime->rekap($sbuRates);
+                $processedDetails = $rekapData['rows'];
+                $totalKeseluruhan = $rekapData['totalDiterima'];
+                $sumUpahLembur = $rekapData['totalUpah'];
+                $sumUangMakan = $rekapData['totalUangMakan'];
+                $sumPajak = $rekapData['totalPajak'];
+                $hasUangMakanBulanIni = $sumUangMakan > 0;
             @endphp
             <section id="rekapSection" class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                 <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
@@ -231,12 +258,12 @@
                             @forelse($processedDetails as $index => $row)
                                 <tr class="hover:bg-slate-50/50">
                                     <td class="px-4 py-3 text-center text-slate-400">{{ $index + 1 }}</td>
-                                    <td class="px-4 py-3 font-semibold text-slate-800">{{ $row['emp']->nama }}</td>
+                                    <td class="px-4 py-3 font-semibold text-slate-800">{{ $row['employee']->nama }}</td>
                                     <td class="px-4 py-3 text-right whitespace-nowrap">
                                         {{ $money($row['valLembur']) }}
                                         @if(!$overtime->is_locked)
                                             <button type="button" class="ml-1 text-indigo-500 hover:text-indigo-700 btn-edit-sbu align-middle"
-                                                data-detail-id="{{ $row['detail']->id }}" data-val-lembur="{{ $row['valLembur'] }}" data-val-makan="{{ $row['valMakan'] }}" data-emp-name="{{ $row['emp']->nama }}" onclick="editSbu(this)" title="Sesuaikan SBU">
+                                                data-detail-id="{{ $row['detail']->id }}" data-val-lembur="{{ $row['valLembur'] }}" data-val-makan="{{ $row['valMakan'] }}" data-emp-name="{{ $row['employee']->nama }}" onclick="editSbu(this)" title="Sesuaikan SBU">
                                                 <i data-lucide="pencil" class="w-3.5 h-3.5 inline-block"></i>
                                             </button>
                                         @endif
@@ -244,8 +271,8 @@
                                     <td class="px-4 py-3 text-center whitespace-nowrap">{{ $row['totalJam'] }} jam</td>
                                     <td class="px-4 py-3 text-right whitespace-nowrap">{{ $money($row['uangLembur']) }}</td>
                                     @if($hasUangMakanBulanIni)<td class="px-4 py-3 text-right whitespace-nowrap">{{ $money($row['uangMakan']) }}</td>@endif
-                                    <td class="px-4 py-3 text-right whitespace-nowrap text-slate-500">{{ $row['pph'] > 0 ? $money($row['pph']) : '-' }}</td>
-                                    <td class="px-4 py-3 text-right whitespace-nowrap font-bold text-emerald-700">{{ $money($row['totalDiterima']) }}</td>
+                                    <td class="px-4 py-3 text-right whitespace-nowrap text-slate-500">{{ $row['pajak'] > 0 ? $money($row['pajak']) : '-' }}</td>
+                                    <td class="px-4 py-3 text-right whitespace-nowrap font-bold text-emerald-700">{{ $money($row['diterima']) }}</td>
                                 </tr>
                             @empty
                                 <tr><td colspan="{{ $hasUangMakanBulanIni ? 8 : 7 }}" class="px-4 py-10 text-center text-slate-400">Belum ada data lembur di bulan ini.</td></tr>
@@ -322,6 +349,7 @@
     </div>
 
     <iframe id="printIframe" style="display:none;"></iframe>
+    @endif
 </div>
 
 <style>
@@ -400,6 +428,7 @@
     }
 @endphp
 
+@if($mode)
 <script>
     const UPDATE_URL = "{{ route($rolePrefix . '.packages.overtimes.updateAjax', [$package, $overtime]) }}";
     const AUTOFILL_URL = "{{ route($rolePrefix . '.packages.overtimes.autoFill', [$package, $overtime]) }}";
@@ -549,4 +578,5 @@
         }
     });
 </script>
+@endif
 @endcomponent
