@@ -63,23 +63,25 @@
                 print-color-adjust: exact !important;
             }
             body { margin: 0; padding: 0; }
+            .no-print { display: none !important; }
             /* @page { size: 330mm 210mm; margin: 10mm; } */
         }
     </style>
 </head>
 <body>
 
-    @include('overtimes.partials.rekap_absensi_bulan')
+    {{-- Tombol Aksi Pratinjau (Sembunyi saat cetak) --}}
+    <div class="no-print" style="margin-bottom: 20px; padding: 10px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; display: flex; align-items: center; justify-content: space-between;">
+        <span style="font-family: sans-serif; font-size: 12px; color: #334155; font-weight: bold; display: inline-flex; align-items: center; gap: 6px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #0284c7;"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+            Pratinjau Rekapitulasi Absensi Lembur
+        </span>
+        <button type="button" onclick="window.print()" style="padding: 8px 18px; background: #10b981; color: #ffffff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px; font-family: sans-serif; display: inline-flex; align-items: center; gap: 6px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect width="12" height="8" x="6" y="14" rx="1"/></svg>
+            Cetak Dokumen
+        </button>
+    </div>
 
-    <script>
-        window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                window.print();
-            }, 300);
-        });
-        window.onafterprint = () => {
-            window.close();
-        };
-    </script>
+    @include('overtimes.partials.rekap_absensi_bulan')
 </body>
 </html>
