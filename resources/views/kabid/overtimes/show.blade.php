@@ -348,7 +348,6 @@
         </div>
     </div>
 
-    <iframe id="printIframe" style="display:none;"></iframe>
     @endif
 </div>
 
@@ -395,7 +394,7 @@
         jQuery(this).closest('.kdmp-modal').modal('hide');
     });
 
-    function printReport(url) { document.getElementById('printIframe').src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 't=' + new Date().getTime(); }
+    function printReport(url) { window.open(url, '_blank'); }
 
     function editSbu(btn) {
         let detailId = $(btn).data('detail-id');
