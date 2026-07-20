@@ -494,14 +494,16 @@
     {{-- Modal Buat SPJ (periode rentang bulan; hanya bulan terkunci) — kabid/admin --}}
     @if($routePrefix !== 'staf')
     <div id="spjModal" class="kdmp-modal hidden fixed inset-0 z-[70] items-center justify-center p-4">
-        <div class="kdmp-modal-backdrop absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
-        <div class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+            @php
+                $defaultDari = count($lockedMonths) > 0 ? min($lockedMonths) : (int) $month;
+                $defaultSampai = count($lockedMonths) > 0 ? max($lockedMonths) : (int) $month;
+            @endphp
             <div class="px-5 py-4 border-b border-slate-100 bg-emerald-50/60 flex items-center justify-between">
                 <div>
                     <h3 class="font-bold text-slate-800">Buat SPJ Lembur</h3>
                     <p class="text-xs text-slate-500 mt-0.5">Pilih periode, lalu cetak dokumennya satu per satu.</p>
                 </div>
-                <button type="button" data-dismiss="modal" class="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
+                <button type="button" onclick="tutupSpj()" class="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
             <div class="p-5 space-y-4">
                 <div class="grid grid-cols-2 gap-3">
@@ -509,7 +511,7 @@
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Dari Bulan</label>
                         <select id="spjDari" class="w-full rounded-lg border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500">
                             @foreach($months as $num => $nama)
-                                <option value="{{ $num }}" @disabled(!in_array($num, $lockedMonths)) @selected($num === (int) $month && in_array($num, $lockedMonths))>
+                                <option value="{{ $num }}" @disabled(!in_array($num, $lockedMonths)) @selected($num === $defaultDari)>
                                     {{ $nama }}{{ in_array($num, $lockedMonths) ? '' : ' — belum dikunci' }}
                                 </option>
                             @endforeach
@@ -519,7 +521,7 @@
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Sampai Bulan</label>
                         <select id="spjSampai" class="w-full rounded-lg border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500">
                             @foreach($months as $num => $nama)
-                                <option value="{{ $num }}" @disabled(!in_array($num, $lockedMonths)) @selected($num === (int) $month && in_array($num, $lockedMonths))>
+                                <option value="{{ $num }}" @disabled(!in_array($num, $lockedMonths)) @selected($num === $defaultSampai)>
                                     {{ $nama }}{{ in_array($num, $lockedMonths) ? '' : ' — belum dikunci' }}
                                 </option>
                             @endforeach
@@ -786,9 +788,15 @@
     // ===== SPJ periode =====
     const SPJ_URL = "{{ route($routePrefix . '.packages.overtimes.spj', [$package, ':type']) }}";
 
-    $(document).on('click', '#btnSpj', function () {
-        $('#spjModal').modal('show');
+    function bukaSpj() {
+        $('#spjModal').removeClass('hidden').addClass('flex');
         if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+    function tutupSpj() {
+        $('#spjModal').addClass('hidden').removeClass('flex');
+    }
+    $(document).on('click', '#btnSpj', function () {
+        bukaSpj();
     });
 
     function cetakSpj(type) {

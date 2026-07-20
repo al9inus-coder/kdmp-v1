@@ -968,13 +968,13 @@ class OvertimeController extends Controller
         if ($type === 'tanda_terima') {
             return view('overtimes.print_tanda_terima', compact(
                 'package', 'overtime', 'sbuRates', 'skpd',
-                'spjRows', 'spjTotalUpah', 'spjTotalPajak', 'periodeLabel'
+                'spjRows', 'spjTotalUpah', 'spjTotalPajak', 'periodeLabel', 'pembuat'
             ));
         }
 
         return view('overtimes.print_kwitansi', compact(
             'package', 'overtime', 'sbuRates', 'skpd',
-            'spjTotalUpah', 'spjTotalPajak', 'periodeLabel'
+            'spjTotalUpah', 'spjTotalPajak', 'periodeLabel', 'pembuat'
         ));
     }
 
