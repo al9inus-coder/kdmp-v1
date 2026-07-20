@@ -100,7 +100,7 @@
             <tr>
                 <th rowspan="3" style="width: 3%;">NO.</th>
                 <th rowspan="3" style="width: 17%;">NAMA/ NIP</th>
-                <th rowspan="3" style="width: 15%;">PANGKAT/GOLONGAN</th>
+                <th rowspan="3" style="width: 15%;">JABATAN</th>
                 <th colspan="{{ $daysInMonth }}">JUMLAH LEMBUR PER HARI (JAM)</th>
                 <th rowspan="3" style="width: 5%;">TOTAL JAM LEMBUR</th>
             </tr>
@@ -138,7 +138,7 @@
                 <tr>
                     <td rowspan="2">{{ $no++ }}</td>
                     <td rowspan="2" class="text-left">{{ $emp->nama }}<br>NIP: {{ $emp->nip ?? '-' }}</td>
-                    <td rowspan="2" class="text-left">{{ $emp->golongan }}</td>
+                    <td rowspan="2" class="text-left">{{ strtoupper($emp->jabatan) }}</td>
                     
                     @for($d = 1; $d <= $daysInMonth; $d++)
                         @php
