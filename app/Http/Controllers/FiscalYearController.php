@@ -31,7 +31,7 @@ class FiscalYearController extends Controller
         ]);
 
         return redirect()
-            ->route('fiscal-years.index')
+            ->route('admin.fiscal-years.index')
             ->with('success','Tahun anggaran berhasil ditambahkan');
     }
 

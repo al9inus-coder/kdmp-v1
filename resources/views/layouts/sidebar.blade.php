@@ -32,6 +32,13 @@
             Pengadaan
         </a>
 
+        <a href="#" class="group flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100">
+            SBU Perjalanan Dinas
+        </a>
+
+        <a href="#" class="group flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100">
+            SBU Transportasi
+        </a>
         <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mt-6 mb-4">
             Sistem
         </p>

@@ -18,6 +18,12 @@
 /public/fonts-manifest.dev.json
 /public/hot
 /public/storage
+/scratch/
+/debug*.php
+/debug*.json
+/check.php
+/autofill_*.php
+/seed_*.php
 /storage/*.key
 /storage/pail
 /vendor

@@ -15,18 +15,12 @@ return new class extends Migration
 
         $table->id();
 
-        $table->foreignId('skpd_id')
-              ->constrained()
-              ->cascadeOnDelete();
-
         $table->string('kode')->unique();
 
         $table->string('nama');
 
-        $table->year('tahun');
-
-        $table->decimal('pagu',18,2)
-              ->default(0);
+        $table->boolean('is_active')
+                ->default(true);
 
         $table->timestamps();
     });

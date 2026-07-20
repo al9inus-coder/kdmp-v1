@@ -1,57 +1,18 @@
-@extends('adminlte::page')
-
+@component('layouts.kdmp')
 @section('title', 'Tambah SKPD')
 
-@section('content_header')
-    <h1>Tambah SKPD</h1>
-@stop
+<x-ui.toast />
 
-@section('content')
+<x-ui.workspace title="Tambah SKPD Baru" description="Lengkapi informasi perangkat daerah dan pejabat terkait.">
+    <x-slot:actions>
+        <x-ui.button variant="outline" size="md" href="{{ route('admin.skpds.index') }}">
+            <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
+        </x-ui.button>
+    </x-slot:actions>
 
-<div class="card">
-
-    <div class="card-body">
-
-        <form action="{{ route('skpds.store') }}"
-              method="POST">
-
-            @csrf
-
-            <div class="form-group">
-                <label>Kode SKPD</label>
-                <input type="text"
-                       name="kode"
-                       class="form-control">
-            </div>
-
-            <div class="form-group">
-                <label>Nama SKPD</label>
-                <input type="text"
-                       name="nama"
-                       class="form-control">
-            </div>
-
-            <div class="form-group">
-                <label>Kepala SKPD</label>
-                <input type="text"
-                       name="kepala_skpd"
-                       class="form-control">
-            </div>
-
-            <div class="form-group">
-                <label>Alamat</label>
-                <textarea name="alamat"
-                          class="form-control"></textarea>
-            </div>
-
-            <button class="btn btn-success">
-                Simpan
-            </button>
-
-        </form>
-
-    </div>
-
-</div>
-
-@stop
+    <form action="{{ route('admin.skpds.store') }}" method="POST">
+        @csrf
+        @include('skpds._form', ['submitLabel' => 'Simpan Data SKPD'])
+    </form>
+</x-ui.workspace>
+@endcomponent

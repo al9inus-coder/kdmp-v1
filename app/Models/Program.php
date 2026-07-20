@@ -3,19 +3,27 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Program extends Model
 {
     protected $fillable = [
-        'skpd_id',
         'kode',
         'nama',
-        'tahun',
-        'pagu'
+        'is_active',
     ];
 
-    public function skpd()
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
+    public function activities(): HasMany
     {
-        return $this->belongsTo(Skpd::class);
+        return $this->hasMany(Activity::class);
+    }
+
+    public function packages(): HasMany
+    {
+        return $this->hasMany(Package::class);
     }
 }

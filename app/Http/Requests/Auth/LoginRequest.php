@@ -50,6 +50,22 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        // Blokir user yang dinonaktifkan (soft disable) tanpa merusak flow existing.
+        $user = Auth::user();
+
+        if ($user && $user->is_active === false) {
+            Auth::logout();
+
+            throw ValidationException::withMessages([
+                'email' => 'Akun Anda dinonaktifkan. Silakan hubungi administrator.',
+            ]);
+        }
+
+        // Catat waktu login terakhir.
+        if ($user) {
+            $user->forceFill(['last_login_at' => now()])->save();
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

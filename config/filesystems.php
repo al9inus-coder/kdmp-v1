@@ -33,7 +33,9 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // File private (import/lampiran) hanya boleh diakses melalui controller
+            // yang berotorisasi, bukan melalui route serving disk.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],
