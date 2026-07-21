@@ -90,15 +90,6 @@ class ProcurementPaymentController extends Controller
         return redirect()->route($tujuan, $package)->with('success', 'Pekerjaan dinyatakan Selesai. Selamat datang di tahap Pembayaran!');
     }
 
-    public function show(Package $package)
-    {
-        $procurementPackage = $package->procurementPackage;
-        $process = $procurementPackage->procurementProcess;
-        $payment = $procurementPackage->payment;
-
-        return view('procurement-payments.show', compact('procurementPackage', 'process', 'payment'));
-    }
-
     public function previewDocument(Package $package)
     {
         $procurementPackage = $package->procurementPackage;
