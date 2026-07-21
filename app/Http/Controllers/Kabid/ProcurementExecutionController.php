@@ -11,6 +11,15 @@ use Illuminate\Support\Facades\Gate;
 
 class ProcurementExecutionController extends Controller
 {
+    /**
+     * Controller ini dipakai route kabid DAN admin (aksi addendum/finish) —
+     * redirect harus mengikuti prefix role user, bukan hardcode kabid.
+     */
+    private function rolePrefix(): string
+    {
+        return auth()->user()->hasAnyRole(['Admin', 'Super Admin']) ? 'admin' : 'kabid';
+    }
+
     public function show(Package $package)
     {
         Gate::authorize('view', $package);
@@ -26,7 +35,7 @@ class ProcurementExecutionController extends Controller
             ProcurementPackage::WORKFLOW_COMPLETED,
         ])) {
             return redirect()
-                ->route('kabid.procurement-packages.procurement-process.show', $package)
+                ->route($this->rolePrefix() . '.procurement-packages.procurement-process.show', $package)
                 ->with('error', 'Mulai tahap Pelaksanaan Kontrak terlebih dahulu.')
                 ->with('panel', 4);
         }
@@ -98,7 +107,7 @@ class ProcurementExecutionController extends Controller
         ]);
 
         return redirect()
-            ->route('kabid.procurement-packages.execution.show', $package)
+            ->route($this->rolePrefix() . '.procurement-packages.execution.show', $package)
             ->with('success', 'Adendum tersimpan — batas akhir kontrak diperbarui.');
     }
 
@@ -139,7 +148,7 @@ class ProcurementExecutionController extends Controller
         ]);
 
         return redirect()
-            ->route('kabid.procurement-packages.execution.show', $package)
+            ->route($this->rolePrefix() . '.procurement-packages.execution.show', $package)
             ->with('success', 'Pekerjaan selesai dicatat. Paket masuk tahap Pembayaran.');
     }
 }

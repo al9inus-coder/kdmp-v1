@@ -469,7 +469,7 @@
             <div class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
                 x-transition:enter="transition ease-out duration-200 delay-75"
                 x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
-                <form method="POST" action="{{ route('kabid.procurement-packages.execution.addendum', $package) }}">
+                <form method="POST" action="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.execution.addendum', $package) }}">
                     @csrf
                     <div class="px-5 py-4 border-b border-slate-100 bg-amber-50/60 flex items-center justify-between">
                         <h3 class="font-bold text-slate-800 flex items-center gap-2">
@@ -525,7 +525,7 @@
             <div class="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col" style="max-height: 90vh;"
                 x-transition:enter="transition ease-out duration-200 delay-75"
                 x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
-                <form method="POST" action="{{ route('kabid.procurement-packages.execution.finish', $package) }}" class="flex flex-col min-h-0">
+                <form method="POST" action="{{ route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.execution.finish', $package) }}" class="flex flex-col min-h-0">
                     @csrf
                     <div class="px-5 py-4 border-b border-slate-100 bg-emerald-50/60 flex items-center justify-between shrink-0">
                         <h3 class="font-bold text-slate-800 flex items-center gap-2">

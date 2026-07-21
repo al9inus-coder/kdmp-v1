@@ -81,7 +81,13 @@ class ProcurementPaymentController extends Controller
             'workflow_status' => ProcurementPackage::WORKFLOW_PAYMENT_PROCESS
         ]);
 
-        return redirect()->route('procurement-payments.show', $package)->with('success', 'Pekerjaan dinyatakan Selesai. Selamat datang di tahap Pembayaran!');
+        // Nama route halaman pembayaran berbeda antar role:
+        // admin.procurement-packages.payment vs kabid.procurement-packages.payment.show
+        $tujuan = auth()->user()->hasAnyRole(['Admin', 'Super Admin'])
+            ? 'admin.procurement-packages.payment'
+            : 'kabid.procurement-packages.payment.show';
+
+        return redirect()->route($tujuan, $package)->with('success', 'Pekerjaan dinyatakan Selesai. Selamat datang di tahap Pembayaran!');
     }
 
     public function show(Package $package)
