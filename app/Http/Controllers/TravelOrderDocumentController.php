@@ -136,12 +136,12 @@ class TravelOrderDocumentController extends Controller
         $this->authorizeAccess($package, $travelOrder);
         $travelOrder->load('personnels.employee');
         
-        if ($type === 'surat-tugas-bupati') {
-            return view('travel-orders.print.surat-tugas-bupati', compact('package', 'travelOrder'));
-        } elseif ($type === 'sppd') {
+        if ($type === 'sppd') {
             return view('travel-orders.print.sppd', compact('package', 'travelOrder'));
         }
 
+        // Surat Tugas Bupati kini diproduksi sebagai dokumen Word (exportWord),
+        // bukan cetak HTML.
         abort(404, 'Tipe dokumen cetak tidak valid');
     }
 
