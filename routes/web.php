@@ -287,6 +287,12 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::middleware(['role:Admin|Super Admin'])->prefix('admin')->name('admin.')->group(function () use ($sharedProcurementRoutes, $sharedOvertimeRoutes) {
         $sharedProcurementRoutes();
         $sharedOvertimeRoutes();
+
+        // Pelaksanaan: catat BAST (selesai pekerjaan) & addendum — handler yang
+        // sama dengan kabid; redirect di controller sudah sadar-role.
+        Route::post('procurement-packages/{package}/execution/addendum', [\App\Http\Controllers\Kabid\ProcurementExecutionController::class, 'storeAddendum'])->name('procurement-packages.execution.addendum');
+        Route::post('procurement-packages/{package}/execution/finish', [\App\Http\Controllers\Kabid\ProcurementExecutionController::class, 'finishWork'])->name('procurement-packages.execution.finish');
+
         // Import (admin)
         Route::get('packages/import', [\App\Http\Controllers\ImportBatchController::class, 'index'])->name('packages.import.index');
         Route::post('packages/import', [\App\Http\Controllers\ImportBatchController::class, 'store'])->name('packages.import.store');
