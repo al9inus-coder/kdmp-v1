@@ -88,144 +88,122 @@
         </div>
     @endif
 
-    {{-- Program → Kegiatan → kartu Sub Kegiatan --}}
-    <div class="space-y-6">
+    {{-- Struktur DPA sebagai pohon: Program (kartu) - Kegiatan - Sub Kegiatan --}}
+    <div class="space-y-5">
         @forelse($programs as $program)
             <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                {{-- Program --}}
                 <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/60 flex flex-wrap items-center justify-between gap-3">
                     <h2 class="text-base font-extrabold text-slate-800 flex items-center gap-2 min-w-0">
                         <i data-lucide="folder-kanban" class="w-5 h-5 text-blue-500 shrink-0"></i>
-                        {{ $program->kode }} - {{ $program->nama }}
+                        <span class="font-mono text-blue-600 text-sm">{{ $program->kode }}</span>
+                        <span class="text-slate-300">&middot;</span>
+                        <span class="truncate">{{ $program->nama }}</span>
                     </h2>
                     <button type="button"
-                        onclick="bukaModal('modalKegiatan', { program_id: {{ $program->id }}, induk: @js($program->kode . ' — ' . $program->nama) })"
+                        onclick="bukaModal('modalKegiatan', { program_id: {{ $program->id }}, induk: @js($program->kode . ' - ' . $program->nama) })"
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-700 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors shrink-0">
-                        <i data-lucide="plus" class="w-3.5 h-3.5"></i> Tambah Kegiatan
+                        <i data-lucide="plus" class="w-3.5 h-3.5"></i> Kegiatan
                     </button>
                 </div>
 
-                <div class="divide-y divide-slate-100">
+                <div class="p-4 space-y-3">
                     @forelse($program->activities as $activity)
-                        <div class="p-5">
-                            <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
-                                <div class="min-w-0">
-                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Kegiatan</p>
-                                    <h3 class="text-sm font-bold text-slate-800 mt-1">{{ $activity->kode }} - {{ $activity->nama }}</h3>
+                        {{-- Kegiatan --}}
+                        <div>
+                            <div class="flex flex-wrap items-center justify-between gap-2 px-2 py-1.5">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <i data-lucide="corner-down-right" class="w-4 h-4 text-slate-300 shrink-0"></i>
+                                    <span class="font-mono text-xs font-bold text-slate-500">{{ $activity->kode }}</span>
+                                    <span class="text-slate-300">&middot;</span>
+                                    <span class="text-sm font-bold text-slate-700 truncate">{{ $activity->nama }}</span>
                                 </div>
                                 <button type="button"
-                                    onclick="bukaModal('modalSubKegiatan', { activity_id: {{ $activity->id }}, induk: @js($activity->kode . ' — ' . $activity->nama) })"
-                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-700 bg-white border border-emerald-200 rounded-lg hover:bg-emerald-50 transition-colors shrink-0">
-                                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> Tambah Sub Kegiatan
+                                    onclick="bukaModal('modalSubKegiatan', { activity_id: {{ $activity->id }}, induk: @js($activity->kode . ' - ' . $activity->nama) })"
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold text-emerald-700 bg-white border border-emerald-200 rounded-lg hover:bg-emerald-50 transition-colors shrink-0">
+                                    <i data-lucide="plus" class="w-3 h-3"></i> Sub Kegiatan
                                 </button>
                             </div>
 
+                            {{-- Sub Kegiatan sebagai daun pohon --}}
                             @if($activity->subActivities->isEmpty())
-                                <div class="flex items-center gap-3 px-4 py-3 rounded-xl border border-dashed border-slate-200 bg-slate-50/60">
-                                    <i data-lucide="layers" class="w-4 h-4 text-slate-300 shrink-0"></i>
-                                    <p class="text-xs text-slate-500 font-semibold">Belum ada sub kegiatan pada kegiatan ini.</p>
-                                    <a href="{{ route('admin.sub-activities.index') }}"
-                                        class="ml-auto text-xs font-bold text-emerald-600 hover:text-emerald-700 whitespace-nowrap">
-                                        Kelola Sub Kegiatan →
-                                    </a>
+                                <div class="ml-6 pl-4 border-l border-slate-200">
+                                    <div class="flex items-center gap-2 px-3 py-2.5 text-xs text-slate-400 font-semibold">
+                                        <i data-lucide="layers" class="w-3.5 h-3.5 shrink-0"></i>
+                                        Belum ada sub kegiatan.
+                                        <a href="{{ route('admin.sub-activities.index') }}" class="text-emerald-600 hover:text-emerald-700 font-bold">Kelola &rarr;</a>
+                                    </div>
                                 </div>
                             @else
-                            <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
-                                @foreach($activity->subActivities as $subActivity)
-                                    @php
-                                        $r = $ringkasSub[$subActivity->id] ?? ['plafon' => 0, 'terinput' => 0, 'selisih' => 0, 'jumlahRekening' => 0, 'jumlahPaket' => 0, 'adaPlafon' => false];
-                                        $seimbang = abs($r['selisih']) < 0.01;
-                                        $persen = $r['plafon'] > 0 ? min(100, $r['terinput'] / $r['plafon'] * 100) : 0;
+                                <div class="ml-6 pl-4 border-l border-slate-200 space-y-0.5">
+                                    @foreach($activity->subActivities as $subActivity)
+                                        @php
+                                            $r = $ringkasSub[$subActivity->id] ?? ['plafon' => 0, 'terinput' => 0, 'selisih' => 0, 'jumlahRekening' => 0, 'jumlahPaket' => 0, 'adaPlafon' => false, 'tanpaRekeningJumlah' => 0];
+                                            $seimbang = abs($r['selisih']) < 0.01;
 
-                                        if (!$r['adaPlafon']) {
-                                            $tone = 'slate'; $badge = 'Belum ada plafon';
-                                        } elseif ($seimbang) {
-                                            $tone = 'emerald'; $badge = 'Sesuai';
-                                        } elseif ($r['selisih'] > 0) {
-                                            $tone = 'amber'; $badge = 'Belum dirinci';
-                                        } else {
-                                            $tone = 'rose'; $badge = 'Melebihi plafon';
-                                        }
+                                            if (!$r['adaPlafon']) {
+                                                $tone = 'slate'; $badge = 'Belum ada plafon';
+                                            } elseif ($seimbang) {
+                                                $tone = 'emerald'; $badge = 'Sesuai';
+                                            } elseif ($r['selisih'] > 0) {
+                                                $tone = 'amber'; $badge = 'Belum dirinci';
+                                            } else {
+                                                $tone = 'rose'; $badge = 'Melebihi plafon';
+                                            }
+                                            $toneClass = [
+                                                'emerald' => 'text-emerald-700 bg-emerald-50 border-emerald-200',
+                                                'amber' => 'text-amber-700 bg-amber-50 border-amber-200',
+                                                'rose' => 'text-rose-700 bg-rose-50 border-rose-200',
+                                                'slate' => 'text-slate-500 bg-slate-100 border-slate-200',
+                                            ][$tone];
+                                        @endphp
 
-                                        $toneClass = [
-                                            'emerald' => 'text-emerald-600 bg-emerald-50 border-emerald-100',
-                                            'amber' => 'text-amber-600 bg-amber-50 border-amber-100',
-                                            'rose' => 'text-rose-600 bg-rose-50 border-rose-100',
-                                            'slate' => 'text-slate-500 bg-slate-100 border-slate-200',
-                                        ][$tone];
-                                        $barClass = [
-                                            'emerald' => 'bg-emerald-500',
-                                            'amber' => 'bg-amber-500',
-                                            'rose' => 'bg-rose-500',
-                                            'slate' => 'bg-slate-300',
-                                        ][$tone];
-                                    @endphp
+                                        <a href="{{ route('admin.anggaran.sub-kegiatan', [$subActivity, 'tahun' => $tahunId]) }}"
+                                            class="group relative flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-colors">
+                                            <span class="absolute -left-4 top-1/2 w-4 border-t border-slate-200" aria-hidden="true"></span>
 
-                                    <a href="{{ route('admin.anggaran.sub-kegiatan', [$subActivity, 'tahun' => $tahunId]) }}"
-                                        class="group block rounded-2xl border border-slate-200 bg-white hover:border-emerald-200 hover:shadow-md transition-all overflow-hidden">
-                                        <div class="p-4">
-                                            <div class="flex items-start justify-between gap-3">
-                                                <div class="min-w-0">
-                                                    <p class="text-xs font-extrabold text-slate-500">{{ $subActivity->kode }}</p>
-                                                    <h4 class="text-sm font-bold text-slate-800 mt-1 leading-snug group-hover:text-emerald-700">
-                                                        {{ $subActivity->nama }}
-                                                    </h4>
-                                                </div>
-                                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full border text-[11px] font-bold {{ $toneClass }} shrink-0 whitespace-nowrap">
-                                                    {{ $badge }}
-                                                </span>
-                                            </div>
-
-                                            <div class="space-y-2.5 mt-4 text-xs">
-                                                <div class="flex items-center justify-between gap-3">
-                                                    <span class="text-slate-400 font-semibold">Plafon DPA</span>
-                                                    <span class="text-slate-800 font-bold text-right">{{ $rupiah($r['plafon']) }}</span>
-                                                </div>
-                                                <div class="flex items-center justify-between gap-3">
-                                                    <span class="text-slate-400 font-semibold">Terinput</span>
-                                                    <span class="text-blue-600 font-bold text-right">{{ $rupiah($r['terinput']) }}</span>
-                                                </div>
-                                                <div class="flex items-center justify-between gap-3">
-                                                    <span class="text-slate-400 font-semibold">Selisih</span>
-                                                    <span class="font-bold text-right {{ $seimbang ? 'text-emerald-600' : ($r['selisih'] > 0 ? 'text-amber-600' : 'text-rose-600') }}">
-                                                        {{ $seimbang ? '—' : $rupiah($r['selisih']) }}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            @if($r['tanpaRekeningJumlah'] > 0)
-                                                <p class="mt-2.5 inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 border border-amber-100 text-[10px] font-bold text-amber-700">
-                                                    <i data-lucide="link-2-off" class="w-3 h-3"></i>
-                                                    {{ $r['tanpaRekeningJumlah'] }} paket belum berrekening
+                                            <div class="min-w-0 flex-1">
+                                                <p class="text-sm font-bold text-slate-800 group-hover:text-emerald-700 leading-snug truncate">
+                                                    <span class="font-mono text-xs text-slate-400 mr-1.5">{{ $subActivity->kode }}</span>
+                                                    {{ $subActivity->nama }}
                                                 </p>
-                                            @endif
-
-                                            <div class="mt-3">
-                                                <div class="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                                                    <div class="h-full {{ $barClass }} rounded-full" style="width: {{ $persen }}%"></div>
-                                                </div>
-                                                <div class="flex items-center justify-between mt-2 text-[11px] font-semibold text-slate-400">
-                                                    <span>{{ $r['jumlahRekening'] }} rekening · {{ $r['jumlahPaket'] }} paket</span>
-                                                    <span class="inline-flex items-center gap-1 text-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        Kelola <i data-lucide="arrow-right" class="w-3 h-3"></i>
-                                                    </span>
-                                                </div>
+                                                <p class="text-[11px] font-semibold text-slate-400 mt-0.5">
+                                                    {{ $r['jumlahRekening'] }} rekening &middot; {{ $r['jumlahPaket'] }} paket
+                                                    @if($r['adaPlafon'])
+                                                        <span class="text-slate-300">&middot;</span> terinput {{ $rupiah($r['terinput']) }}
+                                                    @endif
+                                                    @if($r['tanpaRekeningJumlah'] > 0)
+                                                        <span class="ml-1 inline-flex items-center gap-1 px-1.5 py-px rounded bg-amber-50 border border-amber-100 text-amber-700 font-bold">
+                                                            <i data-lucide="link-2-off" class="w-2.5 h-2.5"></i>{{ $r['tanpaRekeningJumlah'] }} tanpa rekening
+                                                        </span>
+                                                    @endif
+                                                </p>
                                             </div>
-                                        </div>
-                                    </a>
-                                @endforeach
-                            </div>
+
+                                            <div class="text-right shrink-0">
+                                                <p class="text-sm font-extrabold text-slate-900 whitespace-nowrap">{{ $rupiah($r['plafon']) }}</p>
+                                                @unless($seimbang)
+                                                    <p class="text-[11px] font-bold {{ $r['selisih'] > 0 ? 'text-amber-600' : 'text-rose-600' }} whitespace-nowrap">
+                                                        {{ $r['selisih'] > 0 ? '+' : '' }}{{ $rupiah($r['selisih']) }}
+                                                    </p>
+                                                @endunless
+                                            </div>
+
+                                            <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-full border text-[10px] font-bold {{ $toneClass }} shrink-0 whitespace-nowrap w-[104px]">
+                                                {{ $badge }}
+                                            </span>
+
+                                            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 group-hover:text-emerald-500 shrink-0"></i>
+                                        </a>
+                                    @endforeach
+                                </div>
                             @endif
                         </div>
                     @empty
-                        <div class="p-5">
-                            <div class="flex items-center gap-3 px-4 py-3 rounded-xl border border-dashed border-slate-200 bg-slate-50/60">
-                                <i data-lucide="briefcase" class="w-4 h-4 text-slate-300 shrink-0"></i>
-                                <p class="text-xs text-slate-500 font-semibold">Belum ada kegiatan pada program ini.</p>
-                                <a href="{{ route('admin.activities.index') }}"
-                                    class="ml-auto text-xs font-bold text-emerald-600 hover:text-emerald-700 whitespace-nowrap">
-                                    Kelola Kegiatan →
-                                </a>
-                            </div>
+                        <div class="flex items-center gap-2 px-3 py-3 text-xs text-slate-400 font-semibold">
+                            <i data-lucide="briefcase" class="w-3.5 h-3.5 shrink-0"></i>
+                            Belum ada kegiatan pada program ini.
+                            <a href="{{ route('admin.activities.index') }}" class="text-emerald-600 hover:text-emerald-700 font-bold">Kelola &rarr;</a>
                         </div>
                     @endforelse
                 </div>
