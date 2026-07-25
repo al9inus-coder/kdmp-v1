@@ -364,6 +364,13 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::post('fiscal-years/{fiscalYear}/activate', [FiscalYearController::class, 'activate'])->name('fiscal-years.activate');
         Route::resource('fiscal-years', FiscalYearController::class)->except(['show', 'edit', 'update', 'destroy']);
         Route::resource('employees', \App\Http\Controllers\EmployeeController::class)->except(['show']);
+
+        // Anggaran (DPA): plafon per rekening dalam sub kegiatan + riwayat revisi
+        Route::post('anggaran/{anggaran}/revisions', [\App\Http\Controllers\Admin\BudgetLineController::class, 'storeRevision'])->name('anggaran.revisions.store');
+        Route::delete('anggaran/{anggaran}/revisions/{revision}', [\App\Http\Controllers\Admin\BudgetLineController::class, 'destroyRevision'])->name('anggaran.revisions.destroy');
+        Route::resource('anggaran', \App\Http\Controllers\Admin\BudgetLineController::class)
+            ->parameters(['anggaran' => 'anggaran'])
+            ->except(['show']);
     });
     
 
