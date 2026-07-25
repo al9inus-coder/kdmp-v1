@@ -7,11 +7,10 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
-        "barryvdh/laravel-dompdf": "^3.1",
         "laravel/framework": "^13.8",
         "laravel/tinker": "^3.0",
-        "maatwebsite/excel": "^3.1",
         "openai-php/laravel": "^0.19.1",
+        "phpoffice/phpspreadsheet": "^5.0",
         "phpoffice/phpword": "^1.4",
         "spatie/laravel-permission": "^7.4"
     },
