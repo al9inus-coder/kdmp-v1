@@ -250,12 +250,21 @@
             // Default to Google Gemini Light Mode (#F8F9FA Pristine Off-White)
             isDarkMode: false,
 
-            getAiHost() {
-                const currentHost = window.location.hostname || '127.0.0.1';
-                if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(currentHost)) {
-                    return currentHost;
-                }
-                return '127.0.0.1';
+            // AI Service tidak pernah dipanggil langsung dari browser. Semua
+            // lewat KDMP supaya kunci internalnya tetap di server.
+            async panggilAi(url, payload) {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify(payload),
+                });
+
+                return res.json();
             },
 
             init() {
@@ -345,20 +354,7 @@
                 this.scrollToBottom();
 
                 try {
-                    const host = this.getAiHost();
-                    const res = await fetch(`http://${host}:8000/api/v1/ai/chat`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-KDMP-SECRET-KEY': 'kdmp_secret_key_2026'
-                        },
-                        body: JSON.stringify({
-                            user_id: '{{ auth()->user()->name ?? "Operator KDMP" }}',
-                            prompt: userText
-                        })
-                    });
-
-                    const data = await res.json();
+                    const data = await this.panggilAi('{{ route('ai.chat') }}', { prompt: userText });
                     this.isLoading = false;
 
                     if (data.status === 'success' && data.data) {
@@ -387,7 +383,7 @@
                     this.isLoading = false;
                     this.messages.push({
                         sender: 'bot',
-                        formattedText: 'Gagal terhubung ke AI Service microservice. Pastikan server `ai-kdmp` berjalan di port 8000.'
+                        formattedText: 'Gagal terhubung ke AI Service. Pastikan aplikasi <code>ai-kdmp</code> berjalan dan <code>AI_SERVICE_URL</code> sudah benar.'
                     });
                 }
 
@@ -396,29 +392,17 @@
 
             async handleApproval(jobId, decision) {
                 try {
-                    const host = this.getAiHost();
-                    
-                    // 1. Update status in ai-kdmp microservice
-                    const res = await fetch(`http://${host}:8000/api/v1/ai/approve`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-KDMP-SECRET-KEY': 'kdmp_secret_key_2026'
-                        },
-                        body: JSON.stringify({
-                            job_id: jobId,
-                            action: decision,
-                            user_id: '{{ auth()->user()->name ?? "Operator KDMP" }}'
-                        })
+                    // 1. Update status in ai-kdmp microservice (lewat KDMP)
+                    const json = await this.panggilAi('{{ route('ai.approve') }}', {
+                        job_id: jobId,
+                        decision: String(decision).toLowerCase(),
                     });
 
-                    const json = await res.json();
-
                     // 2. If approved, store record directly into KDMP travel_orders & travel_personnels database!
-                    if (decision === 'APPROVE' || decision === 'approve') {
+                    if (String(decision).toLowerCase() === 'approve') {
                         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
                         
-                        const dbRes = await fetch('/sppd/ai-store', {
+                        const dbRes = await fetch('{{ route('sppd.ai-store') }}', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',

@@ -29,6 +29,11 @@ Route::view('/disclaimer', 'disclaimer')->name('disclaimer');
 // Route dengan Middleware Auth
 Route::middleware(['auth', 'active'])->group(function () {
 
+    // Jembatan ke AI Service: browser memanggil KDMP, KDMP yang memegang
+    // kunci internal dan meneruskannya server-to-server.
+    Route::post('/ai/chat', [\App\Http\Controllers\AiProxyController::class, 'chat'])->name('ai.chat');
+    Route::post('/ai/approve', [\App\Http\Controllers\AiProxyController::class, 'approve'])->name('ai.approve');
+
     // AI Bridge route for storing approved SPD into travel_orders database
     Route::post('/sppd/ai-store', [\App\Http\Controllers\AiSppdBridgeController::class, 'store'])->name('sppd.ai-store');
 
