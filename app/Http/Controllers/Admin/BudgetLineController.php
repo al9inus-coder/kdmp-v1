@@ -82,12 +82,24 @@ class BudgetLineController extends Controller
             ->merge($tanpaRekening->keys())
             ->unique();
 
+        // Program & kegiatan ikut tampil walau belum berisi apa-apa, supaya
+        // struktur DPA yang sedang dibangun terlihat utuh dan bagian yang
+        // masih kosong ketahuan. Yang non-aktif hanya muncul bila masih
+        // menyimpan data.
         $programs = Program::query()
-            ->with(['activities' => fn ($q) => $q->orderBy('kode'),
-                    'activities.subActivities' => fn ($q) => $q->whereIn('id', $subIds)->orderBy('kode')])
+            ->where(fn ($q) => $q
+                ->where('is_active', true)
+                ->orWhereHas('activities.subActivities', fn ($s) => $s->whereIn('id', $subIds)))
+            ->with([
+                'activities' => fn ($q) => $q
+                    ->where(fn ($a) => $a
+                        ->where('is_active', true)
+                        ->orWhereHas('subActivities', fn ($s) => $s->whereIn('id', $subIds)))
+                    ->orderBy('kode'),
+                'activities.subActivities' => fn ($q) => $q->whereIn('id', $subIds)->orderBy('kode'),
+            ])
             ->orderBy('kode')
-            ->get()
-            ->filter(fn ($p) => $p->activities->contains(fn ($a) => $a->subActivities->isNotEmpty()));
+            ->get();
 
         // Ringkasan per sub kegiatan, dipakai kartu di view.
         $ringkasSub = collect($subIds)->mapWithKeys(function ($subId) use ($linesPerSub, $paketPerSub, $tanpaRekening) {

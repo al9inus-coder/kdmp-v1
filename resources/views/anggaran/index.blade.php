@@ -97,14 +97,23 @@
                 </div>
 
                 <div class="divide-y divide-slate-100">
-                    @foreach($program->activities as $activity)
-                        @continue($activity->subActivities->isEmpty())
+                    @forelse($program->activities as $activity)
                         <div class="p-5">
                             <div class="mb-4">
                                 <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Kegiatan</p>
                                 <h3 class="text-sm font-bold text-slate-800 mt-1">{{ $activity->kode }} - {{ $activity->nama }}</h3>
                             </div>
 
+                            @if($activity->subActivities->isEmpty())
+                                <div class="flex items-center gap-3 px-4 py-3 rounded-xl border border-dashed border-slate-200 bg-slate-50/60">
+                                    <i data-lucide="layers" class="w-4 h-4 text-slate-300 shrink-0"></i>
+                                    <p class="text-xs text-slate-500 font-semibold">Belum ada sub kegiatan pada kegiatan ini.</p>
+                                    <a href="{{ route('admin.sub-activities.index') }}"
+                                        class="ml-auto text-xs font-bold text-emerald-600 hover:text-emerald-700 whitespace-nowrap">
+                                        Kelola Sub Kegiatan →
+                                    </a>
+                                </div>
+                            @else
                             <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
                                 @foreach($activity->subActivities as $subActivity)
                                     @php
@@ -190,8 +199,20 @@
                                     </a>
                                 @endforeach
                             </div>
+                            @endif
                         </div>
-                    @endforeach
+                    @empty
+                        <div class="p-5">
+                            <div class="flex items-center gap-3 px-4 py-3 rounded-xl border border-dashed border-slate-200 bg-slate-50/60">
+                                <i data-lucide="briefcase" class="w-4 h-4 text-slate-300 shrink-0"></i>
+                                <p class="text-xs text-slate-500 font-semibold">Belum ada kegiatan pada program ini.</p>
+                                <a href="{{ route('admin.activities.index') }}"
+                                    class="ml-auto text-xs font-bold text-emerald-600 hover:text-emerald-700 whitespace-nowrap">
+                                    Kelola Kegiatan →
+                                </a>
+                            </div>
+                        </div>
+                    @endforelse
                 </div>
             </section>
         @empty
