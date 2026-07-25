@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BudgetLineRequest;
 use App\Models\Account;
+use App\Models\Activity;
 use App\Models\BudgetLine;
 use App\Models\BudgetRevision;
 use App\Models\FiscalYear;
@@ -142,6 +143,65 @@ class BudgetLineController extends Controller
             'fiscalYears' => $fiscalYears,
             'tahunId' => $tahunId,
         ]);
+    }
+
+    /**
+     * Struktur DPA dibangun langsung dari halaman ini, menurun mengikuti
+     * dokumen aslinya: Program → Kegiatan → Sub Kegiatan → Rekening.
+     * Aturan validasinya sama dengan master masing-masing (kode unik).
+     */
+    public function storeProgram(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'kode' => ['required', 'string', 'max:50', 'unique:programs,kode'],
+            'nama' => ['required', 'string', 'max:255'],
+        ], [
+            'kode.required' => 'Kode program wajib diisi.',
+            'kode.unique' => 'Kode program ini sudah dipakai.',
+            'nama.required' => 'Nama program wajib diisi.',
+        ]);
+
+        Program::create($data + ['is_active' => true]);
+
+        return back()->with('success', 'Program "' . $data['nama'] . '" ditambahkan. Lanjutkan dengan menambah kegiatan di dalamnya.');
+    }
+
+    public function storeActivity(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'program_id' => ['required', 'exists:programs,id'],
+            'kode' => ['required', 'string', 'max:50', 'unique:activities,kode'],
+            'nama' => ['required', 'string', 'max:255'],
+        ], [
+            'program_id.required' => 'Program induk tidak dikenali.',
+            'kode.required' => 'Kode kegiatan wajib diisi.',
+            'kode.unique' => 'Kode kegiatan ini sudah dipakai.',
+            'nama.required' => 'Nama kegiatan wajib diisi.',
+        ]);
+
+        Activity::create($data + ['is_active' => true]);
+
+        return back()->with('success', 'Kegiatan "' . $data['nama'] . '" ditambahkan. Lanjutkan dengan menambah sub kegiatan.');
+    }
+
+    public function storeSubActivity(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'activity_id' => ['required', 'exists:activities,id'],
+            'kode' => ['required', 'string', 'max:50', 'unique:sub_activities,kode'],
+            'nama' => ['required', 'string', 'max:255'],
+        ], [
+            'activity_id.required' => 'Kegiatan induk tidak dikenali.',
+            'kode.required' => 'Kode sub kegiatan wajib diisi.',
+            'kode.unique' => 'Kode sub kegiatan ini sudah dipakai.',
+            'nama.required' => 'Nama sub kegiatan wajib diisi.',
+        ]);
+
+        $sub = SubActivity::create($data + ['is_active' => true]);
+
+        return redirect()
+            ->route('admin.anggaran.sub-kegiatan', [$sub, 'tahun' => $request->tahun])
+            ->with('success', 'Sub kegiatan ditambahkan. Sekarang isi rekening belanja beserta plafonnya.');
     }
 
     /**

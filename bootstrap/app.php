@@ -12,6 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+        $middleware->web(append: [
+            \App\Http\Middleware\DetectDeviceMiddleware::class,
+        ]);
 
         // Daftar proxy harus eksplisit. Jangan mempercayai seluruh private range
         // karena header X-Forwarded-* dapat dipalsukan dari jaringan internal.

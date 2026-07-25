@@ -7,6 +7,12 @@
 
     <title>{{ config('app.name', 'KDMP') }} - @yield('title', 'Dashboard')</title>
 
+    <!-- PWA Web Manifest & Mobile Theme -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#059669">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
@@ -17,7 +23,7 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-<body class="font-sans antialiased text-slate-900 bg-slate-50"
+<body class="font-sans antialiased text-slate-900 bg-slate-50 pb-16 md:pb-0"
       x-data="{ sidebarOpen: false, sidebarCollapsed: false }"
       x-init="sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true'; $watch('sidebarCollapsed', val => localStorage.setItem('sidebarCollapsed', val))">
     <!-- Backdrop untuk Mobile -->
@@ -131,8 +137,6 @@
                     </div>
                 </div>
 
-                {{-- Ikon Notifikasi disembunyikan sampai fitur notifikasi tersedia --}}
-
                 <!-- Profile Dropdown (Menggunakan Alpine.js) -->
                 <div class="relative" x-data="{ open: false }" @click.away="open = false" @close.stop="open = false">
                     <button @click="open = !open" type="button" class="flex items-center gap-2 focus:outline-none p-1 rounded-full hover:bg-slate-100 transition-colors">
@@ -165,7 +169,6 @@
         </header>
 
         <!-- Main Content -->
-        <!-- Background slate-50, Padding 32px (p-8) -->
         <main class="flex-1 p-4 bg-slate-50">
             @if(isset($header))
                 <div class="mb-6">
@@ -185,10 +188,23 @@
         </footer>
     </div>
 
-    <!-- Script inisialisasi Lucide Icons -->
+    <!-- Mobile PWA Bottom Navigation Bar (Otomatis Tampil di Ponsel) -->
+    <x-mobile-pwa-bottom-nav />
+
+    <!-- AI Assistant Interactive Widget & Slide-over Drawer (Touch-friendly & Desktop FAB) -->
+    <x-ai-assistant-widget />
+
+    <!-- PWA Service Worker Registration & Lucide Icons -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             lucide.createIcons();
+
+            // PWA Service Worker Registration
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('KDMP PWA Service Worker Registered:', reg.scope))
+                    .catch(err => console.error('KDMP PWA Service Worker Failed:', err));
+            }
         });
     </script>
 </body>

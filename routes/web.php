@@ -368,6 +368,10 @@ Route::middleware(['auth', 'active'])->group(function () {
         // Anggaran (DPA): plafon per rekening dalam sub kegiatan + riwayat revisi.
         // Rute sub-kegiatan didaftarkan lebih dulu agar tidak tertangkap
         // resource route anggaran/{anggaran}.
+        // Struktur DPA dibangun langsung dari halaman anggaran
+        Route::post('anggaran/program', [\App\Http\Controllers\Admin\BudgetLineController::class, 'storeProgram'])->name('anggaran.program.store');
+        Route::post('anggaran/kegiatan', [\App\Http\Controllers\Admin\BudgetLineController::class, 'storeActivity'])->name('anggaran.kegiatan.store');
+        Route::post('anggaran/sub-kegiatan', [\App\Http\Controllers\Admin\BudgetLineController::class, 'storeSubActivity'])->name('anggaran.sub-kegiatan.store');
         Route::get('anggaran/sub-kegiatan/{subActivity}', [\App\Http\Controllers\Admin\BudgetLineController::class, 'subActivity'])->name('anggaran.sub-kegiatan');
         Route::post('anggaran/sub-kegiatan/{subActivity}/revisi', [\App\Http\Controllers\Admin\BudgetLineController::class, 'bulkRevision'])->name('anggaran.revisi-massal');
         Route::post('anggaran/{anggaran}/revisions', [\App\Http\Controllers\Admin\BudgetLineController::class, 'storeRevision'])->name('anggaran.revisions.store');

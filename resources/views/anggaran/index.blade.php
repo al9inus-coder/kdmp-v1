@@ -19,6 +19,9 @@
                 @endforeach
             </select>
         </form>
+        <x-ui.button variant="primary" size="md" type="button" onclick="bukaModal('modalProgram')">
+            <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambah Program
+        </x-ui.button>
     </x-slot:actions>
 
     {{-- Ringkasan --}}
@@ -89,19 +92,31 @@
     <div class="space-y-6">
         @forelse($programs as $program)
             <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/60">
-                    <h2 class="text-base font-extrabold text-slate-800 flex items-center gap-2">
-                        <i data-lucide="folder-kanban" class="w-5 h-5 text-blue-500"></i>
+                <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/60 flex flex-wrap items-center justify-between gap-3">
+                    <h2 class="text-base font-extrabold text-slate-800 flex items-center gap-2 min-w-0">
+                        <i data-lucide="folder-kanban" class="w-5 h-5 text-blue-500 shrink-0"></i>
                         {{ $program->kode }} - {{ $program->nama }}
                     </h2>
+                    <button type="button"
+                        onclick="bukaModal('modalKegiatan', { program_id: {{ $program->id }}, induk: @js($program->kode . ' — ' . $program->nama) })"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-700 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors shrink-0">
+                        <i data-lucide="plus" class="w-3.5 h-3.5"></i> Tambah Kegiatan
+                    </button>
                 </div>
 
                 <div class="divide-y divide-slate-100">
                     @forelse($program->activities as $activity)
                         <div class="p-5">
-                            <div class="mb-4">
-                                <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Kegiatan</p>
-                                <h3 class="text-sm font-bold text-slate-800 mt-1">{{ $activity->kode }} - {{ $activity->nama }}</h3>
+                            <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Kegiatan</p>
+                                    <h3 class="text-sm font-bold text-slate-800 mt-1">{{ $activity->kode }} - {{ $activity->nama }}</h3>
+                                </div>
+                                <button type="button"
+                                    onclick="bukaModal('modalSubKegiatan', { activity_id: {{ $activity->id }}, induk: @js($activity->kode . ' — ' . $activity->nama) })"
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-700 bg-white border border-emerald-200 rounded-lg hover:bg-emerald-50 transition-colors shrink-0">
+                                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> Tambah Sub Kegiatan
+                                </button>
                             </div>
 
                             @if($activity->subActivities->isEmpty())
@@ -217,10 +232,158 @@
             </section>
         @empty
             <x-ui.card padding="md">
-                <x-ui.empty-state icon="wallet" title="Belum Ada Data Anggaran"
-                    description="Belum ada plafon maupun paket pada tahun anggaran ini. Jalankan perintah anggaran:seed-dpa untuk membentuk baris dari paket yang sudah ada." />
+                <x-ui.empty-state icon="wallet" title="Belum Ada Program"
+                    description="Mulai bangun struktur DPA dengan menambahkan program terlebih dahulu.">
+                    <x-ui.button variant="primary" size="md" type="button" onclick="bukaModal('modalProgram')">
+                        <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambah Program
+                    </x-ui.button>
+                </x-ui.empty-state>
             </x-ui.card>
         @endforelse
     </div>
+
+    {{-- ── Modal: tambah Program ───────────────────────────── --}}
+    <div id="modalProgram" class="anggaran-modal hidden fixed inset-0 z-[70] items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="tutupModal('modalProgram')"></div>
+        <div class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <form action="{{ route('admin.anggaran.program.store') }}" method="POST">
+                @csrf
+                <div class="px-5 py-4 border-b border-slate-100 bg-blue-50/60 flex items-center justify-between">
+                    <div>
+                        <h3 class="font-bold text-slate-800">Tambah Program</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Tingkat teratas struktur DPA.</p>
+                    </div>
+                    <button type="button" onclick="tutupModal('modalProgram')" class="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg font-black">✕</button>
+                </div>
+                <div class="p-5 space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Kode Program <span class="text-rose-500">*</span></label>
+                        <x-ui.input type="text" name="kode" :value="old('kode')" placeholder="mis. 2.11.11" required />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Program <span class="text-rose-500">*</span></label>
+                        <x-ui.input type="text" name="nama" :value="old('nama')" placeholder="mis. Pengelolaan Persampahan" required />
+                    </div>
+                </div>
+                <div class="px-5 py-4 bg-slate-50/70 border-t border-slate-100 flex justify-end gap-2">
+                    <button type="button" onclick="tutupModal('modalProgram')" class="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg">Batal</button>
+                    <x-ui.button variant="primary" size="md" type="submit">Simpan Program</x-ui.button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- ── Modal: tambah Kegiatan (induk diisi JS) ─────────── --}}
+    <div id="modalKegiatan" class="anggaran-modal hidden fixed inset-0 z-[70] items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="tutupModal('modalKegiatan')"></div>
+        <div class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <form action="{{ route('admin.anggaran.kegiatan.store') }}" method="POST">
+                @csrf
+                <input type="hidden" name="program_id" data-field="program_id">
+                <div class="px-5 py-4 border-b border-slate-100 bg-blue-50/60 flex items-center justify-between">
+                    <div class="min-w-0">
+                        <h3 class="font-bold text-slate-800">Tambah Kegiatan</h3>
+                        <p class="text-xs text-slate-500 mt-0.5 truncate" data-field="induk"></p>
+                    </div>
+                    <button type="button" onclick="tutupModal('modalKegiatan')" class="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg font-black shrink-0">✕</button>
+                </div>
+                <div class="p-5 space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Kode Kegiatan <span class="text-rose-500">*</span></label>
+                        <x-ui.input type="text" name="kode" placeholder="mis. 2.11.11.2.01" required />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Kegiatan <span class="text-rose-500">*</span></label>
+                        <x-ui.input type="text" name="nama" placeholder="Nama kegiatan" required />
+                    </div>
+                </div>
+                <div class="px-5 py-4 bg-slate-50/70 border-t border-slate-100 flex justify-end gap-2">
+                    <button type="button" onclick="tutupModal('modalKegiatan')" class="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg">Batal</button>
+                    <x-ui.button variant="primary" size="md" type="submit">Simpan Kegiatan</x-ui.button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- ── Modal: tambah Sub Kegiatan ──────────────────────── --}}
+    <div id="modalSubKegiatan" class="anggaran-modal hidden fixed inset-0 z-[70] items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="tutupModal('modalSubKegiatan')"></div>
+        <div class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <form action="{{ route('admin.anggaran.sub-kegiatan.store') }}" method="POST">
+                @csrf
+                <input type="hidden" name="activity_id" data-field="activity_id">
+                <input type="hidden" name="tahun" value="{{ $tahunId }}">
+                <div class="px-5 py-4 border-b border-slate-100 bg-emerald-50/60 flex items-center justify-between">
+                    <div class="min-w-0">
+                        <h3 class="font-bold text-slate-800">Tambah Sub Kegiatan</h3>
+                        <p class="text-xs text-slate-500 mt-0.5 truncate" data-field="induk"></p>
+                    </div>
+                    <button type="button" onclick="tutupModal('modalSubKegiatan')" class="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg font-black shrink-0">✕</button>
+                </div>
+                <div class="p-5 space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Kode Sub Kegiatan <span class="text-rose-500">*</span></label>
+                        <x-ui.input type="text" name="kode" placeholder="mis. 2.11.11.2.01.0009" required />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Sub Kegiatan <span class="text-rose-500">*</span></label>
+                        <x-ui.input type="text" name="nama" placeholder="Nama sub kegiatan" required />
+                    </div>
+                    <p class="text-[11px] text-slate-400">Setelah disimpan, Anda langsung dibawa ke halaman pengisian rekening &amp; plafonnya.</p>
+                </div>
+                <div class="px-5 py-4 bg-slate-50/70 border-t border-slate-100 flex justify-end gap-2">
+                    <button type="button" onclick="tutupModal('modalSubKegiatan')" class="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg">Batal</button>
+                    <x-ui.button variant="primary" size="md" type="submit">Simpan Sub Kegiatan</x-ui.button>
+                </div>
+            </form>
+        </div>
+    </div>
 </x-ui.workspace>
+
+<script>
+    // Modal sederhana: induk (program/kegiatan) diisi lewat data-field
+    // sehingga satu modal cukup untuk semua kartu.
+    function bukaModal(id, data) {
+        const modal = document.getElementById(id);
+        if (!modal) return;
+
+        Object.entries(data || {}).forEach(function ([key, val]) {
+            modal.querySelectorAll('[data-field="' + key + '"]').forEach(function (el) {
+                if (el.tagName === 'INPUT') el.value = val;
+                else el.textContent = val;
+            });
+        });
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        const first = modal.querySelector('input:not([type="hidden"])');
+        if (first) setTimeout(() => first.focus(), 50);
+    }
+
+    function tutupModal(id) {
+        const modal = document.getElementById(id);
+        if (!modal) return;
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') return;
+        document.querySelectorAll('.anggaran-modal').forEach(m => {
+            m.classList.add('hidden');
+            m.classList.remove('flex');
+        });
+    });
+
+    // Buka kembali modal yang gagal validasi agar isian tidak terasa hilang.
+    @if($errors->any() && old('kode'))
+        @if(old('activity_id'))
+            bukaModal('modalSubKegiatan', { activity_id: {{ (int) old('activity_id') }} });
+        @elseif(old('program_id'))
+            bukaModal('modalKegiatan', { program_id: {{ (int) old('program_id') }} });
+        @else
+            bukaModal('modalProgram');
+        @endif
+    @endif
+</script>
 @endcomponent
