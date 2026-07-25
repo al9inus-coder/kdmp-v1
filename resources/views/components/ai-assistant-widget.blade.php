@@ -86,6 +86,13 @@
                     <p :class="isDarkMode ? 'text-slate-500' : 'text-slate-400'" class="text-xs font-medium">Saran Perintah Cepat</p>
                     <div class="flex flex-col gap-2.5">
                         
+                        <button @click="sendQuickPrompt('buatkan surat perjalanan dinas atas nama damianus ke Bengkayang tanggal 27 Juli 2025')" 
+                                :class="isDarkMode ? 'bg-[#1E1F22] hover:bg-[#2A2B2F] border-slate-800 text-slate-200' : 'bg-white hover:bg-slate-100 border-slate-200/80 text-slate-800 shadow-sm'"
+                                class="w-full text-left p-3.5 rounded-2xl border transition-all flex items-center justify-between group">
+                            <span class="text-xs font-semibold text-emerald-600">✈️ Buat SPD Perjalanan Dinas (Kadiskominfo)</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all"></i>
+                        </button>
+
                         <button @click="sendQuickPrompt('Buatkan Surat Tugas Survei Lapangan tanggal 29 Juli')" 
                                 :class="isDarkMode ? 'bg-[#1E1F22] hover:bg-[#2A2B2F] border-slate-800 text-slate-200' : 'bg-white hover:bg-slate-100 border-slate-200/80 text-slate-800 shadow-sm'"
                                 class="w-full text-left p-3.5 rounded-2xl border transition-all flex items-center justify-between group">
@@ -97,13 +104,6 @@
                                 :class="isDarkMode ? 'bg-[#1E1F22] hover:bg-[#2A2B2F] border-slate-800 text-slate-200' : 'bg-white hover:bg-slate-100 border-slate-200/80 text-slate-800 shadow-sm'"
                                 class="w-full text-left p-3.5 rounded-2xl border transition-all flex items-center justify-between group">
                             <span class="text-xs font-normal">📜 Susun Berita Acara (BA) Serah Terima</span>
-                            <i data-lucide="arrow-right" class="w-4 h-4 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all"></i>
-                        </button>
-
-                        <button @click="sendQuickPrompt('Berapa tarif SBU Perjalanan Dinas 2026?')" 
-                                :class="isDarkMode ? 'bg-[#1E1F22] hover:bg-[#2A2B2F] border-slate-800 text-slate-200' : 'bg-white hover:bg-slate-100 border-slate-200/80 text-slate-800 shadow-sm'"
-                                class="w-full text-left p-3.5 rounded-2xl border transition-all flex items-center justify-between group">
-                            <span class="text-xs font-normal">📊 Cek Tarif Standar SBU Perjalanan Dinas 2026</span>
                             <i data-lucide="arrow-right" class="w-4 h-4 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all"></i>
                         </button>
 
@@ -154,7 +154,7 @@
                                      class="p-4 rounded-2xl border space-y-3 mt-3">
                                     <div class="flex items-center justify-between text-xs">
                                         <span class="font-semibold text-amber-500 flex items-center gap-1.5">
-                                            <i data-lucide="shield-alert" class="w-4 h-4"></i> Konfirmasi Tindakan
+                                            <i data-lucide="shield-alert" class="w-4 h-4"></i> Konfirmasi Tindakan Pimpinan
                                         </span>
                                         <span class="text-[10px] opacity-60 font-mono" x-text="msg.jobId"></span>
                                     </div>
@@ -163,12 +163,12 @@
                                     <div class="flex items-center gap-2 pt-1">
                                         <button @click="handleApproval(msg.jobId, 'APPROVE')" 
                                                 class="flex-1 py-2 rounded-xl bg-[#4285F4] hover:bg-blue-600 text-white font-medium text-xs transition-colors shadow">
-                                            Setujui & Proses
+                                            ✅ Setujui & Buat Draf SPD
                                         </button>
                                         <button @click="handleApproval(msg.jobId, 'REJECT')" 
                                                 :class="isDarkMode ? 'bg-[#2A2B2F] text-slate-300 border-slate-700 hover:bg-slate-700' : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'"
                                                 class="px-4 py-2 rounded-xl font-medium text-xs border transition-colors">
-                                            Tolak
+                                            ❌ Tolak
                                         </button>
                                     </div>
                                 </div>
@@ -185,7 +185,7 @@
                     <path d="M12 2C12 7.5 7.5 12 2 12C7.5 12 12 16.5 12 22C12 16.5 16.5 12 22 12C16.5 12 12 7.5 12 2Z" fill="currentColor"/>
                 </svg>
                 <div :class="isDarkMode ? 'text-slate-500' : 'text-slate-400'" class="text-xs font-normal animate-pulse">
-                    Gemini sedang memproses...
+                    Gemini sedang memproses draf SPD...
                 </div>
             </div>
 
@@ -217,7 +217,7 @@
                 <input type="text" 
                        x-model="inputPrompt" 
                        @keyup.enter="sendMessage()" 
-                       placeholder="Tanya Gemini..." 
+                       placeholder="Tanya Gemini atau minta buatkan SPD..." 
                        :class="isDarkMode ? 'text-white placeholder-slate-500' : 'text-slate-900 placeholder-slate-400'"
                        class="flex-1 bg-transparent border-0 px-1 text-xs focus:outline-none focus:ring-0">
 
@@ -245,9 +245,18 @@
             isListening: false,
             messages: [],
             recognition: null,
+            lastEntities: null,
             
             // Default to Google Gemini Light Mode (#F8F9FA Pristine Off-White)
             isDarkMode: false,
+
+            getAiHost() {
+                const currentHost = window.location.hostname || '127.0.0.1';
+                if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(currentHost)) {
+                    return currentHost;
+                }
+                return '127.0.0.1';
+            },
 
             init() {
                 if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -336,8 +345,7 @@
                 this.scrollToBottom();
 
                 try {
-                    // Dynamic host binding to support access via local Wi-Fi IP (e.g. 192.168.100.229)
-                    const host = window.location.hostname || '127.0.0.1';
+                    const host = this.getAiHost();
                     const res = await fetch(`http://${host}:8000/api/v1/ai/chat`, {
                         method: 'POST',
                         headers: {
@@ -354,16 +362,20 @@
                     this.isLoading = false;
 
                     if (data.status === 'success' && data.data) {
-                        const botReply = data.data.message;
+                        const botReply = data.data.message || data.data.response_text;
                         const approvalNeeded = data.data.action_required || false;
                         const jobId = data.data.job_id || null;
+
+                        if (data.data.intent && data.data.intent.entities) {
+                            this.lastEntities = data.data.intent.entities;
+                        }
 
                         this.messages.push({
                             sender: 'bot',
                             formattedText: this.formatMarkdown(botReply),
                             approvalRequired: approvalNeeded,
                             jobId: jobId,
-                            actionSummary: data.data.intent ? `Modul Intent: ${data.data.intent}` : 'Membutuhkan verifikasi pimpinan'
+                            actionSummary: data.data.intent ? `Modul Intent: ${data.data.intent.intent || data.data.intent}` : 'Membutuhkan verifikasi pimpinan'
                         });
                     } else {
                         this.messages.push({
@@ -384,7 +396,9 @@
 
             async handleApproval(jobId, decision) {
                 try {
-                    const host = window.location.hostname || '127.0.0.1';
+                    const host = this.getAiHost();
+                    
+                    // 1. Update status in ai-kdmp microservice
                     const res = await fetch(`http://${host}:8000/api/v1/ai/approve`, {
                         method: 'POST',
                         headers: {
@@ -399,14 +413,45 @@
                     });
 
                     const json = await res.json();
-                    alert(json.message || 'Status persetujuan berhasil diperbarui.');
+
+                    // 2. If approved, store record directly into KDMP travel_orders & travel_personnels database!
+                    if (decision === 'APPROVE' || decision === 'approve') {
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+                        
+                        const dbRes = await fetch('/sppd/ai-store', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken,
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                job_id: jobId,
+                                personel: this.lastEntities?.personel || 'DAMIANUS, SH., M.Si',
+                                tujuan: this.lastEntities?.tujuan || 'Bengkayang',
+                                tanggal: this.lastEntities?.tanggal || '27 Juli 2025',
+                                maksud: this.lastEntities?.maksud || 'Perjalanan Dinas'
+                            })
+                        });
+
+                        const dbJson = await dbRes.json();
+                        
+                        if (dbJson.status === 'success') {
+                            alert(`✅ ${dbJson.message}`);
+                            // Auto reload or redirect to Daftar SPD page to show newly inserted record!
+                            window.location.href = dbJson.redirect_url || window.location.href;
+                            return;
+                        }
+                    }
+
+                    alert(json.message || 'Status persetujuan draf SPD berhasil diperbarui.');
                 } catch (e) {
                     alert('Gagal memproses persetujuan: ' + e.message);
                 }
             },
 
             formatMarkdown(text) {
-                return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                return text ? text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>') : '';
             },
 
             scrollToBottom() {

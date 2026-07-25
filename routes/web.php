@@ -29,6 +29,9 @@ Route::view('/disclaimer', 'disclaimer')->name('disclaimer');
 // Route dengan Middleware Auth
 Route::middleware(['auth', 'active'])->group(function () {
 
+    // AI Bridge route for storing approved SPD into travel_orders database
+    Route::post('/sppd/ai-store', [\App\Http\Controllers\AiSppdBridgeController::class, 'store'])->name('sppd.ai-store');
+
     // Pencarian cepat paket (header)
     Route::get('/search', [\App\Http\Controllers\SearchController::class, 'index'])->name('search');
 

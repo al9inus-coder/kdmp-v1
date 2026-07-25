@@ -95,49 +95,44 @@
     @endphp
 
     {{-- Struktur DPA sebagai pohon: Program - Kegiatan - Sub Kegiatan - Rekening.
-         Wadah ini bergulir sendiri (mendatar & menurun) supaya kepala kolom
-         bisa menempel; sticky tidak akan bekerja bila mengandalkan gulir
-         halaman, karena x-ui.workspace membungkusnya dengan overflow-hidden. --}}
-    <div class="overflow-auto max-h-[72vh] rounded-2xl border border-slate-200 bg-slate-50/30">
-      <div style="min-width: {{ $minLebar }}px">
-
-        {{-- Kepala kolom riwayat — tetap terlihat saat menggulir ke bawah --}}
-        <div class="sticky top-0 z-10 flex items-end gap-x-4 px-5 py-3 bg-white/95 backdrop-blur-sm border-b border-slate-200 shadow-sm">
-            <div class="flex-1 min-w-0">
-                <p class="text-[10px] font-black uppercase tracking-wider text-slate-400">Struktur DPA</p>
-            </div>
-            @foreach($kolomTahap as $k)
-                <div class="shrink-0 text-right" style="width: {{ $lebarKolom }}px">
-                    <p class="text-[10px] font-black uppercase tracking-wider {{ $k['kunci'] === 'perubahan' ? 'text-violet-500' : ($k['kunci'] === 'murni' ? 'text-slate-400' : 'text-amber-500') }}">
-                        {{ $k['label'] }}
-                    </p>
-                </div>
-            @endforeach
-            <div class="shrink-0 text-right" style="width: {{ $lebarKolom }}px">
-                <p class="text-[10px] font-black uppercase tracking-wider text-blue-500">Terinput</p>
-            </div>
-            <div class="shrink-0 text-right" style="width: 104px">
-                <p class="text-[10px] font-black uppercase tracking-wider text-slate-400">Status</p>
-            </div>
-        </div>
-
-        <div class="space-y-5 p-3">
+         Label kolom menempel pada baris judul tiap Program, sehingga setiap
+         kartu menerangkan dirinya sendiri tanpa bilah kepala terpisah. --}}
+    <div class="overflow-x-auto pb-1">
+      <div style="min-width: {{ $minLebar }}px" class="space-y-5">
 
         @forelse($programs as $program)
             <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                 {{-- Program --}}
-                <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/60 flex flex-wrap items-center justify-between gap-3">
-                    <h2 class="text-base font-extrabold text-slate-800 flex items-center gap-2 min-w-0">
-                        <i data-lucide="folder-kanban" class="w-5 h-5 text-blue-500 shrink-0"></i>
-                        <span class="font-mono text-blue-600 text-sm">{{ $program->kode }}</span>
-                        <span class="text-slate-300">&middot;</span>
-                        <span class="truncate">{{ $program->nama }}</span>
-                    </h2>
-                    <button type="button"
-                        onclick="bukaModal('modalKegiatan', { program_id: {{ $program->id }}, induk: @js($program->kode . ' - ' . $program->nama) })"
-                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-700 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors shrink-0">
-                        <i data-lucide="plus" class="w-3.5 h-3.5"></i> Kegiatan
-                    </button>
+                {{-- pr-7 menyamakan tepi kanan dengan baris data (p-4 + px-3) --}}
+                <div class="pl-5 pr-7 py-3 border-b border-slate-200 bg-slate-50/60 flex items-center gap-x-4">
+                    <div class="flex-1 min-w-0 flex items-center gap-3">
+                        <h2 class="text-base font-extrabold text-slate-800 flex items-center gap-2 min-w-0">
+                            <i data-lucide="folder-kanban" class="w-5 h-5 text-blue-500 shrink-0"></i>
+                            <span class="font-mono text-blue-600 text-sm">{{ $program->kode }}</span>
+                            <span class="text-slate-300">&middot;</span>
+                            <span class="truncate">{{ $program->nama }}</span>
+                        </h2>
+                        <button type="button"
+                            onclick="bukaModal('modalKegiatan', { program_id: {{ $program->id }}, induk: @js($program->kode . ' - ' . $program->nama) })"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-700 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors shrink-0">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Kegiatan
+                        </button>
+                    </div>
+
+                    {{-- Label kolom, sebaris dengan judul Program --}}
+                    @foreach($kolomTahap as $k)
+                        <div class="shrink-0 text-right" style="width: {{ $lebarKolom }}px">
+                            <p class="text-[10px] font-black uppercase tracking-wider {{ $k['kunci'] === 'perubahan' ? 'text-violet-500' : ($k['kunci'] === 'murni' ? 'text-slate-500' : 'text-amber-500') }}">
+                                {{ $k['label'] }}
+                            </p>
+                        </div>
+                    @endforeach
+                    <div class="shrink-0 text-right" style="width: {{ $lebarKolom }}px">
+                        <p class="text-[10px] font-black uppercase tracking-wider text-blue-500">Terinput</p>
+                    </div>
+                    <div class="shrink-0 text-right" style="width: 104px">
+                        <p class="text-[10px] font-black uppercase tracking-wider text-slate-400">Status</p>
+                    </div>
                 </div>
 
                 <div class="p-4 space-y-3">
@@ -327,7 +322,6 @@
                 </x-ui.empty-state>
             </x-ui.card>
         @endforelse
-        </div>
       </div>
     </div>
 
