@@ -94,12 +94,15 @@
         $minLebar = 340 + (count($kolomTahap) + 1) * $lebarKolom + 116;
     @endphp
 
-    {{-- Struktur DPA sebagai pohon: Program - Kegiatan - Sub Kegiatan - Rekening --}}
-    <div class="overflow-x-auto pb-1">
-      <div style="min-width: {{ $minLebar }}px" class="space-y-5">
+    {{-- Struktur DPA sebagai pohon: Program - Kegiatan - Sub Kegiatan - Rekening.
+         Wadah ini bergulir sendiri (mendatar & menurun) supaya kepala kolom
+         bisa menempel; sticky tidak akan bekerja bila mengandalkan gulir
+         halaman, karena x-ui.workspace membungkusnya dengan overflow-hidden. --}}
+    <div class="overflow-auto max-h-[72vh] rounded-2xl border border-slate-200 bg-slate-50/30">
+      <div style="min-width: {{ $minLebar }}px">
 
-        {{-- Kepala kolom riwayat --}}
-        <div class="flex items-end gap-x-4 px-5 pb-1">
+        {{-- Kepala kolom riwayat — tetap terlihat saat menggulir ke bawah --}}
+        <div class="sticky top-0 z-10 flex items-end gap-x-4 px-5 py-3 bg-white/95 backdrop-blur-sm border-b border-slate-200 shadow-sm">
             <div class="flex-1 min-w-0">
                 <p class="text-[10px] font-black uppercase tracking-wider text-slate-400">Struktur DPA</p>
             </div>
@@ -117,6 +120,8 @@
                 <p class="text-[10px] font-black uppercase tracking-wider text-slate-400">Status</p>
             </div>
         </div>
+
+        <div class="space-y-5 p-3">
 
         @forelse($programs as $program)
             <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
@@ -322,6 +327,7 @@
                 </x-ui.empty-state>
             </x-ui.card>
         @endforelse
+        </div>
       </div>
     </div>
 
