@@ -139,6 +139,7 @@
                                     @foreach($activity->subActivities as $subActivity)
                                         @php
                                             $r = $ringkasSub[$subActivity->id] ?? ['plafon' => 0, 'terinput' => 0, 'selisih' => 0, 'jumlahRekening' => 0, 'jumlahPaket' => 0, 'adaPlafon' => false, 'tanpaRekeningJumlah' => 0];
+                                            $rekening = $rekeningPerSub[$subActivity->id] ?? collect();
                                             $seimbang = abs($r['selisih']) < 0.01;
 
                                             if (!$r['adaPlafon']) {
@@ -158,43 +159,89 @@
                                             ][$tone];
                                         @endphp
 
-                                        <a href="{{ route('admin.anggaran.sub-kegiatan', [$subActivity, 'tahun' => $tahunId]) }}"
-                                            class="group relative flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-colors">
-                                            <span class="absolute -left-4 top-1/2 w-4 border-t border-slate-200" aria-hidden="true"></span>
+                                        <div class="relative">
+                                            <span class="absolute -left-4 top-5 w-4 border-t border-slate-200" aria-hidden="true"></span>
 
-                                            <div class="min-w-0 flex-1">
-                                                <p class="text-sm font-bold text-slate-800 group-hover:text-emerald-700 leading-snug truncate">
-                                                    <span class="font-mono text-xs text-slate-400 mr-1.5">{{ $subActivity->kode }}</span>
-                                                    {{ $subActivity->nama }}
-                                                </p>
-                                                <p class="text-[11px] font-semibold text-slate-400 mt-0.5">
-                                                    {{ $r['jumlahRekening'] }} rekening &middot; {{ $r['jumlahPaket'] }} paket
-                                                    @if($r['adaPlafon'])
-                                                        <span class="text-slate-300">&middot;</span> terinput {{ $rupiah($r['terinput']) }}
-                                                    @endif
-                                                    @if($r['tanpaRekeningJumlah'] > 0)
-                                                        <span class="ml-1 inline-flex items-center gap-1 px-1.5 py-px rounded bg-amber-50 border border-amber-100 text-amber-700 font-bold">
-                                                            <i data-lucide="link-2-off" class="w-2.5 h-2.5"></i>{{ $r['tanpaRekeningJumlah'] }} tanpa rekening
-                                                        </span>
-                                                    @endif
-                                                </p>
-                                            </div>
+                                            {{-- Sub kegiatan: klik untuk melipat rekening di bawahnya --}}
+                                            <button type="button" onclick="lipatSub({{ $subActivity->id }})"
+                                                class="w-full text-left group flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-colors">
+                                                <i data-lucide="chevron-right" id="ikonSub{{ $subActivity->id }}"
+                                                    class="w-4 h-4 text-slate-400 shrink-0 transition-transform"></i>
 
-                                            <div class="text-right shrink-0">
-                                                <p class="text-sm font-extrabold text-slate-900 whitespace-nowrap">{{ $rupiah($r['plafon']) }}</p>
-                                                @unless($seimbang)
-                                                    <p class="text-[11px] font-bold {{ $r['selisih'] > 0 ? 'text-amber-600' : 'text-rose-600' }} whitespace-nowrap">
-                                                        {{ $r['selisih'] > 0 ? '+' : '' }}{{ $rupiah($r['selisih']) }}
+                                                <div class="min-w-0 flex-1">
+                                                    <p class="text-sm font-bold text-slate-800 group-hover:text-emerald-700 leading-snug truncate">
+                                                        <span class="font-mono text-xs text-slate-400 mr-1.5">{{ $subActivity->kode }}</span>
+                                                        {{ $subActivity->nama }}
                                                     </p>
-                                                @endunless
+                                                    <p class="text-[11px] font-semibold text-slate-400 mt-0.5">
+                                                        {{ $r['jumlahRekening'] }} rekening &middot; {{ $r['jumlahPaket'] }} paket
+                                                        @if($r['adaPlafon'])
+                                                            <span class="text-slate-300">&middot;</span> terinput {{ $rupiah($r['terinput']) }}
+                                                        @endif
+                                                        @if($r['tanpaRekeningJumlah'] > 0)
+                                                            <span class="ml-1 inline-flex items-center gap-1 px-1.5 py-px rounded bg-amber-50 border border-amber-100 text-amber-700 font-bold">
+                                                                <i data-lucide="link-2-off" class="w-2.5 h-2.5"></i>{{ $r['tanpaRekeningJumlah'] }} tanpa rekening
+                                                            </span>
+                                                        @endif
+                                                    </p>
+                                                </div>
+
+                                                <div class="text-right shrink-0">
+                                                    <p class="text-sm font-extrabold text-slate-900 whitespace-nowrap">{{ $rupiah($r['plafon']) }}</p>
+                                                    @unless($seimbang)
+                                                        <p class="text-[11px] font-bold {{ $r['selisih'] > 0 ? 'text-amber-600' : 'text-rose-600' }} whitespace-nowrap">
+                                                            {{ $r['selisih'] > 0 ? '+' : '' }}{{ $rupiah($r['selisih']) }}
+                                                        </p>
+                                                    @endunless
+                                                </div>
+
+                                                <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-full border text-[10px] font-bold {{ $toneClass }} shrink-0 whitespace-nowrap w-[104px]">
+                                                    {{ $badge }}
+                                                </span>
+                                            </button>
+
+                                            {{-- Tingkat 3: rekening belanja --}}
+                                            <div id="sub{{ $subActivity->id }}" class="hidden ml-8 pl-4 border-l border-dashed border-slate-200 pb-2">
+                                                @forelse($rekening as $b)
+                                                    @php
+                                                        $line = $b['line'];
+                                                        $selRek = $b['selisih'];
+                                                        $rekSeimbang = abs($selRek) < 0.01;
+                                                        $revisi = $line->revisions->last();
+                                                    @endphp
+                                                    <div class="relative flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2">
+                                                        <span class="absolute -left-4 top-1/2 w-4 border-t border-dashed border-slate-200" aria-hidden="true"></span>
+
+                                                        <div class="min-w-0 flex-1">
+                                                            <p class="text-xs font-bold text-slate-700 truncate">
+                                                                <span class="font-mono text-emerald-700">{{ $line->account?->kode ?? '-' }}</span>
+                                                                <span class="text-slate-300 mx-1">&middot;</span>{{ $line->account?->nama ?? 'Rekening terhapus' }}
+                                                            </p>
+                                                            <p class="text-[10.5px] font-semibold text-slate-400 mt-0.5">
+                                                                @if($revisi){{ $revisi->label }}<span class="text-slate-300 mx-1">&middot;</span>@endif
+                                                                terinput {{ $rupiah($b['terinput']) }} ({{ $b['jumlahPaket'] }} paket)
+                                                            </p>
+                                                        </div>
+
+                                                        <p class="text-xs font-bold text-slate-800 whitespace-nowrap shrink-0">{{ $rupiah($line->pagu_efektif) }}</p>
+
+                                                        <span class="text-[10.5px] font-bold whitespace-nowrap shrink-0 w-[104px] text-right {{ $rekSeimbang ? 'text-emerald-600' : ($selRek > 0 ? 'text-amber-600' : 'text-rose-600') }}">
+                                                            {{ $rekSeimbang ? 'Sesuai' : ($selRek > 0 ? '+' : '') . $rupiah($selRek) }}
+                                                        </span>
+                                                    </div>
+                                                @empty
+                                                    <p class="px-3 py-2 text-[11px] font-semibold text-slate-400">Belum ada rekening belanja pada sub kegiatan ini.</p>
+                                                @endforelse
+
+                                                <div class="px-3 pt-2">
+                                                    <a href="{{ route('admin.anggaran.sub-kegiatan', [$subActivity, 'tahun' => $tahunId]) }}"
+                                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-emerald-700 bg-white border border-emerald-200 rounded-lg hover:bg-emerald-50 transition-colors">
+                                                        <i data-lucide="pencil" class="w-3 h-3"></i>
+                                                        {{ $rekening->isEmpty() ? 'Isi Rekening & Plafon' : 'Kelola Plafon & Revisi' }}
+                                                    </a>
+                                                </div>
                                             </div>
-
-                                            <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-full border text-[10px] font-bold {{ $toneClass }} shrink-0 whitespace-nowrap w-[104px]">
-                                                {{ $badge }}
-                                            </span>
-
-                                            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 group-hover:text-emerald-500 shrink-0"></i>
-                                        </a>
+                                        </div>
                                     @endforeach
                                 </div>
                             @endif
@@ -319,6 +366,16 @@
 </x-ui.workspace>
 
 <script>
+    // Lipat/buka rekening belanja di bawah sub kegiatan.
+    function lipatSub(id) {
+        const isi = document.getElementById('sub' + id);
+        const ikon = document.getElementById('ikonSub' + id);
+        if (!isi) return;
+        const terbuka = !isi.classList.contains('hidden');
+        isi.classList.toggle('hidden', terbuka);
+        if (ikon) ikon.style.transform = terbuka ? '' : 'rotate(90deg)';
+    }
+
     // Modal sederhana: induk (program/kegiatan) diisi lewat data-field
     // sehingga satu modal cukup untuk semua kartu.
     function bukaModal(id, data) {

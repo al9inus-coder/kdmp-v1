@@ -37,9 +37,13 @@ class BudgetLineController extends Controller
         $tahunId = $request->tahun ?: ($fiscalYears->firstWhere('is_active', true)?->id ?? $fiscalYears->first()?->id);
 
         // Semua baris anggaran tahun ini, dikelompokkan per sub kegiatan.
+        // Rekeningnya ikut dimuat karena ditampilkan sebagai tingkat ketiga
+        // pohon (melipat keluar saat sub kegiatan diklik).
         $linesPerSub = BudgetLine::query()
+            ->with(['account', 'revisions'])
             ->where('fiscal_year_id', $tahunId)
             ->get()
+            ->sortBy(fn ($l) => $l->account?->kode)
             ->groupBy('sub_activity_id');
 
         // Sub kegiatan yang punya paket tapi belum punya plafon juga perlu
@@ -123,6 +127,19 @@ class BudgetLineController extends Controller
             ]];
         });
 
+        // Rincian rekening per sub kegiatan untuk tingkat ketiga pohon.
+        $rekon = BudgetLine::rekonsiliasiMap($tahunId);
+        $rekeningPerSub = $linesPerSub->map(fn ($lines) => $lines->map(function (BudgetLine $line) use ($rekon) {
+            $data = $rekon->get($line->kunciSel(), ['total' => 0.0, 'jumlah' => 0]);
+
+            return [
+                'line' => $line,
+                'terinput' => $data['total'],
+                'jumlahPaket' => $data['jumlah'],
+                'selisih' => $line->selisih($data['total']),
+            ];
+        })->values());
+
         $ringkas = [
             'subKegiatan' => $ringkasSub->count(),
             'rekening' => $ringkasSub->sum('jumlahRekening'),
@@ -139,6 +156,7 @@ class BudgetLineController extends Controller
         return view('anggaran.index', [
             'programs' => $programs,
             'ringkasSub' => $ringkasSub,
+            'rekeningPerSub' => $rekeningPerSub,
             'ringkas' => $ringkas,
             'fiscalYears' => $fiscalYears,
             'tahunId' => $tahunId,
