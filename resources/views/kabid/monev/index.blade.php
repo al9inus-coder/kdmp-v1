@@ -4,11 +4,28 @@
 @php
     $summary = [
         'pagu' => 0,
+        'murni' => 0,
         'realisasi' => 0,
         'penyedia' => 0,
         'swakelola' => 0,
         'sub_kegiatan' => 0,
+        'tanpaDpa' => 0,
     ];
+
+    // Pagu monev bersumber dari plafon DPA (Master > Anggaran). Sub kegiatan
+    // yang belum punya baris anggaran memakai jumlah pagu paket sebagai
+    // cadangan, dan ditandai agar bedanya jelas.
+    $paguSub = function ($subActivity) use ($plafonSub) {
+        $p = $plafonSub[$subActivity->id] ?? null;
+
+        if ($p) {
+            return ['pagu' => $p['plafon'], 'murni' => $p['murni'], 'dariDpa' => true];
+        }
+
+        $sum = (float) $subActivity->packages->sum('pagu');
+
+        return ['pagu' => $sum, 'murni' => $sum, 'dariDpa' => false];
+    };
 
     $packageRealisasi = function ($pkg) use ($sbuRates) {
         $total = 0;
@@ -43,8 +60,12 @@
             foreach ($activity->subActivities as $subActivity) {
                 $summary['sub_kegiatan']++;
 
+                $anggaranSub = $paguSub($subActivity);
+                $summary['pagu'] += $anggaranSub['pagu'];
+                $summary['murni'] += $anggaranSub['murni'];
+                if (!$anggaranSub['dariDpa']) { $summary['tanpaDpa']++; }
+
                 foreach ($subActivity->packages as $pkg) {
-                    $summary['pagu'] += (float) $pkg->pagu;
                     $summary['realisasi'] += $packageRealisasi($pkg);
 
                     $jenis = strtolower(($pkg->jenis_pengadaan ?? '') . ' ' . ($pkg->metode_pengadaan ?? ''));
@@ -81,8 +102,21 @@
             <x-ui.card padding="md" class="relative">
                 <div class="flex items-start justify-between gap-4">
                     <div>
-                        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Pagu</p>
+                        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Pagu Berlaku</p>
                         <p class="text-2xl font-extrabold text-slate-900 mt-2">{{ $rupiah($summary['pagu']) }}</p>
+                        @if(abs($summary['pagu'] - $summary['murni']) >= 0.01)
+                            <p class="text-[11px] font-semibold text-slate-400 mt-1">
+                                murni {{ $rupiah($summary['murni']) }}
+                                <span class="font-bold {{ $summary['pagu'] > $summary['murni'] ? 'text-emerald-600' : 'text-rose-600' }}">
+                                    {{ $summary['pagu'] > $summary['murni'] ? '+' : '' }}{{ $rupiah($summary['pagu'] - $summary['murni']) }}
+                                </span>
+                            </p>
+                        @else
+                            <p class="text-[11px] font-semibold text-slate-400 mt-1">plafon DPA</p>
+                        @endif
+                        @if($summary['tanpaDpa'] > 0)
+                            <p class="text-[11px] font-bold text-amber-600 mt-1">{{ $summary['tanpaDpa'] }} sub kegiatan belum berplafon</p>
+                        @endif
                     </div>
                     <span class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
                         <i data-lucide="wallet" class="w-5 h-5"></i>
@@ -159,13 +193,15 @@
                                     <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
                                         @foreach($activity->subActivities as $subActivity)
                                             @php
-                                                $totalPagu = 0;
+                                                $anggaranSub = $paguSub($subActivity);
+                                                $totalPagu = $anggaranSub['pagu'];
+                                                $paguMurniSub = $anggaranSub['murni'];
+                                                $dariDpa = $anggaranSub['dariDpa'];
                                                 $totalRealisasi = 0;
                                                 $paketSwakelola = 0;
                                                 $paketPenyedia = 0;
 
                                                 foreach($subActivity->packages as $pkg) {
-                                                    $totalPagu += (float) $pkg->pagu;
                                                     $totalRealisasi += $packageRealisasi($pkg);
 
                                                     $jenis = strtolower(($pkg->jenis_pengadaan ?? '') . ' ' . ($pkg->metode_pengadaan ?? ''));
@@ -208,9 +244,25 @@
 
                                                     <div class="space-y-2.5 mt-4 text-xs">
                                                         <div class="flex items-center justify-between gap-3">
-                                                            <span class="text-slate-400 font-semibold">Total Pagu</span>
+                                                            <span class="text-slate-400 font-semibold">
+                                                                Pagu Berlaku
+                                                                @unless($dariDpa)
+                                                                    <span class="ml-1 px-1 py-px rounded bg-amber-50 border border-amber-100 text-amber-700 text-[9px] font-bold">dari paket</span>
+                                                                @endunless
+                                                            </span>
                                                             <span class="text-slate-800 font-bold text-right">{{ $rupiah($totalPagu) }}</span>
                                                         </div>
+                                                        @if(abs($totalPagu - $paguMurniSub) >= 0.01)
+                                                            <div class="flex items-center justify-between gap-3">
+                                                                <span class="text-slate-400 font-semibold">Pagu Murni</span>
+                                                                <span class="text-slate-500 font-semibold text-right">
+                                                                    {{ $rupiah($paguMurniSub) }}
+                                                                    <span class="{{ $totalPagu > $paguMurniSub ? 'text-emerald-600' : 'text-rose-600' }} font-bold ml-1">
+                                                                        {{ $totalPagu > $paguMurniSub ? '+' : '' }}{{ $rupiah($totalPagu - $paguMurniSub) }}
+                                                                    </span>
+                                                                </span>
+                                                            </div>
+                                                        @endif
                                                         <div class="flex items-center justify-between gap-3">
                                                             <span class="text-slate-400 font-semibold">Realisasi</span>
                                                             <span class="text-emerald-600 font-bold text-right">{{ $rupiah($totalRealisasi) }}</span>

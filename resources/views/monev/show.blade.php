@@ -46,7 +46,13 @@
         return (float) ($pp->procurementProcess->nilai_kontrak ?? 0);
     };
 
-    $totalPagu = 0;
+    // Pagu bersumber dari plafon DPA (Master > Anggaran); sub kegiatan yang
+    // belum punya baris anggaran memakai jumlah pagu paket sebagai cadangan.
+    $anggaranSub = $plafonSub[$subActivity->id] ?? null;
+    $dariDpa = (bool) $anggaranSub;
+    $totalPagu = $dariDpa ? $anggaranSub['plafon'] : (float) $subActivity->packages->sum('pagu');
+    $paguMurni = $dariDpa ? $anggaranSub['murni'] : $totalPagu;
+
     $totalRealisasi = 0;
     $totalKontrak = 0;
     $totalPembayaran = 0;
@@ -54,7 +60,6 @@
     $paketPenyedia = 0;
 
     foreach ($subActivity->packages as $pkg) {
-        $totalPagu += (float) $pkg->pagu;
         $totalRealisasi += $packageRealisasi($pkg);
 
         $komitmen = $packageKomitmen($pkg);
@@ -80,7 +85,21 @@
     $toneText = ['emerald' => 'text-emerald-600', 'amber' => 'text-amber-600', 'rose' => 'text-rose-600'][$progressTone];
     $toneBg = ['emerald' => '#10b981', 'amber' => '#f59e0b', 'rose' => '#f43f5e'][$progressTone];
     $rupiah = fn($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
-    $groupedPackages = $subActivity->packages->groupBy(fn($pkg) => $pkg->account?->id ?? 'none');
+    // Baris kartu kendali adalah rekening belanja: plafon DPA digabung dengan
+    // rekening yang sudah dipakai paket. Rekening berplafon yang paketnya
+    // belum diinput tetap tampil — justru itu yang perlu ditindaklanjuti.
+    $grupPaket = $subActivity->packages->groupBy(fn($pkg) => $pkg->account?->id ?? 'none');
+    $anggaranPerAkun = $barisAnggaran->keyBy(fn($line) => $line->account_id ?? 'none');
+    $barisKendali = $anggaranPerAkun->keys()
+        ->merge($grupPaket->keys())
+        ->unique()
+        ->map(fn($kunci) => [
+            'line' => $anggaranPerAkun->get($kunci),
+            'packages' => $grupPaket->get($kunci, collect()),
+        ])
+        ->map(fn($baris) => $baris + ['account' => $baris['line']?->account ?? $baris['packages']->first()?->account])
+        ->sortBy(fn($baris) => $baris['account']->kode ?? 'zzz')
+        ->values();
 @endphp
 
 <div class="space-y-6">
@@ -144,8 +163,20 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
         <x-ui.card padding="md">
-            <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Pagu</p>
+            <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Pagu Berlaku</p>
             <p class="text-2xl font-extrabold text-slate-900 mt-2">{{ $rupiah($totalPagu) }}</p>
+            @if(abs($totalPagu - $paguMurni) >= 0.01)
+                <p class="text-xs font-semibold text-slate-500 mt-2">
+                    murni {{ $rupiah($paguMurni) }}
+                    <span class="font-bold {{ $totalPagu > $paguMurni ? 'text-emerald-600' : 'text-rose-600' }}">
+                        {{ $totalPagu > $paguMurni ? '+' : '' }}{{ $rupiah($totalPagu - $paguMurni) }}
+                    </span>
+                </p>
+            @elseif($dariDpa)
+                <p class="text-xs font-semibold text-slate-500 mt-2">plafon DPA</p>
+            @else
+                <p class="text-xs font-bold text-amber-600 mt-2">belum berplafon — dari jumlah pagu paket</p>
+            @endif
         </x-ui.card>
         <x-ui.card padding="md">
             <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Realisasi</p>
@@ -192,10 +223,18 @@
                         </thead>
                         <tbody class="divide-y divide-slate-100">
                             @php $no = 1; @endphp
-                            @forelse($groupedPackages as $accountId => $packages)
+                            @forelse($barisKendali as $baris)
                                 @php
-                                    $account = $packages->first()->account;
-                                    $groupPagu = (float) $packages->sum('pagu');
+                                    $account = $baris['account'];
+                                    $packages = $baris['packages'];
+                                    $line = $baris['line'];
+                                    $terinputGrup = (float) $packages->sum('pagu');
+
+                                    // Plafon rekening ini pada sub kegiatan & tahun berjalan.
+                                    $grupDariDpa = (bool) $line;
+                                    $groupPagu = $grupDariDpa ? (float) $line->pagu_efektif : $terinputGrup;
+                                    $groupMurni = $grupDariDpa ? (float) ($line->paguMurni() ?? $line->pagu_efektif) : $terinputGrup;
+
                                     $groupRealisasi = $packages->sum(fn($pkg) => $packageRealisasi($pkg));
                                     $groupSisa = $groupPagu - $groupRealisasi;
                                     $groupPersen = $groupPagu > 0 ? min(100, $groupRealisasi / $groupPagu * 100) : 0;
@@ -210,7 +249,17 @@
                                         </span>
                                     </td>
                                     <td class="px-5 py-3.5 text-slate-900">{{ $account->nama ?? 'Tanpa Uraian Belanja' }}</td>
-                                    <td class="px-5 py-3.5 text-right text-blue-600 whitespace-nowrap">{{ $rupiah($groupPagu) }}</td>
+                                    <td class="px-5 py-3.5 text-right whitespace-nowrap">
+                                        <span class="text-blue-600">{{ $rupiah($groupPagu) }}</span>
+                                        @if(abs($groupPagu - $groupMurni) >= 0.01)
+                                            <span class="block text-[10px] font-semibold text-slate-400">
+                                                murni {{ $rupiah($groupMurni) }}
+                                            </span>
+                                        @endif
+                                        @unless($grupDariDpa)
+                                            <span class="block text-[9px] font-bold text-amber-600 uppercase tracking-wide">dari paket</span>
+                                        @endunless
+                                    </td>
                                     <td class="px-5 py-3.5 text-right"></td>
                                     <td class="px-5 py-3.5 text-right text-rose-600 whitespace-nowrap">{{ $rupiah($groupSisa) }}</td>
                                     <td class="px-5 py-3.5 text-center text-slate-700">{{ number_format($groupPersen, 1, ',', '.') }}%</td>
@@ -254,10 +303,23 @@
                                         <td class="px-5 py-3 text-center"></td>
                                     </tr>
                                 @endforeach
+
+                                @if($packages->isEmpty())
+                                    <tr>
+                                        <td class="px-5 py-3"></td>
+                                        <td class="px-5 py-3"></td>
+                                        <td class="px-5 py-3 pl-10" colspan="5">
+                                            <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600">
+                                                <i data-lucide="package-x" class="w-3.5 h-3.5"></i>
+                                                Belum ada paket pada rekening ini &mdash; seluruh pagu belum dirinci.
+                                            </span>
+                                        </td>
+                                    </tr>
+                                @endif
                             @empty
                                 <tr>
                                     <td colspan="7" class="px-6 py-10">
-                                        <x-ui.empty-state icon="package-x" title="Belum Ada Paket" description="Belum ada paket pekerjaan pada sub kegiatan ini." />
+                                        <x-ui.empty-state icon="package-x" title="Belum Ada Rekening Belanja" description="Sub kegiatan ini belum punya rekening belanja di DPA maupun paket pekerjaan." />
                                     </td>
                                 </tr>
                             @endforelse

@@ -88,6 +88,42 @@
         </div>
     @endif
 
+    @if($nonAktif->isNotEmpty())
+        <div class="mb-6 flex items-start gap-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+            <div class="p-1.5 rounded-full bg-slate-200 shrink-0">
+                <i data-lucide="eye-off" class="w-4 h-4 text-slate-600"></i>
+            </div>
+            <div class="min-w-0 w-full">
+                <p class="text-sm font-bold text-slate-700">
+                    {{ $nonAktif->count() }} sub kegiatan non-aktif masih menyimpan data
+                </p>
+                <p class="mt-1 text-xs text-slate-500">
+                    Cabang yang dinonaktifkan dianggap tidak dijalankan di DPA, jadi tidak ikut ditampilkan
+                    maupun dijumlah di halaman ini dan di Monev. Datanya tidak dihapus.
+                </p>
+                <ul class="mt-2 space-y-1">
+                    @foreach($nonAktif as $n)
+                        <li class="flex flex-wrap items-baseline gap-x-2 text-xs">
+                            <a href="{{ route('admin.anggaran.sub-kegiatan', $n['sub']) }}"
+                                class="font-mono font-bold text-slate-700 hover:text-blue-600 hover:underline">
+                                {{ $n['sub']->kode }}
+                            </a>
+                            <span class="text-slate-500 truncate">{{ $n['sub']->nama }}</span>
+                            <span class="text-slate-400">
+                                &bull; {{ $n['jumlahRekening'] }} rekening ({{ $rupiah($n['plafon']) }})
+                                &bull; {{ $n['jumlahPaket'] }} paket ({{ $rupiah($n['paguPaket']) }})
+                            </span>
+                        </li>
+                    @endforeach
+                </ul>
+                <p class="mt-2 text-[11px] text-slate-500 font-semibold">
+                    Aktifkan kembali lewat menu Master bila memang dijalankan, atau pindahkan datanya
+                    ke sub kegiatan yang berjalan.
+                </p>
+            </div>
+        </div>
+    @endif
+
     @php
         // Lebar kolom kanan: tiap tahap + terinput + status.
         $lebarKolom = 128;

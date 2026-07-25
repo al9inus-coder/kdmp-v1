@@ -149,6 +149,78 @@ class BudgetLine extends Model
         return $hasil;
     }
 
+    // ── Sumber plafon untuk monev ─────────────────────────────
+
+    /**
+     * Hanya baris yang cabang DPA-nya berjalan. Plafon di program/kegiatan/
+     * sub kegiatan yang dinonaktifkan tidak boleh ikut dihitung.
+     */
+    public function scopeDpaAktif(Builder $query): Builder
+    {
+        return $query->whereHas('subActivity', fn (Builder $q) => $q->aktif());
+    }
+
+    /**
+     * Plafon per sel (tahun x sub kegiatan x rekening) — dipakai monev saat
+     * merinci per rekening belanja.
+     *
+     * @return Collection<string, array{plafon: float, murni: float}>
+     */
+    public static function plafonPerSel(?int $fiscalYearId = null): Collection
+    {
+        return static::query()
+            ->dpaAktif()
+            ->with('revisions')
+            ->when($fiscalYearId, fn ($q) => $q->where('fiscal_year_id', $fiscalYearId))
+            ->get()
+            ->mapWithKeys(fn (BudgetLine $l) => [
+                $l->kunciSel() => [
+                    'plafon' => (float) $l->pagu_efektif,
+                    'murni' => (float) ($l->paguMurni() ?? $l->pagu_efektif),
+                ],
+            ]);
+    }
+
+    /**
+     * Plafon per sub kegiatan (menjumlahkan seluruh rekening di dalamnya).
+     *
+     * @return Collection<int, array{plafon: float, murni: float, jumlahRekening: int}>
+     */
+    public static function plafonPerSubActivity(?int $fiscalYearId = null): Collection
+    {
+        return static::query()
+            ->dpaAktif()
+            ->with('revisions')
+            ->when($fiscalYearId, fn ($q) => $q->where('fiscal_year_id', $fiscalYearId))
+            ->get()
+            ->groupBy('sub_activity_id')
+            ->map(fn ($lines) => [
+                'plafon' => (float) $lines->sum('pagu_efektif'),
+                'murni' => (float) $lines->sum(fn (BudgetLine $l) => (float) ($l->paguMurni() ?? $l->pagu_efektif)),
+                'jumlahRekening' => $lines->count(),
+            ]);
+    }
+
+    /**
+     * Baris DPA milik satu/beberapa sub kegiatan, urut kode rekening.
+     *
+     * Dipakai kartu kendali: rekening yang punya plafon tapi belum ada
+     * paketnya tetap harus tercetak (realisasi nol), bukan hilang.
+     *
+     * @param  int|array<int, int>  $subActivityIds
+     * @return Collection<int, BudgetLine>
+     */
+    public static function untukSubActivity(int|array $subActivityIds, ?int $fiscalYearId = null): Collection
+    {
+        return static::query()
+            ->with(['account', 'revisions'])
+            ->whereIn('sub_activity_id', (array) $subActivityIds)
+            ->when($fiscalYearId, fn ($q) => $q->where('fiscal_year_id', $fiscalYearId))
+            ->get()
+            ->sortBy(fn (BudgetLine $l) => $l->account?->kode ?? '')
+            ->values();
+    }
+
     // ── Rekonsiliasi dengan paket RUP ─────────────────────────
 
     /**

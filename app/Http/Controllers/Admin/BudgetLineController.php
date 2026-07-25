@@ -79,32 +79,43 @@ class BudgetLineController extends Controller
             ->first();
 
         // Seluruh sub kegiatan AKTIF ikut tampil walau belum punya rekening —
-        // justru dari kartunya itulah plafon pertama diisi. Sub kegiatan
-        // non-aktif hanya muncul bila masih menyimpan data.
-        $subIds = SubActivity::where('is_active', true)->pluck('id')
-            ->merge($linesPerSub->keys())
-            ->merge($paketPerSub->keys())
-            ->merge($tanpaRekening->keys())
-            ->unique();
+        // justru dari kartunya itulah plafon pertama diisi. Non-aktif berarti
+        // tidak dijalankan di DPA, jadi tidak ikut ditampilkan maupun dihitung
+        // (lihat $nonAktif di bawah untuk sisa datanya).
+        $subIds = SubActivity::aktif()->pluck('id');
 
         // Program & kegiatan ikut tampil walau belum berisi apa-apa, supaya
         // struktur DPA yang sedang dibangun terlihat utuh dan bagian yang
-        // masih kosong ketahuan. Yang non-aktif hanya muncul bila masih
-        // menyimpan data.
-        $programs = Program::query()
-            ->where(fn ($q) => $q
-                ->where('is_active', true)
-                ->orWhereHas('activities.subActivities', fn ($s) => $s->whereIn('id', $subIds)))
+        // masih kosong ketahuan.
+        $programs = Program::aktif()
             ->with([
-                'activities' => fn ($q) => $q
-                    ->where(fn ($a) => $a
-                        ->where('is_active', true)
-                        ->orWhereHas('subActivities', fn ($s) => $s->whereIn('id', $subIds)))
-                    ->orderBy('kode'),
+                'activities' => fn ($q) => $q->where('is_active', true)->orderBy('kode'),
                 'activities.subActivities' => fn ($q) => $q->whereIn('id', $subIds)->orderBy('kode'),
             ])
             ->orderBy('kode')
             ->get();
+
+        // Cabang yang dinonaktifkan tapi masih menyimpan plafon/paket. Angkanya
+        // sengaja tidak ikut dijumlah, tapi tetap diberitahukan supaya tidak
+        // hilang diam-diam — dari sini pula jalan masuk untuk merapikannya.
+        $nonAktif = SubActivity::query()
+            ->with('activity.program')
+            ->whereIn('id', $linesPerSub->keys()
+                ->merge($paketPerSub->keys())
+                ->merge($tanpaRekening->keys())
+                ->unique()
+                ->diff($subIds))
+            ->orderBy('kode')
+            ->get()
+            ->map(fn (SubActivity $sub) => [
+                'sub' => $sub,
+                'plafon' => (float) $linesPerSub->get($sub->id, collect())->sum('pagu_efektif'),
+                'jumlahRekening' => $linesPerSub->get($sub->id, collect())->count(),
+                'jumlahPaket' => (int) ($paketPerSub->get($sub->id)->jumlah ?? 0)
+                    + (int) ($tanpaRekening->get($sub->id)->jumlah ?? 0),
+                'paguPaket' => (float) ($paketPerSub->get($sub->id)->total ?? 0)
+                    + (float) ($tanpaRekening->get($sub->id)->total ?? 0),
+            ]);
 
         // Ringkasan per sub kegiatan, dipakai kartu di view.
         $ringkasSub = collect($subIds)->mapWithKeys(function ($subId) use ($linesPerSub, $paketPerSub, $tanpaRekening) {
@@ -129,11 +140,15 @@ class BudgetLineController extends Controller
 
         // Kolom riwayat: Murni, Pergeseran I..N, Perubahan — hanya tahap yang
         // benar-benar dipakai tahun ini.
-        $kolomTahap = BudgetLine::kolomTahap($linesPerSub->flatten());
+        // Cabang non-aktif tidak boleh memunculkan kolom tahap sendirian.
+        // toBase(): hasil groupBy masih Eloquent Collection, sedangkan only()
+        // di sana mengharapkan model — bukan kumpulan baris per sub kegiatan.
+        $linesAktif = $linesPerSub->toBase()->only($subIds->all());
+        $kolomTahap = BudgetLine::kolomTahap($linesAktif->flatten());
 
         // Rincian rekening per sub kegiatan untuk tingkat ketiga pohon.
         $rekon = BudgetLine::rekonsiliasiMap($tahunId);
-        $rekeningPerSub = $linesPerSub->map(fn ($lines) => $lines->map(function (BudgetLine $line) use ($rekon, $kolomTahap) {
+        $rekeningPerSub = $linesAktif->map(fn ($lines) => $lines->map(function (BudgetLine $line) use ($rekon, $kolomTahap) {
             $data = $rekon->get($line->kunciSel(), ['total' => 0.0, 'jumlah' => 0]);
 
             return [
@@ -176,6 +191,7 @@ class BudgetLineController extends Controller
             'kolomTahap' => $kolomTahap,
             'tahapPerSub' => $tahapPerSub,
             'ringkas' => $ringkas,
+            'nonAktif' => $nonAktif,
             'fiscalYears' => $fiscalYears,
             'tahunId' => $tahunId,
         ]);
