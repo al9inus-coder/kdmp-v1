@@ -30,7 +30,9 @@ class TravelOrderController extends Controller
         return back()->with('success', 'Biaya rampung berhasil diperbarui.');
     }
 
-    protected function calculateEstimatedCost($employee, $travelOrder, $days, $jenisKendaraan = 'mobil')
+    // Public agar bisa dipakai jalur AI (SpdDraftService) dengan tarif SBU
+    // yang persis sama dengan jalur input manual.
+    public function calculateEstimatedCost($employee, $travelOrder, $days, $jenisKendaraan = 'mobil')
     {
         \Log::info('calculateEstimatedCost CALLED', [
             'employee_id' => $employee->id,

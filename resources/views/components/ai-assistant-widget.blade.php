@@ -147,35 +147,163 @@
 
                         <div class="flex-1 space-y-3">
                             <div :class="isDarkMode ? 'text-[#E3E2E6]' : 'text-[#1F1F1F]'" class="text-xs leading-relaxed font-normal space-y-2" x-html="msg.formattedText"></div>
-
-                            <!-- APPROVAL GATE CARD -->
-                            <template x-if="msg.approvalRequired">
-                                <div :class="isDarkMode ? 'bg-[#1E1F22] border-slate-700/60 text-slate-200' : 'bg-white border-slate-200 text-slate-800 shadow-sm'"
-                                     class="p-4 rounded-2xl border space-y-3 mt-3">
-                                    <div class="flex items-center justify-between text-xs">
-                                        <span class="font-semibold text-amber-500 flex items-center gap-1.5">
-                                            <i data-lucide="shield-alert" class="w-4 h-4"></i> Konfirmasi Tindakan Pimpinan
-                                        </span>
-                                        <span class="text-[10px] opacity-60 font-mono" x-text="msg.jobId"></span>
-                                    </div>
-                                    <p class="text-xs leading-normal opacity-90" x-text="msg.actionSummary"></p>
-                                    
-                                    <div class="flex items-center gap-2 pt-1">
-                                        <button @click="handleApproval(msg.jobId, 'APPROVE')" 
-                                                class="flex-1 py-2 rounded-xl bg-[#4285F4] hover:bg-blue-600 text-white font-medium text-xs transition-colors shadow">
-                                            ✅ Setujui & Buat Draf SPD
-                                        </button>
-                                        <button @click="handleApproval(msg.jobId, 'REJECT')" 
-                                                :class="isDarkMode ? 'bg-[#2A2B2F] text-slate-300 border-slate-700 hover:bg-slate-700' : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'"
-                                                class="px-4 py-2 rounded-xl font-medium text-xs border transition-colors">
-                                            ❌ Tolak
-                                        </button>
-                                    </div>
-                                </div>
-                            </template>
                         </div>
                     </div>
 
+                </div>
+            </template>
+
+            <!-- KARTU DRAF SPD — cermin dari slot yang tersimpan di server -->
+            <template x-if="draft">
+                <div :class="isDarkMode ? 'bg-[#1E1F22] border-slate-700/60 text-slate-200' : 'bg-white border-slate-200 text-slate-800 shadow-sm'"
+                     class="p-4 rounded-2xl border space-y-3">
+
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="font-semibold flex items-center gap-1.5"
+                              :class="draft.lengkap ? 'text-emerald-500' : 'text-amber-500'">
+                            <i :data-lucide="draft.lengkap ? 'shield-check' : 'shield-alert'" class="w-4 h-4"></i>
+                            <span x-text="draft.lengkap ? 'Draf SPD — siap disetujui' : 'Draf SPD — masih perlu dilengkapi'"></span>
+                        </span>
+                        <span class="text-[10px] opacity-60 font-mono" x-text="draft.job_id"></span>
+                    </div>
+
+                    <!-- Pelaksana -->
+                    <div class="space-y-1.5">
+                        <p class="text-[10px] font-semibold uppercase tracking-wide opacity-60">Pelaksana Perjalanan</p>
+                        <div class="flex flex-wrap gap-1.5">
+                            <template x-for="p in (draft.slots.personel.tampil || [])" :key="p.id">
+                                <span :class="isDarkMode ? 'bg-[#2A2B2F] border-slate-700' : 'bg-slate-100 border-slate-200'"
+                                      class="inline-flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-lg border text-[11px]">
+                                    <span x-text="p.nama"></span>
+                                    <button @click="hapusPegawai(p.id)" :disabled="draftBusy" class="p-0.5 rounded hover:text-rose-500" title="Hapus">
+                                        <i data-lucide="x" class="w-3 h-3"></i>
+                                    </button>
+                                </span>
+                            </template>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <select x-model="pegawaiBaru" :disabled="draftBusy"
+                                    :class="isDarkMode ? 'bg-[#2A2B2F] border-slate-700 text-slate-200' : 'bg-white border-slate-300'"
+                                    class="flex-1 text-[11px] rounded-lg border px-2 py-1.5">
+                                <option value="">— tambah pegawai —</option>
+                                <template x-for="p in (draft.slots.personel.opsi || [])" :key="p.id">
+                                    <option :value="p.id" x-text="p.nama + (p.jabatan ? ' — ' + p.jabatan : '')"></option>
+                                </template>
+                            </select>
+                            <button @click="tambahPegawai()" :disabled="!pegawaiBaru || draftBusy"
+                                    class="px-2.5 py-1.5 rounded-lg bg-[#4285F4] text-white text-[11px] font-medium disabled:opacity-40">
+                                Tambah
+                            </button>
+                        </div>
+                        <p x-show="draft.slots.personel.catatan" class="text-[10px] text-amber-500" x-text="draft.slots.personel.catatan"></p>
+                    </div>
+
+                    <!-- Paket belanja -->
+                    <div class="space-y-1">
+                        <p class="text-[10px] font-semibold uppercase tracking-wide opacity-60">Paket Belanja yang Dibebani</p>
+                        {{-- x-effect menyinkronkan nilai select setelah opsi dirender —
+                             tanpa ini browser menampilkan opsi pertama seolah terpilih
+                             padahal server masih menandai slot ini 'pilih'. --}}
+                        <select :disabled="draftBusy" @change="ubahSlot('paket', $event.target.value)"
+                                x-effect="draft && $nextTick(() => $el.value = String(draft.slots.paket.nilai ?? ''))"
+                                :class="isDarkMode ? 'bg-[#2A2B2F] border-slate-700 text-slate-200' : 'bg-white border-slate-300'"
+                                class="w-full text-[11px] rounded-lg border px-2 py-1.5">
+                            <option value="">— pilih paket —</option>
+                            <template x-for="p in (draft.slots.paket.opsi || [])" :key="p.id">
+                                <option :value="p.id" x-text="p.label + ' · ' + p.sub_kegiatan"></option>
+                            </template>
+                        </select>
+                        <p x-show="draft.slots.paket.catatan" class="text-[10px] text-amber-500" x-text="draft.slots.paket.catatan"></p>
+                    </div>
+
+                    <!-- Tujuan & tipe -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="space-y-1">
+                            <p class="text-[10px] font-semibold uppercase tracking-wide opacity-60">Tempat Tujuan</p>
+                            <input type="text" :value="draft.slots.tujuan.nilai" :disabled="draftBusy"
+                                   @change="ubahSlot('tujuan', $event.target.value)"
+                                   :class="isDarkMode ? 'bg-[#2A2B2F] border-slate-700 text-slate-200' : 'bg-white border-slate-300'"
+                                   class="w-full text-[11px] rounded-lg border px-2 py-1.5" placeholder="mis. Lumar">
+                        </div>
+                        <div class="space-y-1">
+                            <p class="text-[10px] font-semibold uppercase tracking-wide opacity-60">
+                                Tipe Perjalanan
+                                <span x-show="draft.slots.tipe_perjalanan.sumber === 'kdmp'"
+                                      class="ml-1 px-1.5 py-px rounded bg-sky-500/15 text-sky-500 normal-case">dari data tujuan</span>
+                            </p>
+                            <select :disabled="draftBusy" @change="ubahSlot('tipe_perjalanan', $event.target.value)"
+                                    x-effect="draft && $nextTick(() => $el.value = String(draft.slots.tipe_perjalanan.nilai ?? ''))"
+                                    :class="isDarkMode ? 'bg-[#2A2B2F] border-slate-700 text-slate-200' : 'bg-white border-slate-300'"
+                                    class="w-full text-[11px] rounded-lg border px-2 py-1.5">
+                                <option value="">— pilih —</option>
+                                <template x-for="t in (draft.slots.tipe_perjalanan.opsi || [])" :key="t">
+                                    <option :value="t" x-text="t"></option>
+                                </template>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Tanggal -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="space-y-1">
+                            <p class="text-[10px] font-semibold uppercase tracking-wide opacity-60">Tgl Berangkat</p>
+                            <input type="date" :value="draft.slots.tanggal_berangkat.nilai" :disabled="draftBusy"
+                                   @change="ubahSlot('tanggal_berangkat', $event.target.value)"
+                                   :class="isDarkMode ? 'bg-[#2A2B2F] border-slate-700 text-slate-200' : 'bg-white border-slate-300'"
+                                   class="w-full text-[11px] rounded-lg border px-2 py-1.5">
+                            <p x-show="draft.slots.tanggal_berangkat.catatan" class="text-[10px] text-amber-500" x-text="draft.slots.tanggal_berangkat.catatan"></p>
+                        </div>
+                        <div class="space-y-1">
+                            <p class="text-[10px] font-semibold uppercase tracking-wide opacity-60">
+                                Tgl Kembali
+                                <span x-show="draft.slots.tanggal_kembali.sumber === 'usulan'"
+                                      class="ml-1 px-1.5 py-px rounded bg-violet-500/15 text-violet-400 normal-case">pergi-pulang</span>
+                            </p>
+                            <input type="date" :value="draft.slots.tanggal_kembali.nilai" :disabled="draftBusy"
+                                   @change="ubahSlot('tanggal_kembali', $event.target.value)"
+                                   :class="isDarkMode ? 'bg-[#2A2B2F] border-slate-700 text-slate-200' : 'bg-white border-slate-300'"
+                                   class="w-full text-[11px] rounded-lg border px-2 py-1.5">
+                            <p x-show="draft.slots.tanggal_kembali.catatan" class="text-[10px] text-amber-500" x-text="draft.slots.tanggal_kembali.catatan"></p>
+                        </div>
+                    </div>
+
+                    <!-- Maksud -->
+                    <div class="space-y-1">
+                        <p class="text-[10px] font-semibold uppercase tracking-wide opacity-60">
+                            Maksud Perjalanan
+                            <span x-show="draft.slots.maksud.sumber === 'usulan'" class="ml-1 px-1.5 py-px rounded bg-violet-500/15 text-violet-400 normal-case">usulan AI — ubah bila perlu</span>
+                        </p>
+                        <input type="text" :value="draft.slots.maksud.nilai" :disabled="draftBusy"
+                               @change="ubahSlot('maksud', $event.target.value)"
+                               :class="isDarkMode ? 'bg-[#2A2B2F] border-slate-700 text-slate-200' : 'bg-white border-slate-300'"
+                               class="w-full text-[11px] rounded-lg border px-2 py-1.5" placeholder="mis. Survei lokasi TPS">
+                    </div>
+
+                    <!-- Dasar pelaksanaan -->
+                    <div class="space-y-1">
+                        <p class="text-[10px] font-semibold uppercase tracking-wide opacity-60">Dasar Pelaksanaan</p>
+                        <input type="text" :value="draft.slots.dasar_pelaksanaan.nilai" :disabled="draftBusy"
+                               @change="ubahSlot('dasar_pelaksanaan', $event.target.value)"
+                               :class="isDarkMode ? 'bg-[#2A2B2F] border-slate-700 text-slate-200' : 'bg-white border-slate-300'"
+                               class="w-full text-[11px] rounded-lg border px-2 py-1.5" placeholder="nomor surat tugas / disposisi">
+                        <p x-show="draft.slots.dasar_pelaksanaan.catatan && !draft.slots.dasar_pelaksanaan.nilai"
+                           class="text-[10px] text-amber-500" x-text="draft.slots.dasar_pelaksanaan.catatan"></p>
+                    </div>
+
+                    <p x-show="draftError" class="text-[11px] text-rose-500 font-medium" x-text="draftError"></p>
+
+                    <div class="flex items-center gap-2 pt-1">
+                        <button @click="approveDraft()" :disabled="!draft.lengkap || draftBusy"
+                                class="flex-1 py-2 rounded-xl bg-[#4285F4] hover:bg-blue-600 text-white font-medium text-xs transition-colors shadow disabled:opacity-40 disabled:cursor-not-allowed">
+                            <span x-show="!draftBusy">✅ Setujui & Buat SPD</span>
+                            <span x-show="draftBusy">Memproses…</span>
+                        </button>
+                        <button @click="draft = null; draftError = null"
+                                :class="isDarkMode ? 'bg-[#2A2B2F] text-slate-300 border-slate-700 hover:bg-slate-700' : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'"
+                                class="px-4 py-2 rounded-xl font-medium text-xs border transition-colors">
+                            Tutup
+                        </button>
+                    </div>
                 </div>
             </template>
 
@@ -245,8 +373,13 @@
             isListening: false,
             messages: [],
             recognition: null,
-            lastEntities: null,
-            
+
+            // Kartu draf SPD — cermin dari slot yang tersimpan di server.
+            draft: null,
+            draftBusy: false,
+            draftError: null,
+            pegawaiBaru: '',
+
             // Default to Google Gemini Light Mode (#F8F9FA Pristine Off-White)
             isDarkMode: false,
 
@@ -264,7 +397,18 @@
                     body: JSON.stringify(payload),
                 });
 
-                return res.json();
+                // Balasan bisa saja bukan JSON (sesi habis, error server).
+                // Jangan sampai penyebabnya hilang jadi pesan umum.
+                try {
+                    return await res.json();
+                } catch (e) {
+                    return {
+                        status: 'error',
+                        message: res.status === 419
+                            ? 'Sesi Anda sudah berakhir. Muat ulang halaman lalu coba lagi.'
+                            : `Server membalas dengan kode ${res.status} dan bukan JSON.`,
+                    };
+                }
             },
 
             init() {
@@ -354,29 +498,30 @@
                 this.scrollToBottom();
 
                 try {
-                    const data = await this.panggilAi('{{ route('ai.chat') }}', { prompt: userText });
+                    const data = await this.panggilAi('{{ route('ai.chat') }}', {
+                        prompt: userText,
+                        job_id: this.draft?.job_id ?? null,
+                    });
                     this.isLoading = false;
 
                     if (data.status === 'success' && data.data) {
-                        const botReply = data.data.message || data.data.response_text;
-                        const approvalNeeded = data.data.action_required || false;
-                        const jobId = data.data.job_id || null;
-
-                        if (data.data.intent && data.data.intent.entities) {
-                            this.lastEntities = data.data.intent.entities;
-                        }
-
                         this.messages.push({
                             sender: 'bot',
-                            formattedText: this.formatMarkdown(botReply),
-                            approvalRequired: approvalNeeded,
-                            jobId: jobId,
-                            actionSummary: data.data.intent ? `Modul Intent: ${data.data.intent.intent || data.data.intent}` : 'Membutuhkan verifikasi pimpinan'
+                            formattedText: this.formatMarkdown(data.data.response_text || ''),
                         });
+
+                        if (data.data.draft) {
+                            this.draft = data.data.draft;
+                            this.draftError = null;
+                        }
                     } else {
+                        // Tampilkan sebab yang sebenarnya dari server, bukan
+                        // permintaan maaf umum yang tidak bisa ditindaklanjuti.
                         this.messages.push({
                             sender: 'bot',
-                            formattedText: 'Mohon maaf, terjadi kendala saat memproses permintaan.'
+                            formattedText: this.formatMarkdown(
+                                data.message || 'Mohon maaf, terjadi kendala saat memproses permintaan.'
+                            )
                         });
                     }
                 } catch (err) {
@@ -388,50 +533,80 @@
                 }
 
                 this.scrollToBottom();
+                this.refreshIcons();
             },
 
-            async handleApproval(jobId, decision) {
+            // ── Kartu draf: setiap perubahan tersimpan di server ──
+
+            async ubahSlot(slot, nilai) {
+                if (!this.draft || this.draftBusy) return;
+                if (nilai === '' && slot !== 'personel') return;
+
+                this.draftBusy = true;
+                this.draftError = null;
+
                 try {
-                    // 1. Update status in ai-kdmp microservice (lewat KDMP)
-                    const json = await this.panggilAi('{{ route('ai.approve') }}', {
-                        job_id: jobId,
-                        decision: String(decision).toLowerCase(),
+                    const data = await this.panggilAi('{{ route('ai.draft') }}', {
+                        job_id: this.draft.job_id,
+                        slot: slot,
+                        nilai: nilai,
                     });
 
-                    // 2. If approved, store record directly into KDMP travel_orders & travel_personnels database!
-                    if (String(decision).toLowerCase() === 'approve') {
-                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-                        
-                        const dbRes = await fetch('{{ route('sppd.ai-store') }}', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': csrfToken,
-                                'Accept': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                job_id: jobId,
-                                personel: this.lastEntities?.personel || 'DAMIANUS, SH., M.Si',
-                                tujuan: this.lastEntities?.tujuan || 'Bengkayang',
-                                tanggal: this.lastEntities?.tanggal || '27 Juli 2025',
-                                maksud: this.lastEntities?.maksud || 'Perjalanan Dinas'
-                            })
-                        });
+                    if (data.status === 'success' && data.data?.draft) {
+                        this.draft = data.data.draft;
+                    } else {
+                        this.draftError = data.message || 'Perubahan ditolak server.';
+                    }
+                } catch (e) {
+                    this.draftError = 'Gagal menyimpan perubahan: ' + e.message;
+                }
 
-                        const dbJson = await dbRes.json();
-                        
-                        if (dbJson.status === 'success') {
-                            alert(`✅ ${dbJson.message}`);
-                            // Auto reload or redirect to Daftar SPD page to show newly inserted record!
-                            window.location.href = dbJson.redirect_url || window.location.href;
-                            return;
-                        }
+                this.draftBusy = false;
+                this.refreshIcons();
+            },
+
+            tambahPegawai() {
+                if (!this.pegawaiBaru) return;
+                const ids = (this.draft?.slots?.personel?.nilai || []).map(Number);
+                ids.push(Number(this.pegawaiBaru));
+                this.pegawaiBaru = '';
+                this.ubahSlot('personel', ids);
+            },
+
+            hapusPegawai(id) {
+                const ids = (this.draft?.slots?.personel?.nilai || []).map(Number).filter(x => x !== Number(id));
+                this.ubahSlot('personel', ids);
+            },
+
+            // Persetujuan hanya membawa job_id — isi draf dibaca server dari
+            // penyimpanannya sendiri, bukan dari kiriman browser.
+            async approveDraft() {
+                if (!this.draft?.lengkap || this.draftBusy) return;
+
+                this.draftBusy = true;
+                this.draftError = null;
+
+                try {
+                    const data = await this.panggilAi('{{ route('ai.approve') }}', {
+                        job_id: this.draft.job_id,
+                    });
+
+                    if (data.status === 'success' && data.data) {
+                        alert(`✅ ${data.data.message}`);
+                        window.location.href = data.data.redirect_url || window.location.href;
+                        return;
                     }
 
-                    alert(json.message || 'Status persetujuan draf SPD berhasil diperbarui.');
+                    this.draftError = data.message || 'Persetujuan ditolak server.';
                 } catch (e) {
-                    alert('Gagal memproses persetujuan: ' + e.message);
+                    this.draftError = 'Gagal memproses persetujuan: ' + e.message;
                 }
+
+                this.draftBusy = false;
+            },
+
+            refreshIcons() {
+                setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 50);
             },
 
             formatMarkdown(text) {
