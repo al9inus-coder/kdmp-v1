@@ -127,9 +127,13 @@ class BudgetLineController extends Controller
             ]];
         });
 
+        // Kolom riwayat: Murni, Pergeseran I..N, Perubahan — hanya tahap yang
+        // benar-benar dipakai tahun ini.
+        $kolomTahap = BudgetLine::kolomTahap($linesPerSub->flatten());
+
         // Rincian rekening per sub kegiatan untuk tingkat ketiga pohon.
         $rekon = BudgetLine::rekonsiliasiMap($tahunId);
-        $rekeningPerSub = $linesPerSub->map(fn ($lines) => $lines->map(function (BudgetLine $line) use ($rekon) {
+        $rekeningPerSub = $linesPerSub->map(fn ($lines) => $lines->map(function (BudgetLine $line) use ($rekon, $kolomTahap) {
             $data = $rekon->get($line->kunciSel(), ['total' => 0.0, 'jumlah' => 0]);
 
             return [
@@ -137,8 +141,20 @@ class BudgetLineController extends Controller
                 'terinput' => $data['total'],
                 'jumlahPaket' => $data['jumlah'],
                 'selisih' => $line->selisih($data['total']),
+                'tahap' => $line->nilaiPerTahap($kolomTahap),
             ];
         })->values());
+
+        // Total tiap tahap per sub kegiatan (menjumlahkan nilai berjalan
+        // seluruh rekening di dalamnya).
+        $tahapPerSub = $rekeningPerSub->map(function ($rekening) use ($kolomTahap) {
+            $total = [];
+            foreach ($kolomTahap as $k) {
+                $total[$k['kunci']] = $rekening->sum(fn ($b) => (float) ($b['tahap'][$k['kunci']]['nilai'] ?? 0));
+            }
+
+            return $total;
+        });
 
         $ringkas = [
             'subKegiatan' => $ringkasSub->count(),
@@ -157,6 +173,8 @@ class BudgetLineController extends Controller
             'programs' => $programs,
             'ringkasSub' => $ringkasSub,
             'rekeningPerSub' => $rekeningPerSub,
+            'kolomTahap' => $kolomTahap,
+            'tahapPerSub' => $tahapPerSub,
             'ringkas' => $ringkas,
             'fiscalYears' => $fiscalYears,
             'tahunId' => $tahunId,

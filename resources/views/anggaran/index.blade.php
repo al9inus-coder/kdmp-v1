@@ -88,8 +88,36 @@
         </div>
     @endif
 
-    {{-- Struktur DPA sebagai pohon: Program (kartu) - Kegiatan - Sub Kegiatan --}}
-    <div class="space-y-5">
+    @php
+        // Lebar kolom kanan: tiap tahap + terinput + status.
+        $lebarKolom = 128;
+        $minLebar = 340 + (count($kolomTahap) + 1) * $lebarKolom + 116;
+    @endphp
+
+    {{-- Struktur DPA sebagai pohon: Program - Kegiatan - Sub Kegiatan - Rekening --}}
+    <div class="overflow-x-auto pb-1">
+      <div style="min-width: {{ $minLebar }}px" class="space-y-5">
+
+        {{-- Kepala kolom riwayat --}}
+        <div class="flex items-end gap-x-4 px-5 pb-1">
+            <div class="flex-1 min-w-0">
+                <p class="text-[10px] font-black uppercase tracking-wider text-slate-400">Struktur DPA</p>
+            </div>
+            @foreach($kolomTahap as $k)
+                <div class="shrink-0 text-right" style="width: {{ $lebarKolom }}px">
+                    <p class="text-[10px] font-black uppercase tracking-wider {{ $k['kunci'] === 'perubahan' ? 'text-violet-500' : ($k['kunci'] === 'murni' ? 'text-slate-400' : 'text-amber-500') }}">
+                        {{ $k['label'] }}
+                    </p>
+                </div>
+            @endforeach
+            <div class="shrink-0 text-right" style="width: {{ $lebarKolom }}px">
+                <p class="text-[10px] font-black uppercase tracking-wider text-blue-500">Terinput</p>
+            </div>
+            <div class="shrink-0 text-right" style="width: 104px">
+                <p class="text-[10px] font-black uppercase tracking-wider text-slate-400">Status</p>
+            </div>
+        </div>
+
         @forelse($programs as $program)
             <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                 {{-- Program --}}
@@ -175,9 +203,6 @@
                                                     </p>
                                                     <p class="text-[11px] font-semibold text-slate-400 mt-0.5">
                                                         {{ $r['jumlahRekening'] }} rekening &middot; {{ $r['jumlahPaket'] }} paket
-                                                        @if($r['adaPlafon'])
-                                                            <span class="text-slate-300">&middot;</span> terinput {{ $rupiah($r['terinput']) }}
-                                                        @endif
                                                         @if($r['tanpaRekeningJumlah'] > 0)
                                                             <span class="ml-1 inline-flex items-center gap-1 px-1.5 py-px rounded bg-amber-50 border border-amber-100 text-amber-700 font-bold">
                                                                 <i data-lucide="link-2-off" class="w-2.5 h-2.5"></i>{{ $r['tanpaRekeningJumlah'] }} tanpa rekening
@@ -186,11 +211,28 @@
                                                     </p>
                                                 </div>
 
-                                                <div class="text-right shrink-0">
-                                                    <p class="text-sm font-extrabold text-slate-900 whitespace-nowrap">{{ $rupiah($r['plafon']) }}</p>
+                                                @php $tahapSub = $tahapPerSub[$subActivity->id] ?? []; @endphp
+                                                @foreach($kolomTahap as $k)
+                                                    @php
+                                                        $nilaiTahap = $tahapSub[$k['kunci']] ?? 0;
+                                                        $sebelum = $loop->first ? null : ($tahapSub[$kolomTahap[$loop->index - 1]['kunci']] ?? 0);
+                                                        $naik = $sebelum !== null ? $nilaiTahap - $sebelum : 0;
+                                                    @endphp
+                                                    <div class="shrink-0 text-right" style="width: {{ $lebarKolom }}px">
+                                                        <p class="text-sm font-extrabold text-slate-900 whitespace-nowrap">{{ $rupiah($nilaiTahap) }}</p>
+                                                        @if(abs($naik) >= 0.01)
+                                                            <p class="text-[10px] font-bold {{ $naik > 0 ? 'text-emerald-600' : 'text-rose-600' }} whitespace-nowrap">
+                                                                {{ $naik > 0 ? '+' : '' }}{{ $rupiah($naik) }}
+                                                            </p>
+                                                        @endif
+                                                    </div>
+                                                @endforeach
+
+                                                <div class="shrink-0 text-right" style="width: {{ $lebarKolom }}px">
+                                                    <p class="text-sm font-bold text-blue-600 whitespace-nowrap">{{ $rupiah($r['terinput']) }}</p>
                                                     @unless($seimbang)
-                                                        <p class="text-[11px] font-bold {{ $r['selisih'] > 0 ? 'text-amber-600' : 'text-rose-600' }} whitespace-nowrap">
-                                                            {{ $r['selisih'] > 0 ? '+' : '' }}{{ $rupiah($r['selisih']) }}
+                                                        <p class="text-[10px] font-bold {{ $r['selisih'] > 0 ? 'text-amber-600' : 'text-rose-600' }} whitespace-nowrap">
+                                                            selisih {{ $r['selisih'] > 0 ? '+' : '' }}{{ $rupiah($r['selisih']) }}
                                                         </p>
                                                     @endunless
                                                 </div>
@@ -219,11 +261,26 @@
                                                             </p>
                                                             <p class="text-[10.5px] font-semibold text-slate-400 mt-0.5">
                                                                 @if($revisi){{ $revisi->label }}<span class="text-slate-300 mx-1">&middot;</span>@endif
-                                                                terinput {{ $rupiah($b['terinput']) }} ({{ $b['jumlahPaket'] }} paket)
+                                                                {{ $b['jumlahPaket'] }} paket
                                                             </p>
                                                         </div>
 
-                                                        <p class="text-xs font-bold text-slate-800 whitespace-nowrap shrink-0">{{ $rupiah($line->pagu_efektif) }}</p>
+                                                        @foreach($kolomTahap as $k)
+                                                            @php $t = $b['tahap'][$k['kunci']] ?? ['nilai' => null, 'eksplisit' => false]; @endphp
+                                                            <div class="shrink-0 text-right" style="width: {{ $lebarKolom }}px">
+                                                                @if($t['nilai'] === null)
+                                                                    <span class="text-[11px] text-slate-300">&mdash;</span>
+                                                                @else
+                                                                    <span class="text-xs whitespace-nowrap {{ $t['eksplisit'] ? 'font-bold text-slate-800' : 'text-slate-400' }}">
+                                                                        {{ $rupiah($t['nilai']) }}
+                                                                    </span>
+                                                                @endif
+                                                            </div>
+                                                        @endforeach
+
+                                                        <div class="shrink-0 text-right" style="width: {{ $lebarKolom }}px">
+                                                            <span class="text-xs font-semibold text-blue-600 whitespace-nowrap">{{ $rupiah($b['terinput']) }}</span>
+                                                        </div>
 
                                                         <span class="text-[10.5px] font-bold whitespace-nowrap shrink-0 w-[104px] text-right {{ $rekSeimbang ? 'text-emerald-600' : ($selRek > 0 ? 'text-amber-600' : 'text-rose-600') }}">
                                                             {{ $rekSeimbang ? 'Sesuai' : ($selRek > 0 ? '+' : '') . $rupiah($selRek) }}
@@ -265,6 +322,7 @@
                 </x-ui.empty-state>
             </x-ui.card>
         @endforelse
+      </div>
     </div>
 
     {{-- ── Modal: tambah Program ───────────────────────────── --}}

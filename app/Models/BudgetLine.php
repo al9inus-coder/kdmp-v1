@@ -89,6 +89,66 @@ class BudgetLine extends Model
         $this->save();
     }
 
+    // ── Riwayat berdampingan (kolom tahap) ────────────────────
+
+    /**
+     * Susun kolom tahap yang benar-benar dipakai sekumpulan baris:
+     * Murni, Pergeseran I..N (sebanyak yang ada), lalu Perubahan.
+     *
+     * @param  \Illuminate\Support\Collection<int, BudgetLine>  $lines
+     * @return array<int, array{kunci: string, label: string}>
+     */
+    public static function kolomTahap($lines): array
+    {
+        $revisi = $lines->flatMap(fn ($l) => $l->revisions);
+
+        $maxPergeseran = (int) $revisi
+            ->where('jenis', BudgetRevision::JENIS_PERGESERAN)
+            ->max('urutan');
+
+        $kolom = [['kunci' => BudgetRevision::JENIS_MURNI, 'label' => 'Murni']];
+
+        $romawi = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+        for ($i = 1; $i <= $maxPergeseran; $i++) {
+            $kolom[] = [
+                'kunci' => BudgetRevision::JENIS_PERGESERAN . '-' . $i,
+                'label' => 'Pergeseran ' . ($romawi[$i] ?? $i),
+            ];
+        }
+
+        if ($revisi->contains('jenis', BudgetRevision::JENIS_PERUBAHAN)) {
+            $kolom[] = ['kunci' => BudgetRevision::JENIS_PERUBAHAN, 'label' => 'Perubahan'];
+        }
+
+        return $kolom;
+    }
+
+    /**
+     * Nilai pagu pada tiap tahap. Tahap yang tidak direvisi mewarisi nilai
+     * tahap sebelumnya (pagunya memang tidak berubah) — ditandai
+     * 'eksplisit' => false agar tampilannya bisa diredupkan.
+     *
+     * @param  array<int, array{kunci: string, label: string}>  $kolom
+     * @return array<string, array{nilai: ?float, eksplisit: bool}>
+     */
+    public function nilaiPerTahap(array $kolom): array
+    {
+        $hasil = [];
+        $berjalan = null;
+
+        foreach ($kolom as $k) {
+            $rev = $this->revisions->first(fn ($r) => $r->kunciTahap() === $k['kunci']);
+
+            if ($rev) {
+                $berjalan = (float) $rev->pagu;
+            }
+
+            $hasil[$k['kunci']] = ['nilai' => $berjalan, 'eksplisit' => (bool) $rev];
+        }
+
+        return $hasil;
+    }
+
     // ── Rekonsiliasi dengan paket RUP ─────────────────────────
 
     /**

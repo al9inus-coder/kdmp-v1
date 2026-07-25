@@ -48,6 +48,17 @@ class BudgetRevision extends Model
     }
 
     /**
+     * Penanda kolom tahap: 'murni', 'pergeseran-1', 'pergeseran-2', 'perubahan'.
+     * Dipakai untuk menyusun kolom riwayat berdampingan.
+     */
+    public function kunciTahap(): string
+    {
+        return $this->jenis === self::JENIS_PERGESERAN
+            ? self::JENIS_PERGESERAN . '-' . $this->urutan
+            : $this->jenis;
+    }
+
+    /**
      * "APBD Murni", "Pergeseran ke-2", "APBD Perubahan".
      * Nomor urut hanya bermakna untuk pergeseran yang bisa berulang.
      */
