@@ -2,3 +2,8 @@
 !private/
 !public/
 !.gitignore
+
+# Template dokumen (.docx) wajib ikut repo — dipakai fitur ekspor Word
+# Surat Tugas/Permohonan. Tanpa file ini, exportWord() gagal 404 di server.
+!templates/
+!templates/**
