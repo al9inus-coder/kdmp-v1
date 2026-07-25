@@ -91,7 +91,7 @@
             <table class="w-full text-sm text-left">
                 <thead class="bg-slate-50 border-b border-slate-100">
                     <tr>
-                        <th class="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Sub Kegiatan / Rekening</th>
+                        <th class="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Rekening Belanja</th>
                         <th class="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider text-center w-32">Tahap</th>
                         <th class="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider text-right w-40">Plafon DPA</th>
                         <th class="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider text-right w-40">Terinput</th>
@@ -100,7 +100,41 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                    @forelse($baris as $b)
+                    @forelse($baris->groupBy(fn ($b) => $b['line']->sub_activity_id) as $grup)
+                        @php
+                            $sub = $grup->first()['line']->subActivity;
+                            $gPlafon = $grup->sum(fn ($b) => (float) $b['line']->pagu_efektif);
+                            $gTerinput = $grup->sum('terinput');
+                            $gSelisih = $gPlafon - $gTerinput;
+                        @endphp
+
+                        {{-- Baris sub kegiatan: induk dari rekening di bawahnya (struktur DPA) --}}
+                        <tr class="bg-slate-50/80">
+                            <td class="px-5 py-3">
+                                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wide">
+                                    {{ $sub?->activity?->program?->nama ?? 'Tanpa program' }}
+                                </p>
+                                <p class="font-bold text-slate-800 leading-snug mt-0.5">
+                                    <span class="font-mono text-blue-600">{{ $sub?->kode ?? '-' }}</span>
+                                    <span class="text-slate-300 mx-1">·</span>{{ $sub?->nama ?? 'Sub kegiatan terhapus' }}
+                                </p>
+                            </td>
+                            <td class="px-5 py-3 text-center">
+                                <span class="text-[10px] font-bold text-slate-400">{{ $grup->count() }} rekening</span>
+                            </td>
+                            <td class="px-5 py-3 text-right font-extrabold text-slate-800 whitespace-nowrap">{{ $rupiah($gPlafon) }}</td>
+                            <td class="px-5 py-3 text-right font-bold text-blue-600 whitespace-nowrap">{{ $rupiah($gTerinput) }}</td>
+                            <td class="px-5 py-3 text-right whitespace-nowrap">
+                                @if(abs($gSelisih) < 0.01)
+                                    <span class="text-xs font-bold text-emerald-600">Sesuai</span>
+                                @else
+                                    <span class="font-bold {{ $gSelisih > 0 ? 'text-amber-600' : 'text-rose-600' }}">{{ $rupiah($gSelisih) }}</span>
+                                @endif
+                            </td>
+                            <td class="px-5 py-3"></td>
+                        </tr>
+
+                        @foreach($grup as $b)
                         @php
                             $line = $b['line'];
                             $selisih = $b['selisih'];
@@ -108,14 +142,14 @@
                             $revisi = $line->revisions->last();
                         @endphp
                         <tr class="hover:bg-slate-50/80 transition-colors">
-                            <td class="px-5 py-4">
-                                <p class="font-semibold text-slate-900 leading-snug">
-                                    <span class="font-mono text-emerald-700">{{ $line->account?->kode ?? '-' }}</span>
-                                    <span class="text-slate-400 mx-1">·</span>{{ $line->account?->nama ?? 'Rekening terhapus' }}
-                                </p>
-                                <p class="text-xs text-slate-400 font-semibold mt-0.5 truncate max-w-xl">
-                                    {{ $line->subActivity?->kode }} — {{ $line->subActivity?->nama ?? '-' }}
-                                </p>
+                            <td class="px-5 py-4 pl-10">
+                                <div class="flex items-start gap-2">
+                                    <i data-lucide="corner-down-right" class="w-3.5 h-3.5 text-slate-300 mt-0.5 shrink-0"></i>
+                                    <p class="font-semibold text-slate-900 leading-snug min-w-0">
+                                        <span class="font-mono text-emerald-700">{{ $line->account?->kode ?? '-' }}</span>
+                                        <span class="text-slate-400 mx-1">·</span>{{ $line->account?->nama ?? 'Rekening terhapus' }}
+                                    </p>
+                                </div>
                             </td>
                             <td class="px-5 py-4 text-center">
                                 @if($revisi)
@@ -156,6 +190,7 @@
                                 </div>
                             </td>
                         </tr>
+                        @endforeach
                     @empty
                         <tr>
                             <td colspan="6" class="px-6 py-12">

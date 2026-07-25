@@ -28,45 +28,52 @@
         <h3 class="text-sm font-bold text-slate-900">Identitas Baris Anggaran</h3>
     </div>
     <div class="p-6 space-y-5">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-                <label for="fiscal_year_id" class="block text-sm font-semibold text-slate-700 mb-1.5">
-                    Tahun Anggaran <span class="text-rose-500">*</span>
-                </label>
-                <x-ui.select name="fiscal_year_id" id="fiscal_year_id" :invalid="$hasError('fiscal_year_id')" required>
-                    @foreach($fiscalYears as $fy)
-                        <option value="{{ $fy->id }}" @selected($val('fiscal_year_id') == $fy->id)>TA {{ $fy->tahun }}</option>
-                    @endforeach
-                </x-ui.select>
-                @error('fiscal_year_id') <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
-            </div>
-            <div>
-                <label for="account_id" class="block text-sm font-semibold text-slate-700 mb-1.5">
-                    Rekening Belanja <span class="text-rose-500">*</span>
-                </label>
-                <x-ui.select name="account_id" id="account_id" :invalid="$hasError('account_id')" required>
-                    <option value="">— Pilih rekening —</option>
-                    @foreach($accounts as $acc)
-                        <option value="{{ $acc->id }}" @selected($val('account_id') == $acc->id)>{{ $acc->kode }} — {{ $acc->nama }}</option>
-                    @endforeach
-                </x-ui.select>
-                @error('account_id') <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
-            </div>
+        {{-- Urutan mengikuti struktur DPA: tahun → sub kegiatan → rekening.
+             Rekening adalah rincian di bawah sub kegiatan, bukan sebaliknya. --}}
+        <div>
+            <label for="fiscal_year_id" class="block text-sm font-semibold text-slate-700 mb-1.5">
+                Tahun Anggaran <span class="text-rose-500">*</span>
+            </label>
+            <x-ui.select name="fiscal_year_id" id="fiscal_year_id" :invalid="$hasError('fiscal_year_id')" required class="sm:max-w-xs">
+                @foreach($fiscalYears as $fy)
+                    <option value="{{ $fy->id }}" @selected($val('fiscal_year_id') == $fy->id)>TA {{ $fy->tahun }}</option>
+                @endforeach
+            </x-ui.select>
+            @error('fiscal_year_id') <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
         </div>
 
         <div>
             <label for="sub_activity_id" class="block text-sm font-semibold text-slate-700 mb-1.5">
+                <span class="inline-flex items-center justify-center w-4 h-4 rounded bg-slate-200 text-[10px] font-black text-slate-600 mr-1.5">1</span>
                 Sub Kegiatan <span class="text-rose-500">*</span>
             </label>
             <x-ui.select name="sub_activity_id" id="sub_activity_id" :invalid="$hasError('sub_activity_id')" required>
                 <option value="">— Pilih sub kegiatan —</option>
-                @foreach($subActivities as $sa)
-                    <option value="{{ $sa->id }}" @selected($val('sub_activity_id') == $sa->id)>
-                        {{ $sa->kode }} — {{ $sa->nama }}
-                    </option>
+                @foreach($subActivities->groupBy(fn ($sa) => $sa->activity?->program?->nama ?? 'Tanpa Program') as $namaProgram => $group)
+                    <optgroup label="{{ $namaProgram }}">
+                        @foreach($group as $sa)
+                            <option value="{{ $sa->id }}" @selected($val('sub_activity_id') == $sa->id)>
+                                {{ $sa->kode }} — {{ $sa->nama }}
+                            </option>
+                        @endforeach
+                    </optgroup>
                 @endforeach
             </x-ui.select>
             @error('sub_activity_id') <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
+        </div>
+
+        <div>
+            <label for="account_id" class="block text-sm font-semibold text-slate-700 mb-1.5">
+                <span class="inline-flex items-center justify-center w-4 h-4 rounded bg-slate-200 text-[10px] font-black text-slate-600 mr-1.5">2</span>
+                Rekening Belanja <span class="text-rose-500">*</span>
+            </label>
+            <x-ui.select name="account_id" id="account_id" :invalid="$hasError('account_id')" required>
+                <option value="">— Pilih rekening di dalam sub kegiatan tersebut —</option>
+                @foreach($accounts as $acc)
+                    <option value="{{ $acc->id }}" @selected($val('account_id') == $acc->id)>{{ $acc->kode }} — {{ $acc->nama }}</option>
+                @endforeach
+            </x-ui.select>
+            @error('account_id') <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
             <p class="mt-1 text-xs text-slate-400">Satu rekening hanya boleh muncul sekali dalam satu sub kegiatan per tahun.</p>
         </div>
 
