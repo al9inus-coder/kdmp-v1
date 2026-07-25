@@ -73,7 +73,11 @@ class BudgetLineController extends Controller
             ->selectRaw('SUM(pagu) as total, COUNT(*) as jumlah')
             ->first();
 
-        $subIds = $linesPerSub->keys()
+        // Seluruh sub kegiatan AKTIF ikut tampil walau belum punya rekening —
+        // justru dari kartunya itulah plafon pertama diisi. Sub kegiatan
+        // non-aktif hanya muncul bila masih menyimpan data.
+        $subIds = SubActivity::where('is_active', true)->pluck('id')
+            ->merge($linesPerSub->keys())
             ->merge($paketPerSub->keys())
             ->merge($tanpaRekening->keys())
             ->unique();
@@ -112,6 +116,7 @@ class BudgetLineController extends Controller
             'plafon' => $ringkasSub->sum('plafon'),
             'terinput' => $ringkasSub->sum('terinput'),
             'belumSeimbang' => $ringkasSub->filter(fn ($r) => abs($r['selisih']) >= 0.01)->count(),
+            'belumAdaPlafon' => $ringkasSub->filter(fn ($r) => !$r['adaPlafon'])->count(),
             'tanpaRekeningJumlah' => $ringkasSub->sum('tanpaRekeningJumlah'),
             'tanpaRekeningTotal' => $ringkasSub->sum('tanpaRekeningTotal'),
             'yatimJumlah' => (int) ($yatim->jumlah ?? 0),

@@ -48,6 +48,9 @@
             </p>
             <p class="text-xs font-semibold text-slate-500 mt-2">
                 {{ $ringkas['belumSeimbang'] > 0 ? 'sub kegiatan belum seimbang' : 'semua sudah seimbang' }}
+                @if($ringkas['belumAdaPlafon'] > 0)
+                    <span class="block text-slate-400 mt-0.5">{{ $ringkas['belumAdaPlafon'] }} belum diisi plafon</span>
+                @endif
             </p>
         </x-ui.card>
     </div>
