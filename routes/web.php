@@ -365,7 +365,11 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::resource('fiscal-years', FiscalYearController::class)->except(['show', 'edit', 'update', 'destroy']);
         Route::resource('employees', \App\Http\Controllers\EmployeeController::class)->except(['show']);
 
-        // Anggaran (DPA): plafon per rekening dalam sub kegiatan + riwayat revisi
+        // Anggaran (DPA): plafon per rekening dalam sub kegiatan + riwayat revisi.
+        // Rute sub-kegiatan didaftarkan lebih dulu agar tidak tertangkap
+        // resource route anggaran/{anggaran}.
+        Route::get('anggaran/sub-kegiatan/{subActivity}', [\App\Http\Controllers\Admin\BudgetLineController::class, 'subActivity'])->name('anggaran.sub-kegiatan');
+        Route::post('anggaran/sub-kegiatan/{subActivity}/revisi', [\App\Http\Controllers\Admin\BudgetLineController::class, 'bulkRevision'])->name('anggaran.revisi-massal');
         Route::post('anggaran/{anggaran}/revisions', [\App\Http\Controllers\Admin\BudgetLineController::class, 'storeRevision'])->name('anggaran.revisions.store');
         Route::delete('anggaran/{anggaran}/revisions/{revision}', [\App\Http\Controllers\Admin\BudgetLineController::class, 'destroyRevision'])->name('anggaran.revisions.destroy');
         Route::resource('anggaran', \App\Http\Controllers\Admin\BudgetLineController::class)

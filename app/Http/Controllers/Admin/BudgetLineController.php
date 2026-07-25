@@ -8,6 +8,7 @@ use App\Models\Account;
 use App\Models\BudgetLine;
 use App\Models\BudgetRevision;
 use App\Models\FiscalYear;
+use App\Models\Package;
 use App\Models\Program;
 use App\Models\SubActivity;
 use Illuminate\Http\RedirectResponse;
@@ -22,30 +23,129 @@ use Illuminate\View\View;
  */
 class BudgetLineController extends Controller
 {
+    /**
+     * Tingkat 1 — gambaran per program.
+     *
+     * Mengikuti pola monev: kartu Program → dikelompokkan per Kegiatan →
+     * grid kartu Sub Kegiatan. Angka yang ditonjolkan adalah plafon DPA vs
+     * yang sudah dirinci jadi paket RUP.
+     */
     public function index(Request $request): View
     {
         $fiscalYears = FiscalYear::orderByDesc('tahun')->get();
         $tahunId = $request->tahun ?: ($fiscalYears->firstWhere('is_active', true)?->id ?? $fiscalYears->first()?->id);
-        $programId = $request->program;
-        $search = $request->q;
-        $hanyaSelisih = $request->boolean('selisih');
+
+        // Semua baris anggaran tahun ini, dikelompokkan per sub kegiatan.
+        $linesPerSub = BudgetLine::query()
+            ->where('fiscal_year_id', $tahunId)
+            ->get()
+            ->groupBy('sub_activity_id');
+
+        // Sub kegiatan yang punya paket tapi belum punya plafon juga perlu
+        // terlihat — justru itu yang harus ditindaklanjuti.
+        // Hanya paket yang sudah punya rekening yang dibandingkan dengan
+        // plafon, supaya angkanya setara dengan baris anggaran.
+        $paketPerSub = Package::query()
+            ->where('fiscal_year_id', $tahunId)
+            ->whereNotNull('sub_activity_id')
+            ->whereNotNull('account_id')
+            ->selectRaw('sub_activity_id, SUM(pagu) as total, COUNT(*) as jumlah')
+            ->groupBy('sub_activity_id')
+            ->get()
+            ->keyBy('sub_activity_id');
+
+        // Paket yang belum dipetakan ke rekening: bukan "melebihi plafon",
+        // melainkan pekerjaan pemetaan yang belum selesai.
+        $tanpaRekening = Package::query()
+            ->where('fiscal_year_id', $tahunId)
+            ->whereNotNull('sub_activity_id')
+            ->whereNull('account_id')
+            ->selectRaw('sub_activity_id, SUM(pagu) as total, COUNT(*) as jumlah')
+            ->groupBy('sub_activity_id')
+            ->get()
+            ->keyBy('sub_activity_id');
+
+        // Paket yang bahkan belum punya sub kegiatan — tidak bisa
+        // ditempelkan ke mana pun, ditampilkan sebagai peringatan global.
+        $yatim = Package::query()
+            ->where('fiscal_year_id', $tahunId)
+            ->whereNull('sub_activity_id')
+            ->selectRaw('SUM(pagu) as total, COUNT(*) as jumlah')
+            ->first();
+
+        $subIds = $linesPerSub->keys()
+            ->merge($paketPerSub->keys())
+            ->merge($tanpaRekening->keys())
+            ->unique();
+
+        $programs = Program::query()
+            ->with(['activities' => fn ($q) => $q->orderBy('kode'),
+                    'activities.subActivities' => fn ($q) => $q->whereIn('id', $subIds)->orderBy('kode')])
+            ->orderBy('kode')
+            ->get()
+            ->filter(fn ($p) => $p->activities->contains(fn ($a) => $a->subActivities->isNotEmpty()));
+
+        // Ringkasan per sub kegiatan, dipakai kartu di view.
+        $ringkasSub = collect($subIds)->mapWithKeys(function ($subId) use ($linesPerSub, $paketPerSub, $tanpaRekening) {
+            $lines = $linesPerSub->get($subId, collect());
+            $paket = $paketPerSub->get($subId);
+            $belum = $tanpaRekening->get($subId);
+
+            $plafon = (float) $lines->sum('pagu_efektif');
+            $terinput = (float) ($paket->total ?? 0);
+
+            return [$subId => [
+                'jumlahRekening' => $lines->count(),
+                'jumlahPaket' => (int) ($paket->jumlah ?? 0),
+                'plafon' => $plafon,
+                'terinput' => $terinput,
+                'selisih' => $plafon - $terinput,
+                'adaPlafon' => $lines->isNotEmpty(),
+                'tanpaRekeningJumlah' => (int) ($belum->jumlah ?? 0),
+                'tanpaRekeningTotal' => (float) ($belum->total ?? 0),
+            ]];
+        });
+
+        $ringkas = [
+            'subKegiatan' => $ringkasSub->count(),
+            'rekening' => $ringkasSub->sum('jumlahRekening'),
+            'plafon' => $ringkasSub->sum('plafon'),
+            'terinput' => $ringkasSub->sum('terinput'),
+            'belumSeimbang' => $ringkasSub->filter(fn ($r) => abs($r['selisih']) >= 0.01)->count(),
+            'tanpaRekeningJumlah' => $ringkasSub->sum('tanpaRekeningJumlah'),
+            'tanpaRekeningTotal' => $ringkasSub->sum('tanpaRekeningTotal'),
+            'yatimJumlah' => (int) ($yatim->jumlah ?? 0),
+            'yatimTotal' => (float) ($yatim->total ?? 0),
+        ];
+
+        return view('anggaran.index', [
+            'programs' => $programs,
+            'ringkasSub' => $ringkasSub,
+            'ringkas' => $ringkas,
+            'fiscalYears' => $fiscalYears,
+            'tahunId' => $tahunId,
+        ]);
+    }
+
+    /**
+     * Tingkat 2 — rekening di dalam satu sub kegiatan. Di sinilah plafon
+     * diubah, karena satu peristiwa APBD-P biasanya menyentuh banyak
+     * rekening sekaligus dengan dasar hukum yang sama.
+     */
+    public function subActivity(Request $request, SubActivity $subActivity): View
+    {
+        $fiscalYears = FiscalYear::orderByDesc('tahun')->get();
+        $tahunId = $request->tahun ?: ($fiscalYears->firstWhere('is_active', true)?->id ?? $fiscalYears->first()?->id);
 
         $lines = BudgetLine::query()
-            ->with(['subActivity.activity.program', 'account', 'revisions'])
-            ->when($tahunId, fn ($q) => $q->where('fiscal_year_id', $tahunId))
-            ->when($programId, fn ($q) => $q->whereHas(
-                'subActivity.activity',
-                fn ($a) => $a->where('program_id', $programId)
-            ))
-            ->when($search, fn ($q) => $q->where(fn ($sub) => $sub
-                ->whereHas('account', fn ($a) => $a->where('kode', 'like', "%{$search}%")->orWhere('nama', 'like', "%{$search}%"))
-                ->orWhereHas('subActivity', fn ($s) => $s->where('kode', 'like', "%{$search}%")->orWhere('nama', 'like', "%{$search}%"))))
+            ->with(['account', 'revisions'])
+            ->where('fiscal_year_id', $tahunId)
+            ->where('sub_activity_id', $subActivity->id)
             ->get()
-            ->sortBy(fn ($l) => [$l->subActivity?->kode, $l->account?->kode])
+            ->sortBy(fn ($l) => $l->account?->kode)
             ->values();
 
-        // Satu query untuk seluruh rekonsiliasi — hindari N+1 pada daftar.
-        $rekon = BudgetLine::rekonsiliasiMap($tahunId ?: null);
+        $rekon = BudgetLine::rekonsiliasiMap($tahunId);
 
         $baris = $lines->map(function (BudgetLine $line) use ($rekon) {
             $data = $rekon->get($line->kunciSel(), ['total' => 0.0, 'jumlah' => 0]);
@@ -58,33 +158,84 @@ class BudgetLineController extends Controller
             ];
         });
 
-        if ($hanyaSelisih) {
-            $baris = $baris->filter(fn ($b) => abs($b['selisih']) >= 0.01)->values();
-        }
+        $subActivity->load('activity.program');
 
-        $ringkas = [
-            'baris' => $baris->count(),
-            'plafon' => $baris->sum(fn ($b) => (float) $b['line']->pagu_efektif),
-            'terinput' => $baris->sum('terinput'),
-            'belumSeimbang' => $baris->filter(fn ($b) => abs($b['selisih']) >= 0.01)->count(),
-        ];
-
-        return view('anggaran.index', [
+        return view('anggaran.sub-kegiatan', [
+            'subActivity' => $subActivity,
             'baris' => $baris,
-            'ringkas' => $ringkas,
             'fiscalYears' => $fiscalYears,
-            'programs' => Program::orderBy('kode')->get(),
             'tahunId' => $tahunId,
-            'programId' => $programId,
-            'search' => $search,
-            'hanyaSelisih' => $hanyaSelisih,
+            'tahun' => $fiscalYears->firstWhere('id', $tahunId),
+            'accounts' => Account::orderBy('kode')->get(),
+            'jenisOptions' => BudgetRevision::jenisOptions(),
+            'ringkas' => [
+                'plafon' => $baris->sum(fn ($b) => (float) $b['line']->pagu_efektif),
+                'terinput' => $baris->sum('terinput'),
+                'belumSeimbang' => $baris->filter(fn ($b) => abs($b['selisih']) >= 0.01)->count(),
+            ],
         ]);
     }
 
-    public function create(): View
+    /**
+     * Catat satu peristiwa revisi untuk seluruh rekening yang nilainya
+     * berubah — satu dasar hukum, banyak baris. Rekening yang nilainya
+     * tetap tidak ikut dicatat agar riwayat tidak penuh entri kosong.
+     */
+    public function bulkRevision(Request $request, SubActivity $subActivity): RedirectResponse
     {
+        $data = $request->validate([
+            'jenis' => ['required', Rule::in(array_keys(BudgetRevision::jenisOptions()))],
+            'tanggal' => ['nullable', 'date'],
+            'nomor_dasar' => ['nullable', 'string', 'max:255'],
+            'keterangan' => ['nullable', 'string', 'max:1000'],
+            'pagu' => ['required', 'array'],
+            'pagu.*' => ['nullable', 'numeric', 'min:0'],
+        ], [], ['jenis' => 'tahap anggaran']);
+
+        $berubah = 0;
+
+        DB::transaction(function () use ($data, $subActivity, &$berubah) {
+            $lines = BudgetLine::whereIn('id', array_keys($data['pagu']))
+                ->where('sub_activity_id', $subActivity->id)
+                ->get();
+
+            foreach ($lines as $line) {
+                $baru = $data['pagu'][$line->id] ?? null;
+
+                if ($baru === null || abs((float) $baru - (float) $line->pagu_efektif) < 0.01) {
+                    continue; // nilainya tidak berubah
+                }
+
+                $urutan = $line->revisions()->where('jenis', $data['jenis'])->count() + 1;
+
+                $line->revisions()->create([
+                    'jenis' => $data['jenis'],
+                    'urutan' => $urutan,
+                    'tanggal' => $data['tanggal'] ?? null,
+                    'nomor_dasar' => $data['nomor_dasar'] ?? null,
+                    'pagu' => $baru,
+                    'keterangan' => $data['keterangan'] ?? null,
+                    'created_by' => auth()->id(),
+                ]);
+
+                $line->refresh()->recalcPaguEfektif();
+                $berubah++;
+            }
+        });
+
+        if ($berubah === 0) {
+            return back()->with('error', 'Tidak ada plafon yang berubah — revisi tidak dicatat.');
+        }
+
+        return back()->with('success', "Revisi dicatat untuk {$berubah} rekening dengan dasar hukum yang sama.");
+    }
+
+    public function create(Request $request): View
+    {
+        // Dipanggil dari halaman sub kegiatan → sub kegiatannya sudah terisi.
         return view('anggaran.create', $this->formData(new BudgetLine([
-            'fiscal_year_id' => FiscalYear::where('is_active', true)->value('id'),
+            'fiscal_year_id' => $request->tahun ?: FiscalYear::where('is_active', true)->value('id'),
+            'sub_activity_id' => $request->sub_kegiatan,
         ])));
     }
 
@@ -112,8 +263,8 @@ class BudgetLineController extends Controller
         });
 
         return redirect()
-            ->route('admin.anggaran.index')
-            ->with('success', 'Baris anggaran berhasil ditambahkan.');
+            ->route('admin.anggaran.sub-kegiatan', [$data['sub_activity_id'], 'tahun' => $data['fiscal_year_id']])
+            ->with('success', 'Rekening berhasil ditambahkan ke sub kegiatan ini.');
     }
 
     public function edit(BudgetLine $anggaran): View

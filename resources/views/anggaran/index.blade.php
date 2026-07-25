@@ -9,209 +9,194 @@
 <x-ui.toast />
 
 <x-ui.workspace title="Anggaran (DPA)"
-    description="Plafon per rekening belanja dalam sub kegiatan, beserta riwayat murni, pergeseran, dan perubahan.">
+    description="Plafon per rekening belanja, dikelompokkan mengikuti struktur Program → Kegiatan → Sub Kegiatan.">
     <x-slot:actions>
-        <div class="flex items-center gap-2 bg-slate-50 rounded-full px-4 py-1.5 text-sm text-slate-600 font-medium border border-slate-100 shadow-sm">
-            <i data-lucide="calendar" class="w-4 h-4 text-emerald-500"></i>
-            TA {{ $tahunAktif->tahun ?? '-' }}
-        </div>
-        <x-ui.button variant="primary" size="md" href="{{ route('admin.anggaran.create') }}">
-            <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambah Baris
-        </x-ui.button>
-    </x-slot:actions>
-
-    {{-- Ringkasan --}}
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <x-ui.card padding="md">
-            <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Baris Anggaran</p>
-            <p class="text-2xl font-extrabold text-slate-900 mt-1">{{ $ringkas['baris'] }}</p>
-            <p class="text-[11px] font-semibold text-slate-400 mt-1">rekening × sub kegiatan</p>
-        </x-ui.card>
-        <x-ui.card padding="md">
-            <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Total Plafon</p>
-            <p class="text-2xl font-extrabold text-slate-900 mt-1">{{ $rupiah($ringkas['plafon']) }}</p>
-            <p class="text-[11px] font-semibold text-slate-400 mt-1">pagu berlaku</p>
-        </x-ui.card>
-        <x-ui.card padding="md">
-            <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Terinput Paket</p>
-            <p class="text-2xl font-extrabold text-blue-600 mt-1">{{ $rupiah($ringkas['terinput']) }}</p>
-            <p class="text-[11px] font-semibold text-slate-400 mt-1">jumlah pagu paket RUP</p>
-        </x-ui.card>
-        <x-ui.card padding="md">
-            <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Belum Seimbang</p>
-            <p class="text-2xl font-extrabold {{ $ringkas['belumSeimbang'] > 0 ? 'text-amber-600' : 'text-emerald-600' }} mt-1">
-                {{ $ringkas['belumSeimbang'] }}
-            </p>
-            <p class="text-[11px] font-semibold text-slate-400 mt-1">
-                {{ $ringkas['belumSeimbang'] > 0 ? 'baris perlu ditinjau' : 'semua sudah cocok' }}
-            </p>
-        </x-ui.card>
-    </div>
-
-    {{-- Filter --}}
-    <x-ui.card padding="none" class="mb-6">
-        <form method="GET" action="{{ route('admin.anggaran.index') }}" class="p-4 flex flex-col lg:flex-row gap-3">
-            <div class="relative flex-1 min-w-0">
-                <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-                    <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
-                </div>
-                <input type="text" name="q" value="{{ $search }}" placeholder="Cari kode/nama rekening atau sub kegiatan..."
-                    class="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
-            </div>
-            <select name="tahun" class="py-2.5 text-sm border-slate-200 rounded-xl bg-slate-50 focus:ring-emerald-500 focus:border-emerald-500">
+        <form method="GET" action="{{ route('admin.anggaran.index') }}">
+            <select name="tahun" onchange="this.form.submit()"
+                class="py-2 text-sm border-slate-200 rounded-xl bg-white focus:ring-emerald-500 focus:border-emerald-500 shadow-sm">
                 @foreach($fiscalYears as $fy)
                     <option value="{{ $fy->id }}" @selected($tahunId == $fy->id)>TA {{ $fy->tahun }}</option>
                 @endforeach
             </select>
-            <select name="program" class="py-2.5 text-sm border-slate-200 rounded-xl bg-slate-50 focus:ring-emerald-500 focus:border-emerald-500 max-w-xs">
-                <option value="">Semua Program</option>
-                @foreach($programs as $p)
-                    <option value="{{ $p->id }}" @selected($programId == $p->id)>{{ $p->kode }} — {{ Str::limit($p->nama, 40) }}</option>
-                @endforeach
-            </select>
-            <label class="inline-flex items-center gap-2 px-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
-                <input type="checkbox" name="selisih" value="1" @checked($hanyaSelisih)
-                    class="rounded text-amber-600 focus:ring-amber-500 border-slate-300">
-                <span class="text-xs font-semibold text-slate-600 whitespace-nowrap">Hanya yang selisih</span>
-            </label>
-            <div class="flex items-center gap-2">
-                <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-200">
-                    <i data-lucide="filter" class="w-4 h-4"></i> Terapkan
-                </button>
-                <a href="{{ route('admin.anggaran.index') }}" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
-                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
-                </a>
-            </div>
         </form>
-    </x-ui.card>
+    </x-slot:actions>
 
-    {{-- Tabel --}}
-    <x-ui.card padding="none">
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left">
-                <thead class="bg-slate-50 border-b border-slate-100">
-                    <tr>
-                        <th class="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Rekening Belanja</th>
-                        <th class="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider text-center w-32">Tahap</th>
-                        <th class="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider text-right w-40">Plafon DPA</th>
-                        <th class="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider text-right w-40">Terinput</th>
-                        <th class="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider text-right w-44">Selisih</th>
-                        <th class="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider text-center w-20">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    @forelse($baris->groupBy(fn ($b) => $b['line']->sub_activity_id) as $grup)
-                        @php
-                            $sub = $grup->first()['line']->subActivity;
-                            $gPlafon = $grup->sum(fn ($b) => (float) $b['line']->pagu_efektif);
-                            $gTerinput = $grup->sum('terinput');
-                            $gSelisih = $gPlafon - $gTerinput;
-                        @endphp
+    {{-- Ringkasan --}}
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <x-ui.card padding="md">
+            <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Plafon</p>
+            <p class="text-2xl font-extrabold text-slate-900 mt-2">{{ $rupiah($ringkas['plafon']) }}</p>
+            <p class="text-xs font-semibold text-slate-500 mt-2">{{ $ringkas['rekening'] }} rekening · {{ $ringkas['subKegiatan'] }} sub kegiatan</p>
+        </x-ui.card>
+        <x-ui.card padding="md">
+            <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Sudah Dirinci</p>
+            <p class="text-2xl font-extrabold text-blue-600 mt-2">{{ $rupiah($ringkas['terinput']) }}</p>
+            <p class="text-xs font-semibold text-slate-500 mt-2">jumlah pagu paket RUP</p>
+        </x-ui.card>
+        <x-ui.card padding="md">
+            <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Belum Dirinci</p>
+            @php $sisaRinci = $ringkas['plafon'] - $ringkas['terinput']; @endphp
+            <p class="text-2xl font-extrabold {{ abs($sisaRinci) < 0.01 ? 'text-emerald-600' : ($sisaRinci > 0 ? 'text-amber-600' : 'text-rose-600') }} mt-2">
+                {{ $rupiah($sisaRinci) }}
+            </p>
+            <p class="text-xs font-semibold text-slate-500 mt-2">selisih plafon vs paket</p>
+        </x-ui.card>
+        <x-ui.card padding="md">
+            <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Perlu Ditinjau</p>
+            <p class="text-2xl font-extrabold {{ $ringkas['belumSeimbang'] > 0 ? 'text-amber-600' : 'text-emerald-600' }} mt-2">
+                {{ $ringkas['belumSeimbang'] }}
+            </p>
+            <p class="text-xs font-semibold text-slate-500 mt-2">
+                {{ $ringkas['belumSeimbang'] > 0 ? 'sub kegiatan belum seimbang' : 'semua sudah seimbang' }}
+            </p>
+        </x-ui.card>
+    </div>
 
-                        {{-- Baris sub kegiatan: induk dari rekening di bawahnya (struktur DPA) --}}
-                        <tr class="bg-slate-50/80">
-                            <td class="px-5 py-3">
-                                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wide">
-                                    {{ $sub?->activity?->program?->nama ?? 'Tanpa program' }}
-                                </p>
-                                <p class="font-bold text-slate-800 leading-snug mt-0.5">
-                                    <span class="font-mono text-blue-600">{{ $sub?->kode ?? '-' }}</span>
-                                    <span class="text-slate-300 mx-1">·</span>{{ $sub?->nama ?? 'Sub kegiatan terhapus' }}
-                                </p>
-                            </td>
-                            <td class="px-5 py-3 text-center">
-                                <span class="text-[10px] font-bold text-slate-400">{{ $grup->count() }} rekening</span>
-                            </td>
-                            <td class="px-5 py-3 text-right font-extrabold text-slate-800 whitespace-nowrap">{{ $rupiah($gPlafon) }}</td>
-                            <td class="px-5 py-3 text-right font-bold text-blue-600 whitespace-nowrap">{{ $rupiah($gTerinput) }}</td>
-                            <td class="px-5 py-3 text-right whitespace-nowrap">
-                                @if(abs($gSelisih) < 0.01)
-                                    <span class="text-xs font-bold text-emerald-600">Sesuai</span>
-                                @else
-                                    <span class="font-bold {{ $gSelisih > 0 ? 'text-amber-600' : 'text-rose-600' }}">{{ $rupiah($gSelisih) }}</span>
-                                @endif
-                            </td>
-                            <td class="px-5 py-3"></td>
-                        </tr>
-
-                        @foreach($grup as $b)
-                        @php
-                            $line = $b['line'];
-                            $selisih = $b['selisih'];
-                            $seimbang = abs($selisih) < 0.01;
-                            $revisi = $line->revisions->last();
-                        @endphp
-                        <tr class="hover:bg-slate-50/80 transition-colors">
-                            <td class="px-5 py-4 pl-10">
-                                <div class="flex items-start gap-2">
-                                    <i data-lucide="corner-down-right" class="w-3.5 h-3.5 text-slate-300 mt-0.5 shrink-0"></i>
-                                    <p class="font-semibold text-slate-900 leading-snug min-w-0">
-                                        <span class="font-mono text-emerald-700">{{ $line->account?->kode ?? '-' }}</span>
-                                        <span class="text-slate-400 mx-1">·</span>{{ $line->account?->nama ?? 'Rekening terhapus' }}
-                                    </p>
-                                </div>
-                            </td>
-                            <td class="px-5 py-4 text-center">
-                                @if($revisi)
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border
-                                        {{ $revisi->jenis === 'perubahan' ? 'bg-violet-50 text-violet-700 border-violet-200'
-                                           : ($revisi->jenis === 'pergeseran' ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                           : 'bg-slate-100 text-slate-600 border-slate-200') }}">
-                                        {{ $revisi->label }}
-                                    </span>
-                                @else
-                                    <span class="text-xs text-slate-300">—</span>
-                                @endif
-                            </td>
-                            <td class="px-5 py-4 text-right font-bold text-slate-900 whitespace-nowrap">{{ $rupiah($line->pagu_efektif) }}</td>
-                            <td class="px-5 py-4 text-right whitespace-nowrap">
-                                <span class="font-semibold text-blue-600">{{ $rupiah($b['terinput']) }}</span>
-                                <span class="block text-[10px] text-slate-400 font-semibold">{{ $b['jumlahPaket'] }} paket</span>
-                            </td>
-                            <td class="px-5 py-4 text-right whitespace-nowrap">
-                                @if($seimbang)
-                                    <span class="inline-flex items-center gap-1 text-xs font-bold text-emerald-600">
-                                        <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Sesuai
-                                    </span>
-                                @elseif($selisih > 0)
-                                    <span class="font-bold text-amber-600">{{ $rupiah($selisih) }}</span>
-                                    <span class="block text-[10px] font-bold text-amber-500 uppercase tracking-wide">belum terinput</span>
-                                @else
-                                    <span class="font-bold text-rose-600">{{ $rupiah($selisih) }}</span>
-                                    <span class="block text-[10px] font-bold text-rose-500 uppercase tracking-wide">melebihi plafon</span>
-                                @endif
-                            </td>
-                            <td class="px-5 py-4">
-                                <div class="flex items-center justify-center">
-                                    <a href="{{ route('admin.anggaran.edit', $line) }}"
-                                        class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-emerald-600 bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 transition-colors" title="Kelola & riwayat">
-                                        <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                        @endforeach
-                    @empty
-                        <tr>
-                            <td colspan="6" class="px-6 py-12">
-                                <x-ui.empty-state icon="wallet" title="Belum Ada Baris Anggaran"
-                                    description="Tambahkan baris secara manual, atau jalankan perintah anggaran:seed-dpa untuk membentuknya dari pagu paket yang sudah ada.">
-                                    <x-ui.button variant="primary" size="md" href="{{ route('admin.anggaran.create') }}">
-                                        <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambah Baris
-                                    </x-ui.button>
-                                </x-ui.empty-state>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        @if($baris->isNotEmpty())
-            <div class="px-5 py-3 border-t border-slate-100 bg-slate-50/50 text-[11px] text-slate-400 font-semibold">
-                Selisih positif berarti masih ada pagu yang belum dirinci menjadi paket RUP; negatif berarti rincian paket melebihi plafon DPA.
+    {{-- Peringatan pemetaan paket: bukan soal plafon, tapi data yang belum lengkap --}}
+    @if($ringkas['tanpaRekeningJumlah'] > 0 || $ringkas['yatimJumlah'] > 0)
+        <div class="mb-6 flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+            <div class="p-1.5 rounded-full bg-amber-100 shrink-0">
+                <i data-lucide="link-2-off" class="w-4 h-4 text-amber-600"></i>
             </div>
-        @endif
-    </x-ui.card>
+            <div class="min-w-0">
+                <p class="text-sm font-bold text-amber-800">Ada paket RUP yang belum terpetakan ke anggaran</p>
+                <ul class="mt-1 text-xs text-amber-700 space-y-0.5">
+                    @if($ringkas['tanpaRekeningJumlah'] > 0)
+                        <li>
+                            <b>{{ $ringkas['tanpaRekeningJumlah'] }} paket</b> ({{ $rupiah($ringkas['tanpaRekeningTotal']) }})
+                            sudah punya sub kegiatan tetapi <b>belum punya rekening belanja</b> — sehingga tidak bisa
+                            dibandingkan dengan plafon mana pun.
+                        </li>
+                    @endif
+                    @if($ringkas['yatimJumlah'] > 0)
+                        <li>
+                            <b>{{ $ringkas['yatimJumlah'] }} paket</b> ({{ $rupiah($ringkas['yatimTotal']) }})
+                            belum punya sub kegiatan sama sekali.
+                        </li>
+                    @endif
+                </ul>
+                <p class="mt-1.5 text-[11px] text-amber-600 font-semibold">
+                    Lengkapi rekening paket lewat menu Paket RUP agar angkanya ikut terhitung di sini.
+                </p>
+            </div>
+        </div>
+    @endif
+
+    {{-- Program → Kegiatan → kartu Sub Kegiatan --}}
+    <div class="space-y-6">
+        @forelse($programs as $program)
+            <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/60">
+                    <h2 class="text-base font-extrabold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="folder-kanban" class="w-5 h-5 text-blue-500"></i>
+                        {{ $program->kode }} - {{ $program->nama }}
+                    </h2>
+                </div>
+
+                <div class="divide-y divide-slate-100">
+                    @foreach($program->activities as $activity)
+                        @continue($activity->subActivities->isEmpty())
+                        <div class="p-5">
+                            <div class="mb-4">
+                                <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Kegiatan</p>
+                                <h3 class="text-sm font-bold text-slate-800 mt-1">{{ $activity->kode }} - {{ $activity->nama }}</h3>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
+                                @foreach($activity->subActivities as $subActivity)
+                                    @php
+                                        $r = $ringkasSub[$subActivity->id] ?? ['plafon' => 0, 'terinput' => 0, 'selisih' => 0, 'jumlahRekening' => 0, 'jumlahPaket' => 0, 'adaPlafon' => false];
+                                        $seimbang = abs($r['selisih']) < 0.01;
+                                        $persen = $r['plafon'] > 0 ? min(100, $r['terinput'] / $r['plafon'] * 100) : 0;
+
+                                        if (!$r['adaPlafon']) {
+                                            $tone = 'slate'; $badge = 'Belum ada plafon';
+                                        } elseif ($seimbang) {
+                                            $tone = 'emerald'; $badge = 'Sesuai';
+                                        } elseif ($r['selisih'] > 0) {
+                                            $tone = 'amber'; $badge = 'Belum dirinci';
+                                        } else {
+                                            $tone = 'rose'; $badge = 'Melebihi plafon';
+                                        }
+
+                                        $toneClass = [
+                                            'emerald' => 'text-emerald-600 bg-emerald-50 border-emerald-100',
+                                            'amber' => 'text-amber-600 bg-amber-50 border-amber-100',
+                                            'rose' => 'text-rose-600 bg-rose-50 border-rose-100',
+                                            'slate' => 'text-slate-500 bg-slate-100 border-slate-200',
+                                        ][$tone];
+                                        $barClass = [
+                                            'emerald' => 'bg-emerald-500',
+                                            'amber' => 'bg-amber-500',
+                                            'rose' => 'bg-rose-500',
+                                            'slate' => 'bg-slate-300',
+                                        ][$tone];
+                                    @endphp
+
+                                    <a href="{{ route('admin.anggaran.sub-kegiatan', [$subActivity, 'tahun' => $tahunId]) }}"
+                                        class="group block rounded-2xl border border-slate-200 bg-white hover:border-emerald-200 hover:shadow-md transition-all overflow-hidden">
+                                        <div class="p-4">
+                                            <div class="flex items-start justify-between gap-3">
+                                                <div class="min-w-0">
+                                                    <p class="text-xs font-extrabold text-slate-500">{{ $subActivity->kode }}</p>
+                                                    <h4 class="text-sm font-bold text-slate-800 mt-1 leading-snug group-hover:text-emerald-700">
+                                                        {{ $subActivity->nama }}
+                                                    </h4>
+                                                </div>
+                                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full border text-[11px] font-bold {{ $toneClass }} shrink-0 whitespace-nowrap">
+                                                    {{ $badge }}
+                                                </span>
+                                            </div>
+
+                                            <div class="space-y-2.5 mt-4 text-xs">
+                                                <div class="flex items-center justify-between gap-3">
+                                                    <span class="text-slate-400 font-semibold">Plafon DPA</span>
+                                                    <span class="text-slate-800 font-bold text-right">{{ $rupiah($r['plafon']) }}</span>
+                                                </div>
+                                                <div class="flex items-center justify-between gap-3">
+                                                    <span class="text-slate-400 font-semibold">Terinput</span>
+                                                    <span class="text-blue-600 font-bold text-right">{{ $rupiah($r['terinput']) }}</span>
+                                                </div>
+                                                <div class="flex items-center justify-between gap-3">
+                                                    <span class="text-slate-400 font-semibold">Selisih</span>
+                                                    <span class="font-bold text-right {{ $seimbang ? 'text-emerald-600' : ($r['selisih'] > 0 ? 'text-amber-600' : 'text-rose-600') }}">
+                                                        {{ $seimbang ? '—' : $rupiah($r['selisih']) }}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            @if($r['tanpaRekeningJumlah'] > 0)
+                                                <p class="mt-2.5 inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 border border-amber-100 text-[10px] font-bold text-amber-700">
+                                                    <i data-lucide="link-2-off" class="w-3 h-3"></i>
+                                                    {{ $r['tanpaRekeningJumlah'] }} paket belum berrekening
+                                                </p>
+                                            @endif
+
+                                            <div class="mt-3">
+                                                <div class="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                                                    <div class="h-full {{ $barClass }} rounded-full" style="width: {{ $persen }}%"></div>
+                                                </div>
+                                                <div class="flex items-center justify-between mt-2 text-[11px] font-semibold text-slate-400">
+                                                    <span>{{ $r['jumlahRekening'] }} rekening · {{ $r['jumlahPaket'] }} paket</span>
+                                                    <span class="inline-flex items-center gap-1 text-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        Kelola <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+        @empty
+            <x-ui.card padding="md">
+                <x-ui.empty-state icon="wallet" title="Belum Ada Data Anggaran"
+                    description="Belum ada plafon maupun paket pada tahun anggaran ini. Jalankan perintah anggaran:seed-dpa untuk membentuk baris dari paket yang sudah ada." />
+            </x-ui.card>
+        @endforelse
+    </div>
 </x-ui.workspace>
 @endcomponent
