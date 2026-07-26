@@ -20,14 +20,19 @@ use App\Http\Controllers\BukuRegisterController;
 use Illuminate\Support\Facades\Route;
 
 // Public Route
+// Pengguna yang sudah login dan membuka dari ponsel langsung diantar ke
+// percakapan; tamu dan layar besar tetap melihat halaman muka.
 Route::get('/', function () {
     return view('welcome');
-});
+})->middleware(\App\Http\Middleware\ArahkanPonselKeAsisten::class);
 Route::view('/panduan', 'panduan')->name('panduan');
 Route::view('/disclaimer', 'disclaimer')->name('disclaimer');
 
 // Route dengan Middleware Auth
 Route::middleware(['auth', 'active'])->group(function () {
+
+    // Ruang percakapan asisten — halaman polos, jadi pintu masuk utama di HP.
+    Route::view('/asisten', 'asisten.index')->name('asisten');
 
     // Jembatan ke AI Service: browser memanggil KDMP, KDMP yang memegang
     // kunci internal dan meneruskannya server-to-server. Isi draf tersimpan
@@ -46,7 +51,11 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::delete('/profile', [\App\Http\Controllers\ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Dashboard (Redirector)
-    Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
+    // Pengalih sesudah login. Menu sidebar menunjuk langsung ke
+    // dashboard.{staf,kabid,admin}, jadi aman dipasangi pengalihan ponsel.
+    Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])
+        ->middleware(\App\Http\Middleware\ArahkanPonselKeAsisten::class)
+        ->name('dashboard');
     
     // Role-specific Dashboards
     Route::get('/admin/dashboard', [\App\Http\Controllers\DashboardController::class, 'admin'])

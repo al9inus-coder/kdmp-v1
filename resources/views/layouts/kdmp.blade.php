@@ -194,6 +194,8 @@
     <!-- AI Assistant Interactive Widget & Slide-over Drawer (Touch-friendly & Desktop FAB) -->
     <x-ai-assistant-widget />
 
+    @stack('scripts')
+
     <!-- PWA Service Worker Registration & Lucide Icons -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {

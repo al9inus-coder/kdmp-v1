@@ -28,6 +28,12 @@ class SpdDraftService
 {
     public const TIPE_PERJALANAN = ['Dalam Daerah', 'Luar Daerah'];
 
+    /** Seluruh slot draf SPD, urut sesuai tampilan kartu. */
+    public const SLOT = [
+        'personel', 'paket', 'tujuan', 'tipe_perjalanan',
+        'tanggal_berangkat', 'tanggal_kembali', 'maksud', 'dasar_pelaksanaan',
+    ];
+
     public const SLOT_TEKS = ['tujuan', 'maksud', 'dasar_pelaksanaan', 'tanggal_berangkat', 'tanggal_kembali'];
 
     private const BULAN = [
@@ -287,14 +293,21 @@ class SpdDraftService
 
     public function draftUntukWidget(string $jobId, array $slots, bool $lengkap, ?string $pesan): array
     {
-        // Opsi pegawai dikirim utuh supaya kartu bisa menambah pelaksana.
-        $slots['personel']['opsi'] = $this->opsiPegawai();
-
-        if (($slots['paket']['opsi'] ?? []) === []) {
-            $slots['paket']['opsi'] = $this->kandidatPaket();
+        // Kartu membaca setiap slot tanpa pengaman, jadi bentuknya harus utuh
+        // walau payload lama/rusak hanya berisi sebagian slot.
+        foreach (self::SLOT as $kunci) {
+            $slots[$kunci] = array_merge(
+                $this->slot($kunci === 'personel' ? [] : null, 'kosong'),
+                $slots[$kunci] ?? []
+            );
         }
 
-        $slots['tipe_perjalanan']['opsi'] = self::TIPE_PERJALANAN;
+        // Daftar pilihan TIDAK ikut dikirim. Percakapan hanya butuh nilai yang
+        // sudah terisi; mengirim seluruh master pegawai (berikut NIP) ke
+        // browser pada tiap balasan adalah paparan data yang tidak perlu.
+        foreach (self::SLOT as $kunci) {
+            unset($slots[$kunci]['opsi']);
+        }
 
         return [
             'job_id' => $jobId,
@@ -525,14 +538,6 @@ class SpdDraftService
             ->all();
     }
 
-    private function opsiPegawai(): array
-    {
-        return Employee::where('tipe', 'dinas')
-            ->orderBy('nama')
-            ->get(['id', 'nama', 'nip', 'jabatan'])
-            ->map(fn ($e) => $this->ringkasPegawai($e))
-            ->all();
-    }
 
     private function ringkasPegawai(Employee $e): array
     {

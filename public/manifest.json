@@ -1,11 +1,12 @@
 {
-  "name": "KDMP Mobile PWA",
-  "short_name": "KDMP Mobile",
-  "description": "Aplikasi Sistem Informasi KDMP dengan AI Assistant & Quick Approval Seluler",
-  "start_url": "/dashboard",
+  "name": "KDMP Asisten",
+  "short_name": "KDMP",
+  "description": "Asisten kerja KDMP: percakapan, penyusunan dokumen, dan persetujuan cepat dari ponsel",
+  "start_url": "/asisten",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0F172A",
-  "theme_color": "#059669",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "orientation": "portrait",
   "icons": [
     {
