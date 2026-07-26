@@ -23,7 +23,7 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-<body class="font-sans antialiased text-slate-900 bg-slate-50 pb-16 md:pb-0"
+<body class="font-sans antialiased text-slate-900 bg-slate-50"
       x-data="{ sidebarOpen: false, sidebarCollapsed: false }"
       x-init="sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true'; $watch('sidebarCollapsed', val => localStorage.setItem('sidebarCollapsed', val))">
     <!-- Backdrop untuk Mobile -->
@@ -188,10 +188,10 @@
         </footer>
     </div>
 
-    <!-- Mobile PWA Bottom Navigation Bar (Otomatis Tampil di Ponsel) -->
-    <x-mobile-pwa-bottom-nav />
+    <!-- Ponsel: satu jalan pulang ke percakapan, berubah warna saat ada antrean -->
+    <x-ai.tombol-asisten :href="route('asisten')" tampil="md:hidden" />
 
-    <!-- AI Assistant Interactive Widget & Slide-over Drawer (Touch-friendly & Desktop FAB) -->
+    <!-- Layar besar: tombol melayang yang membuka panel percakapan -->
     <x-ai-assistant-widget />
 
     @stack('scripts')

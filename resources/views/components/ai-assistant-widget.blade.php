@@ -9,12 +9,10 @@
 --}}
 <div x-data="{ terbuka: false }" @buka-asisten.window="terbuka = true" class="hidden md:block">
 
-    {{-- Tombol melayang --}}
-    <button type="button" @click="terbuka = true" x-show="!terbuka"
-            class="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 via-violet-500 to-rose-500 text-white shadow-xl hover:scale-105 active:scale-95 transition-transform flex items-center justify-center"
-            title="Asisten KDMP">
-        <i data-lucide="sparkles" class="w-6 h-6"></i>
-    </button>
+    {{-- Tombol melayang — bentuk yang sama persis dengan yang di ponsel,
+         hanya perilakunya berbeda: di sini membuka panel, di sana pindah
+         ke halaman /asisten. --}}
+    <x-ai.tombol-asisten x-show="!terbuka" @click="terbuka = true" />
 
     {{-- Panel percakapan --}}
     <div x-show="terbuka" style="display:none"

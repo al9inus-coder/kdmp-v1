@@ -4,6 +4,13 @@
     'mode' => 'penuh',
 ])
 
+@php
+    // Pil/FAB berubah warna saat ada antrean, jadi begitu dibuka percakapan
+    // harus langsung memberi tahu apa yang menunggu — kalau tidak, pengguna
+    // dipancing lalu digantung.
+    $antrean = app(\App\Services\AntreanKerja::class)->untuk(auth()->user());
+@endphp
+
 {{--
     Percakapan + kolom ketik. Satu komponen dipakai dua tempat (halaman penuh
     dan panel desktop) supaya tidak ada dua implementasi chat yang harus
@@ -18,12 +25,33 @@
     <div x-ref="riwayat" class="flex-1 min-h-0 overflow-y-auto px-4 py-6 space-y-6">
 
         {{-- Sapaan saat percakapan masih kosong --}}
-        <div x-show="pesan.length === 0" class="h-full flex flex-col items-center justify-center text-center px-6">
-            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 via-violet-500 to-rose-500 flex items-center justify-center shadow-lg">
+        <div x-show="pesan.length === 0"
+             class="{{ $antrean->isEmpty() ? 'h-full flex flex-col items-center justify-center text-center' : 'flex flex-col items-center text-center pt-4' }} px-6">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 via-violet-500 to-rose-500 flex items-center justify-center shadow-lg shrink-0">
                 <i data-lucide="sparkles" class="w-6 h-6 text-white"></i>
             </div>
             <h1 class="mt-5 text-2xl font-semibold text-slate-800">Halo, {{ auth()->user()->name ?? 'rekan' }}</h1>
-            <p class="mt-1.5 text-sm text-slate-500">Ada yang bisa saya bantu hari ini?</p>
+
+            @if($antrean->isEmpty())
+                <p class="mt-1.5 text-sm text-slate-500">Ada yang bisa saya bantu hari ini?</p>
+            @else
+                <p class="mt-1.5 text-sm text-slate-500">Ada yang menunggu tindakan Anda.</p>
+
+                <div class="mt-6 w-full max-w-md space-y-2 text-left">
+                    @foreach($antrean as $baris)
+                        <a href="{{ $baris['url'] }}"
+                           class="flex items-center gap-3 px-4 py-3 rounded-2xl border border-amber-200 bg-amber-50 hover:bg-amber-100 transition-colors">
+                            <span class="inline-flex items-center justify-center w-7 h-7 shrink-0 rounded-full bg-amber-500 text-white text-xs font-bold">
+                                {{ $baris['jumlah'] > 99 ? '99+' : $baris['jumlah'] }}
+                            </span>
+                            <span class="flex-1 min-w-0 text-sm text-amber-900">{{ $baris['teks'] }}</span>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-amber-500 shrink-0"></i>
+                        </a>
+                    @endforeach
+                </div>
+
+                <p class="mt-4 text-xs text-slate-400">Atau tanyakan apa saja di bawah.</p>
+            @endif
         </div>
 
         <template x-for="(m, i) in pesan" :key="i">
