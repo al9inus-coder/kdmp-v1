@@ -20,14 +20,26 @@ use App\Http\Controllers\BukuRegisterController;
 use Illuminate\Support\Facades\Route;
 
 // Public Route
+// Pengguna yang sudah login dan membuka dari ponsel langsung diantar ke
+// percakapan; tamu dan layar besar tetap melihat halaman muka.
 Route::get('/', function () {
     return view('welcome');
-});
+})->middleware(\App\Http\Middleware\ArahkanPonselKeAsisten::class);
 Route::view('/panduan', 'panduan')->name('panduan');
 Route::view('/disclaimer', 'disclaimer')->name('disclaimer');
 
 // Route dengan Middleware Auth
 Route::middleware(['auth', 'active'])->group(function () {
+
+    // Ruang percakapan asisten — halaman polos, jadi pintu masuk utama di HP.
+    Route::view('/asisten', 'asisten.index')->name('asisten');
+
+    // Jembatan ke AI Service: browser memanggil KDMP, KDMP yang memegang
+    // kunci internal dan meneruskannya server-to-server. Isi draf tersimpan
+    // di server; approve hanya membawa job_id, lalu KDMP mengeksekusinya.
+    Route::post('/ai/chat', [\App\Http\Controllers\AiProxyController::class, 'chat'])->name('ai.chat');
+    Route::post('/ai/draft', [\App\Http\Controllers\AiProxyController::class, 'draft'])->name('ai.draft');
+    Route::post('/ai/approve', [\App\Http\Controllers\AiProxyController::class, 'approve'])->name('ai.approve');
 
     // Pencarian cepat paket (header)
     Route::get('/search', [\App\Http\Controllers\SearchController::class, 'index'])->name('search');
@@ -39,7 +51,11 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::delete('/profile', [\App\Http\Controllers\ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Dashboard (Redirector)
-    Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
+    // Pengalih sesudah login. Menu sidebar menunjuk langsung ke
+    // dashboard.{staf,kabid,admin}, jadi aman dipasangi pengalihan ponsel.
+    Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])
+        ->middleware(\App\Http\Middleware\ArahkanPonselKeAsisten::class)
+        ->name('dashboard');
     
     // Role-specific Dashboards
     Route::get('/admin/dashboard', [\App\Http\Controllers\DashboardController::class, 'admin'])
@@ -364,6 +380,21 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::post('fiscal-years/{fiscalYear}/activate', [FiscalYearController::class, 'activate'])->name('fiscal-years.activate');
         Route::resource('fiscal-years', FiscalYearController::class)->except(['show', 'edit', 'update', 'destroy']);
         Route::resource('employees', \App\Http\Controllers\EmployeeController::class)->except(['show']);
+
+        // Anggaran (DPA): plafon per rekening dalam sub kegiatan + riwayat revisi.
+        // Rute sub-kegiatan didaftarkan lebih dulu agar tidak tertangkap
+        // resource route anggaran/{anggaran}.
+        // Struktur DPA dibangun langsung dari halaman anggaran
+        Route::post('anggaran/program', [\App\Http\Controllers\Admin\BudgetLineController::class, 'storeProgram'])->name('anggaran.program.store');
+        Route::post('anggaran/kegiatan', [\App\Http\Controllers\Admin\BudgetLineController::class, 'storeActivity'])->name('anggaran.kegiatan.store');
+        Route::post('anggaran/sub-kegiatan', [\App\Http\Controllers\Admin\BudgetLineController::class, 'storeSubActivity'])->name('anggaran.sub-kegiatan.store');
+        Route::get('anggaran/sub-kegiatan/{subActivity}', [\App\Http\Controllers\Admin\BudgetLineController::class, 'subActivity'])->name('anggaran.sub-kegiatan');
+        Route::post('anggaran/sub-kegiatan/{subActivity}/revisi', [\App\Http\Controllers\Admin\BudgetLineController::class, 'bulkRevision'])->name('anggaran.revisi-massal');
+        Route::post('anggaran/{anggaran}/revisions', [\App\Http\Controllers\Admin\BudgetLineController::class, 'storeRevision'])->name('anggaran.revisions.store');
+        Route::delete('anggaran/{anggaran}/revisions/{revision}', [\App\Http\Controllers\Admin\BudgetLineController::class, 'destroyRevision'])->name('anggaran.revisions.destroy');
+        Route::resource('anggaran', \App\Http\Controllers\Admin\BudgetLineController::class)
+            ->parameters(['anggaran' => 'anggaran'])
+            ->except(['show']);
     });
     
 

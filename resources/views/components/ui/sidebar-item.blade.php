@@ -33,15 +33,13 @@
         return; // Don't render if unauthorized
     }
 
-    // Badge angka "butuh tindakan" — kunci badge didefinisikan di config/navigation.php
+    // Badge angka "butuh tindakan" — kunci badge didefinisikan di config/navigation.php.
+    // Hitungan SPD diambil dari AntreanKerja agar sama persis dengan pil asisten.
     $badgeCount = null;
     if (isset($item['badge'])) {
         $badgeCount = match ($item['badge']) {
             'kabid_paket_pending' => \App\Models\Package::where('status', 'submitted')->count(),
-            // Butuh tindakan di halaman SPPD: pengajuan SPPD baru + pengajuan SPJ (biaya rampung).
-            'kabid_sppd_pending'  => \App\Models\TravelOrder::where('status', \App\Models\TravelOrder::STATUS_SUBMITTED)->count()
-                + \App\Models\TravelOrder::where('status', \App\Models\TravelOrder::STATUS_APPROVED)
-                    ->where('spj_status', \App\Models\TravelOrder::SPJ_SUBMITTED)->count(),
+            'kabid_sppd_pending'  => app(\App\Services\AntreanKerja::class)->jumlahSpd(auth()->user()),
             default => null,
         };
     }

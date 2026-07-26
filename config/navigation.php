@@ -236,6 +236,12 @@ return [
                 'roles' => ['Admin'],
             ],
             [
+                'title' => 'Anggaran (DPA)',
+                'route' => 'admin.anggaran.index',
+                'icon'  => 'wallet',
+                'roles' => ['Admin'],
+            ],
+            [
                 'title' => 'SKPD',
                 'route' => 'admin.skpds.index',
                 'icon'  => 'building-2',

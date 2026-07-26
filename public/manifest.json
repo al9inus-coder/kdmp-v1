@@ -1,0 +1,18 @@
+{
+  "name": "KDMP Asisten",
+  "short_name": "KDMP",
+  "description": "Asisten kerja KDMP: percakapan, penyusunan dokumen, dan persetujuan cepat dari ponsel",
+  "start_url": "/asisten",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

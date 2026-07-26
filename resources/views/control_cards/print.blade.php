@@ -56,9 +56,11 @@
                     break;
                 }
             }
-            $tahun = $firstPackage ? ($firstPackage->fiscalYear->tahun ?? date('Y')) : date('Y');
+            // $tahun dari controller adalah id tahun anggaran; label tahunnya
+            // diambil terpisah supaya tidak saling menimpa.
+            $tahunLabel = $firstPackage ? ($firstPackage->fiscalYear->tahun ?? date('Y')) : date('Y');
         @endphp
-        <h3>Tahun Anggaran {{ $tahun }}</h3>
+        <h3>Tahun Anggaran {{ $tahunLabel }}</h3>
     </div>
 
     <div class="header-info">
@@ -81,8 +83,8 @@
                 <th class="w-10">Kode Rekening</th>
                 <th class="w-25">Uraian Belanja</th>
                 <th class="w-15">Pagu Anggaran Murni</th>
-                <th class="w-15">Pagu Pergeseran/<br>Pergeseran</th>
-                <th class="w-15">Realisasi<br>(ini dari nilai kontrak)</th>
+                <th class="w-15">Pagu Setelah<br>Pergeseran/Perubahan</th>
+                <th class="w-15">Realisasi</th>
                 <th class="w-10">Sisa Pagu</th>
                 <th class="w-5">Persentase<br>Serapan<br>Anggaran</th>
             </tr>
@@ -90,40 +92,86 @@
         <tbody>
             @php
                 $no = 1;
-                $sumPagu = 0;
+                $sumMurni = 0;
+                $sumBerlaku = 0;
                 $sumRealisasi = 0;
+                $adaCadangan = false;
+                $sbuRates = \App\Models\SbuLembur::all();
+
+                $realisasiPaket = function ($packages) use ($sbuRates) {
+                    $total = 0;
+                    foreach ($packages as $pkg) {
+                        if ($pkg->procurementPackage) {
+                            $total += (float) $pkg->procurementPackage->realisasi;
+                        }
+                        foreach ($pkg->travelOrders ?? [] as $to) {
+                            // Hanya SPJ (biaya rampung) yang sudah disetujui yang masuk realisasi.
+                            if ($to->spjStatus() !== \App\Models\TravelOrder::SPJ_APPROVED) { continue; }
+                            foreach ($to->personnels as $personnel) {
+                                $total += $personnel->uang_harian + $personnel->biaya_penginapan
+                                    + $personnel->biaya_representasi + $personnel->biaya_transport
+                                    + ($personnel->biaya_taksi ?? 0);
+                            }
+                        }
+                        foreach ($pkg->overtimes ?? [] as $overtime) {
+                            if ($overtime->is_locked) {
+                                $total += (float) $overtime->calculateTotalRealisasi($sbuRates);
+                            }
+                        }
+                    }
+                    return $total;
+                };
             @endphp
             @forelse($activity->subActivities as $subActivity)
+                @php
+                    // Baris kartu kendali adalah rekening belanja: plafon DPA
+                    // digabung dengan rekening yang sudah dipakai paket.
+                    $grupPaket = $subActivity->packages->groupBy(fn ($pkg) => $pkg->account?->id ?? 'none');
+                    $anggaranPerAkun = ($barisAnggaran[$subActivity->id] ?? collect())->keyBy(fn ($l) => $l->account_id ?? 'none');
+
+                    $barisKendali = $anggaranPerAkun->keys()
+                        ->merge($grupPaket->keys())
+                        ->unique()
+                        ->map(fn ($kunci) => [
+                            'line' => $anggaranPerAkun->get($kunci),
+                            'packages' => $grupPaket->get($kunci, collect()),
+                        ])
+                        ->map(fn ($b) => $b + ['account' => $b['line']?->account ?? $b['packages']->first()?->account])
+                        ->sortBy(fn ($b) => $b['account']->kode ?? 'zzz')
+                        ->values();
+                @endphp
                 <tr>
                     <td colspan="8" class="font-weight-bold" style="background-color: #fafafa;">Sub Kegiatan: {{ $subActivity->kode }} - {{ $subActivity->nama }}</td>
                 </tr>
-                @forelse($subActivity->packages as $pkg)
+                @forelse($barisKendali as $baris)
                     @php
-                        $realisasi = 0;
-                        if($pkg->procurementPackage) {
-                            $realisasi = (float) $pkg->procurementPackage->realisasi;
-                        }
-                        
-                        $pagu = (float) $pkg->pagu;
-                        $sisa = $pagu - $realisasi;
-                        $persen = $pagu > 0 ? ($realisasi / $pagu) * 100 : 0;
+                        $line = $baris['line'];
+                        $paguPaket = (float) $baris['packages']->sum('pagu');
+                        $berlaku = $line ? (float) $line->pagu_efektif : $paguPaket;
+                        $murni = $line ? (float) ($line->paguMurni() ?? $line->pagu_efektif) : $paguPaket;
+                        $adaCadangan = $adaCadangan || ! $line;
 
-                        $sumPagu += $pagu;
+                        $realisasi = $realisasiPaket($baris['packages']);
+                        $sisa = $berlaku - $realisasi;
+                        $persen = $berlaku > 0 ? ($realisasi / $berlaku) * 100 : 0;
+
+                        $sumMurni += $murni;
+                        $sumBerlaku += $berlaku;
                         $sumRealisasi += $realisasi;
                     @endphp
                     <tr>
                         <td class="text-center">{{ $no++ }}</td>
-                        <td class="text-center">{{ $pkg->account->kode ?? '-' }}</td>
-                        <td>{{ $pkg->nama_paket }}</td>
-                        <td class="text-right">{{ number_format($pagu, 2, ',', '.') }}</td>
-                        <td class="text-center">-</td>
+                        <td class="text-center">{{ $baris['account']->kode ?? '-' }}{{ $line ? '' : ' *' }}</td>
+                        <td>{{ $baris['account']->nama ?? 'Tanpa Uraian Belanja' }}</td>
+                        <td class="text-right">{{ number_format($murni, 2, ',', '.') }}</td>
+                        <td class="text-right">{{ $berlaku != $murni ? number_format($berlaku, 2, ',', '.') : '-' }}</td>
                         <td class="text-right">{{ number_format($realisasi, 2, ',', '.') }}</td>
                         <td class="text-right">{{ number_format($sisa, 2, ',', '.') }}</td>
                         <td class="text-center">{{ number_format($persen, 2, ',', '.') }}%</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" class="text-center" style="color: #666; font-style: italic;">Belum ada paket pekerjaan di sub kegiatan ini.</td>
+                        <td colspan="8" class="text-center" style="color: #666; font-style: italic;">Belum ada rekening belanja maupun paket pekerjaan di sub kegiatan ini.</td>
                     </tr>
                 @endforelse
             @empty
@@ -134,19 +182,25 @@
         </tbody>
         <tfoot>
             @php
-                $sumSisa = $sumPagu - $sumRealisasi;
-                $sumPersen = $sumPagu > 0 ? ($sumRealisasi / $sumPagu) * 100 : 0;
+                $sumSisa = $sumBerlaku - $sumRealisasi;
+                $sumPersen = $sumBerlaku > 0 ? ($sumRealisasi / $sumBerlaku) * 100 : 0;
             @endphp
             <tr class="font-weight-bold">
                 <td colspan="3" class="text-center">Jumlah</td>
-                <td class="text-right">{{ number_format($sumPagu, 2, ',', '.') }}</td>
-                <td class="text-center">-</td>
+                <td class="text-right">{{ number_format($sumMurni, 2, ',', '.') }}</td>
+                <td class="text-right">{{ $sumBerlaku != $sumMurni ? number_format($sumBerlaku, 2, ',', '.') : '-' }}</td>
                 <td class="text-right">{{ number_format($sumRealisasi, 2, ',', '.') }}</td>
                 <td class="text-right">{{ number_format($sumSisa, 2, ',', '.') }}</td>
                 <td class="text-center">{{ number_format($sumPersen, 2, ',', '.') }}%</td>
             </tr>
         </tfoot>
     </table>
+
+    @if($adaCadangan)
+        <p style="font-size: 9pt; color: #444; margin-top: 8px;">
+            * Rekening belum punya plafon DPA; pagu yang tertera diambil dari jumlah pagu paket.
+        </p>
+    @endif
 
     <script>
         window.onload = function() {
