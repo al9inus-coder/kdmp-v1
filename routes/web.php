@@ -38,6 +38,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     // kunci internal dan meneruskannya server-to-server. Isi draf tersimpan
     // di server; approve hanya membawa job_id, lalu KDMP mengeksekusinya.
     Route::post('/ai/chat', [\App\Http\Controllers\AiProxyController::class, 'chat'])->name('ai.chat');
+    Route::post('/ai/upload', [\App\Http\Controllers\AiProxyController::class, 'unggah'])->name('ai.upload');
     Route::post('/ai/draft', [\App\Http\Controllers\AiProxyController::class, 'draft'])->name('ai.draft');
     Route::post('/ai/approve', [\App\Http\Controllers\AiProxyController::class, 'approve'])->name('ai.approve');
 
