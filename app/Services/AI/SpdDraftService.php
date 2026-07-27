@@ -212,7 +212,7 @@ class SpdDraftService
     public function eksekusi(array $slots, int $createdBy): array
     {
         $ids = array_map('intval', (array) ($slots['personel']['nilai'] ?? []));
-        $employees = Employee::whereIn('id', $ids)->where('tipe', 'dinas')->get();
+        $employees = Employee::dinas()->whereIn('id', $ids)->get();
         if ($ids === [] || $employees->count() !== count($ids)) {
             throw new InvalidArgumentException('Pelaksana perjalanan tidak sah — pilih ulang pegawainya.');
         }
@@ -326,7 +326,7 @@ class SpdDraftService
             return $this->slot([], 'kosong');
         }
 
-        $cocok = Employee::where('tipe', 'dinas')
+        $cocok = Employee::dinas()
             ->where('nama', 'like', '%' . trim($mentah) . '%')
             ->get();
 
@@ -352,7 +352,7 @@ class SpdDraftService
             return $this->slot([], 'kosong');
         }
 
-        $pegawai = Employee::whereIn('id', $ids)->where('tipe', 'dinas')->get();
+        $pegawai = Employee::dinas()->whereIn('id', $ids)->get();
 
         if ($pegawai->count() !== count($ids)) {
             throw new InvalidArgumentException('Ada pegawai yang tidak dikenal atau bukan pegawai dinas.');

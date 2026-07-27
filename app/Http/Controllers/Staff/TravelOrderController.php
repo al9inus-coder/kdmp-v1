@@ -14,6 +14,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
@@ -118,7 +119,9 @@ class TravelOrderController extends KabidTravelOrderController
             'tanggal_kembali' => 'required|date|after_or_equal:tanggal_berangkat',
             'tanggal_surat' => 'nullable|date',
             'employees' => 'required|array|min:1',
-            'employees.*' => 'exists:employees,id',
+            // Dijaga di server juga, bukan cuma disaring di daftar: tanpa ini
+            // id petugas kebersihan masih bisa dikirim langsung.
+            'employees.*' => ['integer', Rule::exists('employees', 'id')->where('tipe', Employee::TIPE_DINAS)],
             'kendaraan' => 'nullable|array',
             'kendaraan.*' => 'in:mobil,motor,pesawat,pengikut',
             'package_id' => 'nullable|exists:packages,id',
@@ -297,7 +300,9 @@ class TravelOrderController extends KabidTravelOrderController
     protected function travelOrderFormData(): array
     {
         return [
-            'employees' => Employee::orderBy('nama')->get(),
+            // Hanya pegawai dinas: petugas kebersihan tidak pernah ditugaskan
+            // perjalanan dinas, dan jumlahnya membanjiri daftar.
+            'employees' => Employee::dinas()->orderBy('nama')->get(),
             'dalamDaerahDestinations' => SbuTransportRate::where('kategori', 'dalam_daerah')
                 ->select('tempat_tujuan')
                 ->distinct()
@@ -326,7 +331,9 @@ class TravelOrderController extends KabidTravelOrderController
             'tanggal_kembali' => 'required|date|after_or_equal:tanggal_berangkat',
             'tanggal_surat' => 'nullable|date',
             'employees' => 'required|array|min:1',
-            'employees.*' => 'exists:employees,id',
+            // Dijaga di server juga, bukan cuma disaring di daftar: tanpa ini
+            // id petugas kebersihan masih bisa dikirim langsung.
+            'employees.*' => ['integer', Rule::exists('employees', 'id')->where('tipe', Employee::TIPE_DINAS)],
             'kendaraan' => 'nullable|array',
             'kendaraan.*' => 'in:mobil,motor,pesawat,pengikut',
         ], [
