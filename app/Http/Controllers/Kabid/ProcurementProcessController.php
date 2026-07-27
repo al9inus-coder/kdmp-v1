@@ -5,11 +5,16 @@ namespace App\Http\Controllers\Kabid;
 use App\Http\Controllers\Controller;
 use App\Models\Package;
 use App\Models\ProcurementPackage;
+use App\Services\Pengadaan\KelengkapanTahap;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
 class ProcurementProcessController extends Controller
 {
+    public function __construct(private KelengkapanTahap $kelengkapan)
+    {
+    }
+
     public function show(Package $package)
     {
         Gate::authorize('view', $package);
@@ -105,14 +110,13 @@ class ProcurementProcessController extends Controller
 
         abort_if(!$process, 404);
 
+        // NPWP, nama bank, dan nomor rekening pindah ke tahap Pembayaran —
+        // ketiganya hanya dipakai dokumen di tahap itu.
         $data = $request->validate([
             'nama_penyedia' => 'nullable|string|max:255',
             'alamat_penyedia' => 'nullable|string',
-            'npwp_penyedia' => 'nullable|string|max:255',
             'nama_pic' => 'nullable|string|max:255',
             'jabatan_pic' => 'nullable|string|max:255',
-            'nama_bank' => 'nullable|string|max:255',
-            'nomor_rekening' => 'nullable|string|max:255',
         ]);
 
         $process->update($data);
@@ -135,22 +139,12 @@ class ProcurementProcessController extends Controller
 
         abort_if(!$process, 404);
 
-        $lengkap = filled($process->nomor_surat_pesanan)
-            && filled($process->tanggal_surat_pesanan)
-            && filled($process->tanggal_barang_diterima)
-            && (float) $process->nilai_kontrak > 0
-            && filled($process->nama_penyedia)
-            && filled($process->alamat_penyedia)
-            && filled($process->npwp_penyedia)
-            && filled($process->nama_pic)
-            && filled($process->jabatan_pic)
-            && filled($process->nama_bank)
-            && filled($process->nomor_rekening);
+        $kurang = $this->kelengkapan->pemilihan($process);
 
-        if (!$lengkap) {
+        if ($kurang !== []) {
             return redirect()
                 ->route('kabid.procurement-packages.procurement-process.show', $package)
-                ->with('error', 'Masih ada data surat pesanan atau penyedia yang belum lengkap.')
+                ->with('error', 'Belum lengkap: ' . $this->kelengkapan->kalimat($kurang) . '.')
                 ->with('panel', 4);
         }
 

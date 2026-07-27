@@ -113,18 +113,10 @@
                 <i data-lucide="image" class="w-4 h-4 text-slate-400"></i> Pilih foto
             </button>
             <button type="button" @click="pilihBerkas('berkas')" class="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 border-t border-slate-100">
-                <i data-lucide="paperclip" class="w-4 h-4 text-slate-400"></i> Unggah berkas
+                <i data-lucide="file-text" class="w-4 h-4 text-slate-400"></i> Unggah PDF
             </button>
         </div>
 
-        {{-- Lampiran terpilih --}}
-        <div x-show="lampiran" class="mb-2 mx-1 flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 text-xs text-slate-600" style="display:none">
-            <i data-lucide="paperclip" class="w-3.5 h-3.5 shrink-0"></i>
-            <span class="truncate" x-text="lampiran?.name"></span>
-            <button type="button" @click="lampiran = null" class="ml-auto p-0.5 rounded hover:text-rose-500 shrink-0">
-                <i data-lucide="x" class="w-3.5 h-3.5"></i>
-            </button>
-        </div>
 
         <div class="flex items-end gap-1.5 rounded-[26px] border border-slate-200 bg-white px-2 py-1.5 shadow-sm focus-within:border-slate-300 transition-colors">
             {{-- Kiri: tambah lampiran --}}
@@ -174,7 +166,6 @@
                 sibuk: false,
                 mendengar: false,
                 menuLampiran: false,
-                lampiran: null,
                 jobId: null,
                 pengenalSuara: null,
 
@@ -289,20 +280,71 @@
 
                 pilihBerkas(jenis) {
                     const el = this.$refs.berkas;
-                    el.accept = jenis === 'berkas' ? '' : 'image/*';
+                    // Batasi di pemilih berkas juga, bukan cuma di server —
+                    // supaya pengguna tidak repot memilih jenis yang pasti ditolak.
+                    el.accept = jenis === 'berkas' ? 'application/pdf' : 'image/jpeg,image/png,image/webp';
                     if (jenis === 'kamera') { el.setAttribute('capture', 'environment'); }
                     else { el.removeAttribute('capture'); }
                     this.menuLampiran = false;
                     el.click();
                 },
 
-                terimaBerkas(e) {
+                async terimaBerkas(e) {
                     const f = e.target.files?.[0];
-                    if (!f) return;
-                    this.lampiran = f;
                     e.target.value = '';
-                    // Pengunggahan & OCR belum tersedia — jangan berpura-pura bisa.
-                    this.tambahTeks('Berkas sudah dipilih, tetapi pembacaan dokumen (OCR) belum tersedia. Sementara ini tuliskan saja isinya.');
+                    if (!f || this.sibuk) return;
+
+                    this.pesan.push({ dari: 'user', teks: `📎 ${f.name}` });
+                    this.sibuk = true;
+                    this.keBawah();
+
+                    const data = new FormData();
+                    data.append('berkas', f);
+                    if (this.jobId) data.append('job_id', this.jobId);
+
+                    try {
+                        const res = await fetch('{{ route('ai.upload') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+                            },
+                            credentials: 'same-origin',
+                            body: data,
+                        });
+
+                        let hasil;
+                        try {
+                            hasil = await res.json();
+                        } catch (err) {
+                            hasil = { status: 'error', message: `Server membalas kode ${res.status}.` };
+                        }
+
+                        if (hasil.status === 'success' && hasil.data) {
+                            this.jobId = hasil.data.draft?.job_id ?? this.jobId;
+
+                            // Transkrip selalu ditampilkan: salah baca harus
+                            // ketahuan sebelum dipakai jadi dokumen.
+                            let teks = hasil.data.response_text || '';
+                            if (hasil.data.teks) {
+                                teks += `\n\n**Yang saya baca dari ${hasil.data.jenis_dokumen || 'dokumen'} ini:**\n${hasil.data.teks}`;
+                            }
+
+                            this.pesan.push({
+                                dari: 'ai',
+                                html: this.keHtml(teks),
+                                aksi: hasil.data.draft?.lengkap
+                                    ? { jenis: 'setujui_spd', jobId: hasil.data.draft.job_id, label: 'Setujui & buat SPD' }
+                                    : null,
+                            });
+                        } else {
+                            this.tambahTeks(hasil.message || 'Dokumen tidak dapat dibaca.');
+                        }
+                    } catch (err) {
+                        this.tambahTeks('Gagal mengunggah dokumen. Periksa koneksi lalu coba lagi.');
+                    }
+
+                    this.sibuk = false;
                     this.keBawah();
                 },
 

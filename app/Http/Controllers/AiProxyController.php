@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AI\PenyiapDokumen;
 use App\Services\AI\SpdDraftService;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response as ClientResponse;
@@ -114,6 +115,95 @@ class AiProxyController extends Controller
                 'session_id' => $isi['session_id'] ?? null,
                 'response_text' => trim($teks),
                 'draft' => null,
+            ],
+            'error' => null,
+        ]);
+    }
+
+    /**
+     * POST /ai/upload — foto atau PDF dokumen dibaca AI.
+     *
+     * PDF digital dibaca sendiri di server (gratis dan persis); foto serta
+     * PDF hasil pindai dikirim ke model penglihatan. Berkasnya tidak pernah
+     * disimpan: disiapkan di memori, dikirim, lalu dibuang. Yang tersimpan
+     * hanya transkripnya di sisi AI Service.
+     */
+    public function unggah(Request $request, PenyiapDokumen $penyiap): JsonResponse
+    {
+        $request->validate([
+            'berkas' => ['required', 'file', 'max:' . (int) (PenyiapDokumen::UKURAN_MAKSIMAL / 1024)],
+            'job_id' => ['nullable', 'string', 'max:64'],
+            'session_id' => ['nullable', 'string', 'max:64'],
+        ], [
+            'berkas.max' => 'Ukuran berkas melebihi 8 MB.',
+        ]);
+
+        if ($gagal = $this->pastikanSiap()) {
+            return $gagal;
+        }
+
+        try {
+            $lampiran = $penyiap->siapkan($request->file('berkas'));
+        } catch (InvalidArgumentException $e) {
+            return $this->gagal($e->getMessage(), 'BERKAS_TIDAK_DIDUKUNG', 422);
+        }
+
+        $jobId = $request->input('job_id');
+        $slotsSebelum = [];
+        $konteks = ['kandidat_paket' => $this->draftService->kandidatUntukLlm()];
+
+        if ($jobId) {
+            $job = $this->ambilJob($request, $jobId);
+
+            if (! $job instanceof JsonResponse) {
+                $slotsSebelum = $job['payload']['slots'] ?? [];
+                $konteks['slot_status'] = $this->draftService->statusRingkas($slotsSebelum);
+            }
+        }
+
+        $respon = $this->kirim('post', '/api/v1/ai/upload', $request, [
+            'lampiran' => $lampiran,
+            'session_id' => $request->input('session_id'),
+            'job_id' => $jobId,
+            'context' => $konteks,
+        ]);
+
+        if ($respon instanceof JsonResponse) {
+            return $respon;
+        }
+
+        if ($respon->failed()) {
+            return $this->gagal(
+                $respon->json('message') ?? 'Dokumen tidak dapat dibaca.',
+                $respon->json('error') ?? 'VISION_FAILED',
+                $respon->status()
+            );
+        }
+
+        $isi = $respon->json('data') ?? [];
+
+        // Slot hasil bacaan tetap melewati resolusi & validasi yang sama
+        // dengan yang diketik — dokumen bukan sumber yang lebih dipercaya.
+        $slots = $this->draftService->terapkanEkstraksi(
+            ($isi['job_baru'] ?? false) ? [] : $slotsSebelum,
+            $isi['fields'] ?? []
+        );
+
+        $hasil = $this->simpanSlots($request, $isi['job_id'], $slots);
+        if ($hasil instanceof JsonResponse) {
+            return $hasil;
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'session_id' => $isi['session_id'] ?? null,
+                'jenis_dokumen' => $isi['jenis_dokumen'] ?? null,
+                'teks' => $isi['teks'] ?? '',
+                'response_text' => trim(($isi['response_text'] ?? '') . "\n\n" . ($hasil['pesan'] ?? '')),
+                'draft' => $this->draftService->draftUntukWidget(
+                    $isi['job_id'], $slots, (bool) ($hasil['lengkap'] ?? false), $hasil['pesan'] ?? null
+                ),
             ],
             'error' => null,
         ]);

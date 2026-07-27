@@ -6,13 +6,12 @@
         && filled($process->tanggal_barang_diterima)
         && (float) $process->nilai_kontrak > 0;
 
+    // Rekening & NPWP tidak lagi diperiksa di sini — keduanya milik tahap
+    // Pembayaran. Lihat App\Services\Pengadaan\KelengkapanTahap.
     $penyediaDone = filled($process->nama_penyedia)
         && filled($process->alamat_penyedia)
-        && filled($process->npwp_penyedia)
         && filled($process->nama_pic)
-        && filled($process->jabatan_pic)
-        && filled($process->nama_bank)
-        && filled($process->nomor_rekening);
+        && filled($process->jabatan_pic);
 
     $selesai = in_array($procurementPackage->workflow_status, [
         \App\Models\ProcurementPackage::WORKFLOW_EXECUTION,
