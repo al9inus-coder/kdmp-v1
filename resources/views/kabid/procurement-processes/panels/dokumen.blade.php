@@ -4,7 +4,8 @@
     $syarat = [
         ['label' => 'Nomor & tanggal surat pesanan terisi', 'done' => filled($process->nomor_surat_pesanan) && filled($process->tanggal_surat_pesanan), 'step' => 1],
         ['label' => 'Nilai kontrak terisi',                 'done' => (float) $process->nilai_kontrak > 0, 'step' => 1],
-        ['label' => 'Data penyedia lengkap',                'done' => filled($process->nama_penyedia) && filled($process->alamat_penyedia) && filled($process->npwp_penyedia), 'step' => 2],
+        // SSUK & SSKK tidak memuat NPWP maupun rekening, jadi tidak disyaratkan.
+        ['label' => 'Data penyedia lengkap',                'done' => filled($process->nama_penyedia) && filled($process->alamat_penyedia), 'step' => 2],
     ];
     $siapCetak = collect($syarat)->every(fn($s) => $s['done']);
 @endphp

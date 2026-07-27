@@ -175,22 +175,22 @@
                     <div class="px-4 py-2.5">
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">BAST</p>
                         <p class="text-xs font-semibold text-slate-700 mt-0.5">{{ $payment->nomor_bast ?? '-' }}</p>
-                        <p class="text-[11px] text-slate-400">{{ optional($payment->tanggal_bast)->locale('id')->translatedFormat('d F Y') }}</p>
+                        <p class="text-[11px] text-slate-400">{{ $payment->tanggal_bast?->locale('id')->translatedFormat('d F Y') ?? '-' }}</p>
                     </div>
                     <div class="px-4 py-2.5">
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Invoice</p>
                         <p class="text-xs font-semibold text-slate-700 mt-0.5">{{ $payment->nomor_invoice ?? '-' }}</p>
-                        <p class="text-[11px] text-slate-400">{{ optional($payment->tanggal_invoice)->locale('id')->translatedFormat('d F Y') }}</p>
+                        <p class="text-[11px] text-slate-400">{{ $payment->tanggal_invoice?->locale('id')->translatedFormat('d F Y') ?? '-' }}</p>
                     </div>
                     <div class="px-4 py-2.5">
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">BAP</p>
                         <p class="text-[11px] font-bold text-slate-700 font-mono mt-0.5 break-all">{{ $payment->nomor_bap ?? '-' }}/BAP/{{ $kodeProgram }}/PERKIMPLH-C</p>
-                        <p class="text-[11px] text-slate-400">{{ optional($payment->tanggal_bap)->locale('id')->translatedFormat('d F Y') }}</p>
+                        <p class="text-[11px] text-slate-400">{{ $payment->tanggal_bap?->locale('id')->translatedFormat('d F Y') ?? '-' }}</p>
                     </div>
                     <div class="px-4 py-2.5">
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kwitansi</p>
                         <p class="text-[11px] font-bold text-slate-700 font-mono mt-0.5 break-all">{{ $payment->nomor_kwitansi ?? '-' }}/KWT/{{ $kodeProgram }}/PERKIMPLH-C</p>
-                        <p class="text-[11px] text-slate-400">{{ optional($payment->tanggal_kwitansi)->locale('id')->translatedFormat('d F Y') }}</p>
+                        <p class="text-[11px] text-slate-400">{{ $payment->tanggal_kwitansi?->locale('id')->translatedFormat('d F Y') ?? '-' }}</p>
                     </div>
                     <div class="px-4 py-2.5 flex items-center justify-between gap-2">
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status Non-PKP</p>

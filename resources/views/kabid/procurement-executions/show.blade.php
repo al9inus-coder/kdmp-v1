@@ -100,7 +100,6 @@
         start: @js($mulai?->format('Y-m-d')),
         end: @js($akhir?->format('Y-m-d')),
         finished: {{ $finished ? 'true' : 'false' }},
-        nonPkp: {{ old('is_non_pkp', $payment->is_non_pkp ?? false) ? 'true' : 'false' }},
         adendumDates: @js($adendumDates),
     })">
     <x-ui.toast />
@@ -531,9 +530,11 @@
                         </p>
                     </div>
 
-                    {{-- BAST & Invoice --}}
+                    {{-- Serah terima pekerjaan. Dokumen tagihan diisi di tahap
+                         Pembayaran karena saat pekerjaan baru selesai, invoice
+                         dan kwitansi belum tentu sudah terbit. --}}
                     <div>
-                        <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2.5">BAST &amp; Invoice</p>
+                        <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2.5">Berita Acara Serah Terima</p>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-xs font-semibold text-slate-600 mb-1">Nomor BAST</label>
@@ -545,98 +546,15 @@
                                 <input type="date" name="tanggal_bast" required x-model="selectedDate"
                                     class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
                             </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">Nomor Invoice</label>
-                                <input type="text" name="nomor_invoice" required value="{{ old('nomor_invoice', $payment->nomor_invoice ?? '') }}"
-                                    class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal Invoice</label>
-                                <input type="date" name="tanggal_invoice" required value="{{ old('tanggal_invoice', optional($payment?->tanggal_invoice)->format('Y-m-d')) }}"
-                                    class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                            </div>
                         </div>
                     </div>
 
-                    {{-- BAP & Kwitansi --}}
-                    <div>
-                        <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2.5">BAP &amp; Kwitansi</p>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">Nomor BAP <span class="font-normal text-slate-400">(angka saja)</span></label>
-                                <div class="flex">
-                                    <input type="number" name="nomor_bap" required value="{{ old('nomor_bap', $payment->nomor_bap ?? '') }}"
-                                        class="w-24 rounded-l-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                                    <span class="inline-flex items-center px-2.5 rounded-r-lg border border-l-0 border-slate-300 bg-slate-50 text-[10px] font-bold text-slate-500 whitespace-nowrap">/BAP/{{ $kodeProgram }}/PERKIMPLH-C</span>
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal BAP</label>
-                                <input type="date" name="tanggal_bap" required value="{{ old('tanggal_bap', optional($payment?->tanggal_bap)->format('Y-m-d')) }}"
-                                    class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">Nomor Kwitansi <span class="font-normal text-slate-400">(angka saja)</span></label>
-                                <div class="flex">
-                                    <input type="number" name="nomor_kwitansi" required value="{{ old('nomor_kwitansi', $payment->nomor_kwitansi ?? '') }}"
-                                        class="w-24 rounded-l-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                                    <span class="inline-flex items-center px-2.5 rounded-r-lg border border-l-0 border-slate-300 bg-slate-50 text-[10px] font-bold text-slate-500 whitespace-nowrap">/KWT/{{ $kodeProgram }}/PERKIMPLH-C</span>
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal Kwitansi</label>
-                                <input type="date" name="tanggal_kwitansi" required value="{{ old('tanggal_kwitansi', optional($payment?->tanggal_kwitansi)->format('Y-m-d')) }}"
-                                    class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- PPTK --}}
-                    <div>
-                        <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2.5">Data PPTK <span class="font-normal normal-case text-slate-400">(untuk BAP — terisi dari master)</span></p>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">Nama PPTK</label>
-                                <input type="text" name="nama_pptk" required value="{{ old('nama_pptk', $pptkPrefill['nama_pptk']) }}"
-                                    class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">NIP PPTK</label>
-                                <input type="text" name="nip_pptk" required value="{{ old('nip_pptk', $pptkPrefill['nip_pptk']) }}"
-                                    class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm font-mono">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">Pangkat / Golongan</label>
-                                <input type="text" name="pangkat_golongan_pptk" required value="{{ old('pangkat_golongan_pptk', $pptkPrefill['pangkat_golongan_pptk']) }}"
-                                    class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Dokumen tambahan --}}
-                    <div>
-                        <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2.5">Dokumen Tambahan</p>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal Ringkasan Kontrak</label>
-                                <input type="date" name="tanggal_ringkasan_kontrak" required value="{{ old('tanggal_ringkasan_kontrak', optional($payment?->tanggal_ringkasan_kontrak)->format('Y-m-d')) }}"
-                                    class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                            </div>
-                            <div>
-                                <label class="flex items-center gap-2 px-3 py-2.5 rounded-lg border cursor-pointer text-sm font-semibold transition-colors"
-                                    :class="nonPkp ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'">
-                                    <input type="checkbox" name="is_non_pkp" value="1" x-model="nonPkp"
-                                        class="rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
-                                    Lampirkan Surat Non-PKP
-                                </label>
-                            </div>
-                            <div x-show="nonPkp" x-transition.opacity style="display: none;">
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal Surat Non-PKP</label>
-                                <input type="date" name="tanggal_non_pkp" :required="nonPkp" :disabled="!nonPkp"
-                                    value="{{ old('tanggal_non_pkp', optional($payment?->tanggal_non_pkp)->format('Y-m-d')) }}"
-                                    class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                            </div>
-                        </div>
+                    <div class="flex items-start gap-2.5 px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                        <i data-lucide="arrow-right-circle" class="w-4 h-4 text-slate-400 shrink-0 mt-0.5"></i>
+                        <p class="text-xs text-slate-500 leading-relaxed">
+                            Invoice, BAP, kwitansi, ringkasan kontrak, surat Non-PKP, data PPTK,
+                            serta NPWP dan rekening penyedia diisi pada halaman <strong>Pembayaran</strong>.
+                        </p>
                     </div>
                 </div>
 
@@ -676,7 +594,6 @@
             start: config.start,
             end: config.end,
             finished: config.finished,
-            nonPkp: config.nonPkp,
             adendumDates: config.adendumDates || [],
             showAksi: false,
             showAdendum: false,

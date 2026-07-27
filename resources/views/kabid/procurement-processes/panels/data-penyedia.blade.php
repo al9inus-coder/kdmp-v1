@@ -34,24 +34,13 @@
                     <textarea name="alamat_penyedia" rows="3" placeholder="Alamat lengkap penyedia..."
                         class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm">{{ old('alamat_penyedia', $process->alamat_penyedia) }}</textarea>
                 </div>
-                <div class="p-4">
-                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">NPWP Penyedia</label>
-                    <input type="text" name="npwp_penyedia"
-                        value="{{ old('npwp_penyedia', $process->npwp_penyedia) }}"
-                        placeholder="00.000.000.0-000.000"
-                        class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm font-mono">
-                    <p class="text-[11px] text-amber-600 font-semibold mt-1.5 leading-snug">
-                        <i data-lucide="alert-triangle" class="w-3 h-3 inline-block -mt-0.5"></i>
-                        Gunakan NPWP <strong>badan usaha</strong> (bukan NPWP direktur). Untuk penyedia perorangan, gunakan NPWP pribadi.
-                    </p>
-                </div>
             </div>
         </div>
 
-        {{-- Kolom kanan: wakil sah + pembayaran --}}
+        {{-- Kolom kanan: wakil sah --}}
         <div class="space-y-4">
             <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                <i data-lucide="user-check" class="w-4 h-4 text-blue-500"></i> Wakil Sah &amp; Rekening
+                <i data-lucide="user-check" class="w-4 h-4 text-blue-500"></i> Wakil Sah Penyedia
             </h3>
             <div class="bg-white border border-slate-200 rounded-xl shadow-sm divide-y divide-slate-100">
                 <div class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -74,26 +63,12 @@
                         </p>
                     </div>
                 </div>
-                <div class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">Nama Bank</label>
-                        <input type="text" name="nama_bank"
-                            value="{{ old('nama_bank', $process->nama_bank) }}"
-                            placeholder="Contoh: Bank Kalbar"
-                            class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">Nomor Rekening</label>
-                        <input type="text" name="nomor_rekening"
-                            value="{{ old('nomor_rekening', $process->nomor_rekening) }}"
-                            placeholder="Nomor rekening penyedia"
-                            class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm font-mono">
-                    </div>
-                </div>
                 <div class="p-4 bg-slate-50/70 rounded-b-xl">
                     <p class="text-[11px] text-slate-400 leading-snug">
                         <i data-lucide="info" class="w-3 h-3 inline-block -mt-0.5"></i>
-                        Pastikan nama bank dan nomor rekening sesuai dengan dokumen tagihan pembayaran penyedia.
+                        NPWP, nama bank, dan nomor rekening penyedia diisi nanti pada
+                        <strong class="text-slate-500">tahap Pembayaran</strong> — ketiganya baru dipakai
+                        oleh BAP, Ringkasan Kontrak, dan surat Non-PKP.
                     </p>
                 </div>
             </div>

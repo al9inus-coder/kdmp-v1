@@ -7,10 +7,11 @@
         ['step' => 1, 'icon' => 'file-text', 'label' => 'Surat Pesanan',
          'desc' => filled($process->nomor_surat_pesanan) ? 'No. ' . $process->nomor_surat_pesanan : 'Nomor, tanggal, dan nilai kontrak.',
          'done' => filled($process->nomor_surat_pesanan) && filled($process->tanggal_surat_pesanan) && filled($process->tanggal_barang_diterima) && $nilai > 0],
+        // Rekening & NPWP tidak diperiksa di sini — keduanya milik tahap Pembayaran.
         ['step' => 2, 'icon' => 'store', 'label' => 'Data Penyedia',
-         'desc' => $process->nama_penyedia ?? 'Identitas, wakil sah, dan rekening.',
-         'done' => filled($process->nama_penyedia) && filled($process->alamat_penyedia) && filled($process->npwp_penyedia)
-                   && filled($process->nama_pic) && filled($process->jabatan_pic) && filled($process->nama_bank) && filled($process->nomor_rekening)],
+         'desc' => $process->nama_penyedia ?? 'Identitas dan wakil sah penyedia.',
+         'done' => filled($process->nama_penyedia) && filled($process->alamat_penyedia)
+                   && filled($process->nama_pic) && filled($process->jabatan_pic)],
     ];
     $doneCount = collect($checks)->where('done', true)->count();
     $allDone = $doneCount === count($checks);
@@ -139,8 +140,10 @@
                     <div class="p-4">
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Penyedia</p>
                         <p class="font-semibold text-slate-700 mt-0.5 text-sm">{{ $process->nama_penyedia ?? '-' }}</p>
-                        @if($process->nama_bank || $process->nomor_rekening)
-                            <p class="text-xs text-slate-400 mt-0.5">{{ $process->nama_bank }} &bull; {{ $process->nomor_rekening }}</p>
+                        {{-- Rekening baru diisi di tahap Pembayaran, jadi di sini
+                             yang relevan adalah wakil sahnya. --}}
+                        @if($process->nama_pic)
+                            <p class="text-xs text-slate-400 mt-0.5">{{ $process->nama_pic }} &bull; {{ $process->jabatan_pic }}</p>
                         @endif
                     </div>
                 </div>

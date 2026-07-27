@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Kabid;
 use App\Http\Controllers\Controller;
 use App\Models\Package;
 use App\Models\ProcurementPackage;
-use App\Models\Skpd;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -54,21 +53,8 @@ class ProcurementExecutionController extends Controller
 
         $payment = $procurementPackage->payment;
 
-        // Prefill PPTK dari master SKPD (snapshot, tidak disimpan)
-        $pptkPrefill = [
-            'nama_pptk' => $payment->nama_pptk ?? null,
-            'nip_pptk' => $payment->nip_pptk ?? null,
-            'pangkat_golongan_pptk' => $payment->pangkat_golongan_pptk ?? null,
-        ];
-        if (!$payment && ($skpd = Skpd::first())) {
-            $pptkPrefill = [
-                'nama_pptk' => $skpd->nama_pptk,
-                'nip_pptk' => $skpd->nip_pptk,
-                'pangkat_golongan_pptk' => $skpd->pangkat_pptk,
-            ];
-        }
-
-        return view('kabid.procurement-executions.show', compact('procurementPackage', 'process', 'payment', 'pptkPrefill'));
+        // Data PPTK kini diisi di tahap Pembayaran, bukan di sini.
+        return view('kabid.procurement-executions.show', compact('procurementPackage', 'process', 'payment'));
     }
 
     /**
@@ -119,24 +105,13 @@ class ProcurementExecutionController extends Controller
 
         $this->assertExecutionEditable($procurementPackage);
 
+        // Tahap ini hanya mencatat serah terima pekerjaan. Invoice, BAP,
+        // kwitansi, PPTK, dan data setoran penyedia diisi di tahap Pembayaran
+        // — dokumennya memang belum tentu terbit saat pekerjaan baru selesai.
         $data = $request->validate([
             'nomor_bast' => 'required|string|max:255',
             'tanggal_bast' => 'required|date',
-            'nomor_invoice' => 'required|string|max:255',
-            'tanggal_invoice' => 'required|date',
-            'nomor_bap' => 'required|string|max:255',
-            'tanggal_bap' => 'required|date',
-            'nomor_kwitansi' => 'required|string|max:255',
-            'tanggal_kwitansi' => 'required|date',
-            'tanggal_ringkasan_kontrak' => 'required|date',
-            'is_non_pkp' => 'nullable|boolean',
-            'tanggal_non_pkp' => 'required_if:is_non_pkp,1|date|nullable',
-            'nama_pptk' => 'required|string|max:255',
-            'nip_pptk' => 'required|string|max:255',
-            'pangkat_golongan_pptk' => 'required|string|max:255',
         ]);
-
-        $data['is_non_pkp'] = $request->boolean('is_non_pkp');
 
         $procurementPackage->payment()->updateOrCreate(
             ['procurement_package_id' => $procurementPackage->id],

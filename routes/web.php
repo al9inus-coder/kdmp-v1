@@ -298,6 +298,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::post('procurement-packages/{package}/execution/addendum', [\App\Http\Controllers\Kabid\ProcurementExecutionController::class, 'storeAddendum'])->name('procurement-packages.execution.addendum');
         Route::post('procurement-packages/{package}/execution/finish', [\App\Http\Controllers\Kabid\ProcurementExecutionController::class, 'finishWork'])->name('procurement-packages.execution.finish');
         Route::get('procurement-packages/{package}/payment', [\App\Http\Controllers\Kabid\ProcurementPaymentController::class, 'show'])->name('procurement-packages.payment.show');
+        Route::post('procurement-packages/{package}/payment', [\App\Http\Controllers\Kabid\ProcurementPaymentController::class, 'store'])->name('procurement-packages.payment.store');
         Route::post('procurement-packages/{package}/payment/complete', [\App\Http\Controllers\Kabid\ProcurementPaymentController::class, 'complete'])->name('procurement-packages.payment.complete');
     });
     // Admin Procurement Packages Module
