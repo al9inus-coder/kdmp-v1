@@ -56,7 +56,7 @@
                             2 => [
                                 'title' => 'Data Penyedia',
                                 'icon' => 'store',
-                                'desc' => 'Identitas, NPWP, wakil sah, dan rekening penyedia.',
+                                'desc' => 'Identitas penyedia dan wakil sah penanda tangan kontrak.',
                                 'view' => 'kabid.procurement-processes.panels.data-penyedia',
                                 'save_form' => 'form-data-penyedia',
                                 'save_label' => 'Simpan',

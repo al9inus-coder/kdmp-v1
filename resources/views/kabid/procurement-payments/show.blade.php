@@ -139,11 +139,12 @@
             <form method="POST" action="{{ route('kabid.procurement-packages.payment.store', $package) }}">
                 @csrf
 
-                {{-- Semua bagian memakai irama 6 kolom: pasangan mengambil 3,
-                     tigaan mengambil 2. Dengan begitu setiap baris terisi penuh
-                     dan kolomnya sejajar dari atas ke bawah. Lebar dibatasi
-                     supaya kolom nomor tidak melar selebar layar. --}}
-                <div class="p-5 sm:p-6 max-w-5xl space-y-7">
+                {{-- Tiga kolom yang terisi penuh di seluruh bagian, jadi lebar
+                     kartu terpakai habis tanpa menyisakan ruang kosong di kanan
+                     dan tanpa memelarkan kolom pendek. Setiap dokumen tagihan
+                     jadi satu blok berisi nomor + tanggalnya, supaya pasangannya
+                     tetap terbaca sebagai satu kesatuan. --}}
+                <div class="p-5 sm:p-6 space-y-7">
 
                     {{-- 1. Dokumen tagihan --}}
                     <section>
@@ -152,49 +153,57 @@
                             <span class="flex-1 h-px bg-slate-100"></span>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-6 gap-x-4 gap-y-4">
-                            <div class="sm:col-span-3">
-                                <label class="block text-xs font-semibold text-slate-600 mb-1.5">Nomor Invoice</label>
-                                <input type="text" name="nomor_invoice" value="{{ old('nomor_invoice', $payment->nomor_invoice) }}"
-                                    placeholder="Nomor invoice dari penyedia"
-                                    class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                            </div>
-                            <div class="sm:col-span-3">
-                                <label class="block text-xs font-semibold text-slate-600 mb-1.5">Tanggal Invoice</label>
-                                <input type="date" name="tanggal_invoice" value="{{ old('tanggal_invoice', optional($payment->tanggal_invoice)->format('Y-m-d')) }}"
-                                    class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                            </div>
-
-                            <div class="sm:col-span-3">
-                                <label class="block text-xs font-semibold text-slate-600 mb-1.5">
-                                    Nomor BAP <span class="font-normal text-slate-400">— angka urut saja</span>
-                                </label>
-                                <input type="number" name="nomor_bap" x-model="bapNo" placeholder="mis. 15"
-                                    class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                                {{-- Nomor utuh ditampilkan hidup di bawah kolom, bukan
-                                     sebagai imbuhan di sampingnya yang menyempitkan input. --}}
-                                <p class="text-[11px] text-slate-400 font-mono mt-1.5 break-all"
-                                   x-text="(bapNo || '…') + '/BAP/{{ $kodeProgram }}/PERKIMPLH-C'"></p>
-                            </div>
-                            <div class="sm:col-span-3">
-                                <label class="block text-xs font-semibold text-slate-600 mb-1.5">Tanggal BAP</label>
-                                <input type="date" name="tanggal_bap" value="{{ old('tanggal_bap', optional($payment->tanggal_bap)->format('Y-m-d')) }}"
-                                    class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-5">
+                            {{-- Invoice --}}
+                            <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
+                                <p class="text-xs font-bold text-slate-700">Invoice Penyedia</p>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Nomor</label>
+                                    <input type="text" name="nomor_invoice" value="{{ old('nomor_invoice', $payment->nomor_invoice) }}"
+                                        placeholder="Nomor invoice"
+                                        class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Tanggal</label>
+                                    <input type="date" name="tanggal_invoice" value="{{ old('tanggal_invoice', optional($payment->tanggal_invoice)->format('Y-m-d')) }}"
+                                        class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                                </div>
                             </div>
 
-                            <div class="sm:col-span-3">
-                                <label class="block text-xs font-semibold text-slate-600 mb-1.5">
-                                    Nomor Kwitansi <span class="font-normal text-slate-400">— angka urut saja</span>
-                                </label>
-                                <input type="number" name="nomor_kwitansi" x-model="kwtNo" placeholder="mis. 15"
-                                    class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                                <p class="text-[11px] text-slate-400 font-mono mt-1.5 break-all"
-                                   x-text="(kwtNo || '…') + '/KWT/{{ $kodeProgram }}/PERKIMPLH-C'"></p>
+                            {{-- BAP --}}
+                            <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
+                                <p class="text-xs font-bold text-slate-700">Berita Acara Pembayaran</p>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Nomor urut</label>
+                                    <input type="number" name="nomor_bap" x-model="bapNo" placeholder="mis. 15"
+                                        class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                                    {{-- Nomor utuh tampil hidup di bawah kolom, bukan
+                                         sebagai imbuhan di samping yang menyempitkan input. --}}
+                                    <p class="text-[11px] text-slate-400 font-mono mt-1 break-all"
+                                       x-text="(bapNo || '…') + '/BAP/{{ $kodeProgram }}/PERKIMPLH-C'"></p>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Tanggal</label>
+                                    <input type="date" name="tanggal_bap" value="{{ old('tanggal_bap', optional($payment->tanggal_bap)->format('Y-m-d')) }}"
+                                        class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                                </div>
                             </div>
-                            <div class="sm:col-span-3">
-                                <label class="block text-xs font-semibold text-slate-600 mb-1.5">Tanggal Kwitansi</label>
-                                <input type="date" name="tanggal_kwitansi" value="{{ old('tanggal_kwitansi', optional($payment->tanggal_kwitansi)->format('Y-m-d')) }}"
-                                    class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+
+                            {{-- Kwitansi --}}
+                            <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
+                                <p class="text-xs font-bold text-slate-700">Kwitansi</p>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Nomor urut</label>
+                                    <input type="number" name="nomor_kwitansi" x-model="kwtNo" placeholder="mis. 15"
+                                        class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                                    <p class="text-[11px] text-slate-400 font-mono mt-1 break-all"
+                                       x-text="(kwtNo || '…') + '/KWT/{{ $kodeProgram }}/PERKIMPLH-C'"></p>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Tanggal</label>
+                                    <input type="date" name="tanggal_kwitansi" value="{{ old('tanggal_kwitansi', optional($payment->tanggal_kwitansi)->format('Y-m-d')) }}"
+                                        class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -207,8 +216,8 @@
                             <span class="text-[11px] text-slate-400 whitespace-nowrap hidden sm:inline">dipakai BAP, Ringkasan Kontrak &amp; Non-PKP</span>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-6 gap-x-4 gap-y-4">
-                            <div class="sm:col-span-2">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-4">
+                            <div>
                                 <label class="block text-xs font-semibold text-slate-600 mb-1.5">NPWP Penyedia</label>
                                 <input type="text" name="npwp_penyedia" value="{{ old('npwp_penyedia', $process->npwp_penyedia) }}"
                                     placeholder="00.000.000.0-000.000"
@@ -217,13 +226,13 @@
                                     NPWP <strong>badan usaha</strong>, bukan NPWP direktur.
                                 </p>
                             </div>
-                            <div class="sm:col-span-2">
+                            <div>
                                 <label class="block text-xs font-semibold text-slate-600 mb-1.5">Nama Bank</label>
                                 <input type="text" name="nama_bank" value="{{ old('nama_bank', $process->nama_bank) }}"
                                     placeholder="Contoh: Bank Kalbar"
                                     class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
                             </div>
-                            <div class="sm:col-span-2">
+                            <div>
                                 <label class="block text-xs font-semibold text-slate-600 mb-1.5">Nomor Rekening</label>
                                 <input type="text" name="nomor_rekening" value="{{ old('nomor_rekening', $process->nomor_rekening) }}"
                                     placeholder="Rekening atas nama penyedia"
@@ -237,21 +246,21 @@
                         <div class="flex items-center gap-3 mb-3">
                             <p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Data PPTK</p>
                             <span class="flex-1 h-px bg-slate-100"></span>
-                            <span class="text-[11px] text-slate-400 whitespace-nowrap hidden sm:inline">terisi dari master SKPD</span>
+                            <span class="text-[11px] text-slate-400 whitespace-nowrap hidden sm:inline">penanda tangan BAP &amp; kwitansi, terisi dari master SKPD</span>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-6 gap-x-4 gap-y-4">
-                            <div class="sm:col-span-2">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-4">
+                            <div>
                                 <label class="block text-xs font-semibold text-slate-600 mb-1.5">Nama PPTK</label>
                                 <input type="text" name="nama_pptk" value="{{ old('nama_pptk', $pptkPrefill['nama_pptk']) }}"
                                     class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
                             </div>
-                            <div class="sm:col-span-2">
+                            <div>
                                 <label class="block text-xs font-semibold text-slate-600 mb-1.5">NIP PPTK</label>
                                 <input type="text" name="nip_pptk" value="{{ old('nip_pptk', $pptkPrefill['nip_pptk']) }}"
                                     class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm font-mono">
                             </div>
-                            <div class="sm:col-span-2">
+                            <div>
                                 <label class="block text-xs font-semibold text-slate-600 mb-1.5">Pangkat / Golongan</label>
                                 <input type="text" name="pangkat_golongan_pptk" value="{{ old('pangkat_golongan_pptk', $pptkPrefill['pangkat_golongan_pptk']) }}"
                                     class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
@@ -266,8 +275,8 @@
                             <span class="flex-1 h-px bg-slate-100"></span>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-6 gap-x-4 gap-y-4">
-                            <div class="sm:col-span-2">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-4 items-start">
+                            <div>
                                 <label class="block text-xs font-semibold text-slate-600 mb-1.5">Tanggal Ringkasan Kontrak</label>
                                 <input type="date" name="tanggal_ringkasan_kontrak" value="{{ old('tanggal_ringkasan_kontrak', optional($payment->tanggal_ringkasan_kontrak)->format('Y-m-d')) }}"
                                     class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
@@ -275,27 +284,30 @@
 
                             {{-- Sakelar dan tanggalnya disatukan dalam satu kotak supaya
                                  saat dicentang tata letaknya tidak melompat. --}}
-                            <div class="sm:col-span-4">
+                            <div class="sm:col-span-2">
                                 <label class="block text-xs font-semibold text-slate-600 mb-1.5">Surat Non-PKP</label>
-                                <div class="rounded-lg border p-3 transition-colors"
+                                <div class="rounded-xl border p-3 transition-colors"
                                      :class="nonPkp ? 'border-emerald-300 bg-emerald-50/60' : 'border-slate-200 bg-slate-50/60'">
-                                    <label class="flex items-center gap-2.5 cursor-pointer">
-                                        <input type="checkbox" name="is_non_pkp" value="1" x-model="nonPkp"
-                                            class="rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
-                                        <span class="text-sm font-semibold" :class="nonPkp ? 'text-emerald-700' : 'text-slate-600'">
-                                            Lampirkan surat Non-PKP
-                                        </span>
-                                    </label>
-                                    {{-- Tanggalnya selalu dirender, hanya diredupkan saat
-                                         tidak dicentang. Selain menjaga tinggi kotak tetap,
-                                         ini menghindari x-show bersarang di dalam panel yang
-                                         juga ber-transisi — kombinasi itu tidak dapat diandalkan. --}}
-                                    <div class="mt-3 pt-3 border-t border-emerald-200/70 max-w-xs transition-opacity"
-                                         :class="nonPkp ? 'opacity-100' : 'opacity-50'">
-                                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">Tanggal Surat Non-PKP</label>
-                                        <input type="date" name="tanggal_non_pkp" :disabled="!nonPkp"
-                                            value="{{ old('tanggal_non_pkp', optional($payment->tanggal_non_pkp)->format('Y-m-d')) }}"
-                                            class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm bg-white disabled:bg-slate-100 disabled:cursor-not-allowed">
+                                    <div class="flex flex-wrap items-center gap-x-5 gap-y-3">
+                                        <label class="flex items-center gap-2.5 cursor-pointer">
+                                            <input type="checkbox" name="is_non_pkp" value="1" x-model="nonPkp"
+                                                class="rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
+                                            <span class="text-sm font-semibold" :class="nonPkp ? 'text-emerald-700' : 'text-slate-600'">
+                                                Lampirkan surat Non-PKP
+                                            </span>
+                                        </label>
+
+                                        {{-- Tanggalnya selalu dirender, hanya diredupkan saat tidak
+                                             dicentang. Selain menjaga tinggi kotak tetap, ini
+                                             menghindari x-show bersarang di dalam panel yang juga
+                                             ber-transisi — kombinasi itu tidak dapat diandalkan. --}}
+                                        <div class="flex items-center gap-2 transition-opacity"
+                                             :class="nonPkp ? 'opacity-100' : 'opacity-50'">
+                                            <span class="text-[11px] font-semibold text-slate-500 whitespace-nowrap">Tanggal surat</span>
+                                            <input type="date" name="tanggal_non_pkp" :disabled="!nonPkp"
+                                                value="{{ old('tanggal_non_pkp', optional($payment->tanggal_non_pkp)->format('Y-m-d')) }}"
+                                                class="rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-sm disabled:bg-slate-100 disabled:cursor-not-allowed">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -312,6 +324,7 @@
                         </div>
                     @endif
                 </div>
+
 
                 {{-- Tombol menempel di kaki kartu supaya posisinya tetap terduga --}}
                 <div class="px-5 sm:px-6 py-4 bg-slate-50/70 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
