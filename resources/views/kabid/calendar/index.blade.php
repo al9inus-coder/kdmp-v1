@@ -87,52 +87,85 @@
                 <div class="grid grid-cols-7 gap-px bg-slate-200 border border-slate-200 rounded-xl overflow-hidden">
                     <template x-for="(cell, idx) in cells" :key="idx">
                         <div class="bg-white" :class="cell.iso === todayIso ? 'bg-amber-50/10' : ''">
+                            {{-- Tinggi sel dipatok, bukan min-h. Dulu tiap agenda menambah
+                                 satu batang 20px tanpa batas atas, dan karena grid
+                                 menyamakan tinggi satu baris, sehari yang padat menarik
+                                 seluruh baris minggu itu ikut memanjang. --}}
                             <button type="button" x-show="cell.d" @click="pick(cell.iso)"
-                                class="w-full min-h-[90px] sm:min-h-[110px] p-1.5 sm:p-2 transition-all flex flex-col items-stretch text-left group"
+                                class="w-full h-[72px] sm:h-[92px] p-1.5 sm:p-2 transition-all flex flex-col items-stretch text-left group"
                                 :class="cell.iso === selected ? 'ring-2 ring-inset ring-indigo-500 bg-indigo-50/30' : 'hover:bg-slate-50'">
-                                
-                                {{-- Tanggal & Indikator --}}
-                                <div class="flex items-center justify-between w-full mb-1.5">
-                                    <span class="w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold transition-colors"
-                                        :class="cell.iso === todayIso ? 'bg-amber-400 text-amber-900 shadow-sm' : (new Date(cell.iso + 'T00:00:00').getDay() === 0 ? 'text-rose-500 group-hover:bg-rose-50' : 'text-slate-700 group-hover:bg-slate-100')"
-                                        x-text="cell.d"></span>
-                                    
-                                    <div class="flex items-center gap-1 opacity-80">
-                                        <span x-show="holidayOf(cell.iso)" style="display:none" :title="holidayOf(cell.iso)">
-                                            <i data-lucide="sun" class="w-3.5 h-3.5 text-rose-500"></i>
-                                        </span>
-                                        <span x-show="deadlinesOn(cell.iso).length" style="display:none" title="Batas akhir kontrak">
-                                            <i data-lucide="flag" class="w-3.5 h-3.5 text-indigo-600"></i>
-                                        </span>
-                                    </div>
-                                </div>
 
-                                {{-- Stacked Bars --}}
-                                <div class="space-y-1 flex-1 overflow-hidden">
-                                    <template x-for="(e, i) in travelsOn(cell.iso)" :key="'t'+i">
-                                        <div class="h-5 bg-emerald-100 border border-emerald-200 text-emerald-800 text-[10px] px-1.5 rounded flex items-center font-semibold truncate shadow-sm cursor-help"
-                                            :title="e.sub + ' (' + e.label.replace('SPPD — ', '') + ')'">
-                                            <span class="truncate" x-text="e.sub"></span>
-                                        </div>
-                                    </template>
-                                    <template x-for="(e, i) in contractsOn(cell.iso)" :key="'c'+i">
-                                        <div class="h-5 bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] px-1.5 rounded flex items-center font-semibold truncate shadow-sm cursor-help"
-                                            :title="e.label">
-                                            <span class="truncate" x-text="e.label"></span>
-                                        </div>
-                                    </template>
+                                {{-- Tanggal --}}
+                                <span class="w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold transition-colors shrink-0"
+                                    :class="cell.iso === todayIso ? 'bg-amber-400 text-amber-900 shadow-sm' : (new Date(cell.iso + 'T00:00:00').getDay() === 0 ? 'text-rose-500 group-hover:bg-rose-50' : 'text-slate-700 group-hover:bg-slate-100')"
+                                    x-text="cell.d"></span>
+
+                                {{-- Penanda: satu lingkaran berkode huruf per jenis, bukan
+                                     satu batang per agenda. Rinciannya dibaca di panel
+                                     Agenda setelah tanggalnya diklik. --}}
+                                <div class="flex-1 flex items-end">
+                                    {{-- Ponsel: sel cuma ±43px, tidak cukup untuk kode tiap
+                                         kontrak. Dipakai bentuk ringkas — satu lingkaran per
+                                         jenis, ditumpuk sedikit supaya ketiganya muat. --}}
+                                    <div class="flex sm:hidden items-center -space-x-1">
+                                        <template x-for="(c, i) in penanda(cell.iso)" :key="'p'+i">
+                                            <span class="w-4 h-4 rounded-full border flex items-center justify-center text-[9px] font-black ring-1 ring-white shrink-0"
+                                                :class="c.cls" :title="c.tip" x-text="c.kode"></span>
+                                        </template>
+                                    </div>
+
+                                    {{-- Layar besar: isi sel 91px, muat empat lingkaran 20px.
+                                         Kontrak dapat kode hurufnya sendiri supaya satu kontrak
+                                         bisa ditelusuri sepanjang masanya; SPPD tetap menyatu
+                                         karena pendek dan tidak membentang. --}}
+                                    <div class="hidden sm:flex items-center gap-[2px]">
+                                        <template x-for="(c, i) in penandaRinci(cell.iso)" :key="'r'+i">
+                                            <span class="relative shrink-0">
+                                                <span class="min-w-[20px] h-5 px-1 rounded-full border flex items-center justify-center text-[10px] font-black leading-none"
+                                                    :class="c.cls" :title="c.tip" x-text="c.teks"></span>
+                                                <span x-show="c.jumlah > 1" style="display:none"
+                                                    class="absolute -top-1 -right-1 min-w-[13px] h-[13px] px-0.5 flex items-center justify-center rounded-full bg-slate-700 text-white text-[8px] font-black leading-none"
+                                                    x-text="c.jumlah"></span>
+                                            </span>
+                                        </template>
+                                    </div>
                                 </div>
                             </button>
                         </div>
                     </template>
                 </div>
 
-                <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mt-5 pt-4 border-t border-dashed border-slate-200">
-                    <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500"><span class="w-3 h-3 rounded-full ring-2 ring-inset ring-amber-400 bg-amber-50"></span> Hari ini</span>
-                    <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500"><span class="w-4 h-3 rounded bg-emerald-100 border border-emerald-200"></span> Perjalanan dinas</span>
-                    <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500"><span class="w-4 h-3 rounded bg-indigo-50 border border-indigo-200"></span> Kontrak</span>
-                    <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500"><i data-lucide="flag" class="w-3.5 h-3.5 text-indigo-600"></i> Batas akhir</span>
-                    <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500"><i data-lucide="sun" class="w-3.5 h-3.5 text-rose-500"></i> Libur</span>
+                <div class="mt-5 pt-4 border-t border-dashed border-slate-200">
+                    <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+                        <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500"><span class="w-5 h-5 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-700 text-[10px] font-black flex items-center justify-center">S</span> Perjalanan dinas</span>
+                        <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500"><span class="w-5 h-5 rounded-full bg-indigo-50 border border-indigo-300 text-indigo-600 text-[10px] font-black flex items-center justify-center">A</span> Kontrak berjalan</span>
+                        <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500"><span class="w-5 h-5 rounded-full bg-indigo-600 border border-indigo-600 text-white text-[10px] font-black flex items-center justify-center">A</span> Batas akhir kontrak</span>
+                        <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500"><span class="w-5 h-5 rounded-full bg-emerald-500 border border-emerald-500 text-white text-[10px] font-black flex items-center justify-center">A</span> Selesai (BAST)</span>
+                        <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500"><span class="w-5 h-5 rounded-full bg-rose-100 border border-rose-300 text-rose-700 text-[10px] font-black flex items-center justify-center">L</span> Hari libur</span>
+                        <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500"><span class="w-3 h-3 rounded-full ring-2 ring-inset ring-amber-400 bg-amber-50"></span> Hari ini</span>
+                    </div>
+
+                    {{-- Rujukan kode huruf. Tanpa ini lingkaran "A" tidak berarti
+                         apa-apa; hanya kontrak bulan tampil yang didaftar supaya
+                         daftarnya tetap pendek. --}}
+                    <div class="hidden sm:block mt-4" x-show="kontrakBulanIni.length" style="display:none">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Kontrak bulan ini</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1.5">
+                            <template x-for="(e, i) in kontrakBulanIni" :key="'lg'+i">
+                                <a :href="e.url" class="flex items-center gap-2 min-w-0 group">
+                                    <span class="min-w-[20px] h-5 px-1 rounded-full border flex items-center justify-center text-[10px] font-black leading-none shrink-0"
+                                        :class="e.bast ? 'bg-emerald-50 border-emerald-300 text-emerald-600' : 'bg-indigo-50 border-indigo-300 text-indigo-600'"
+                                        x-text="e.kode"></span>
+                                    <span class="text-[11px] text-slate-600 truncate group-hover:text-indigo-700" x-text="e.label"></span>
+                                    <span class="text-[10px] text-slate-400 shrink-0 ml-auto" x-text="rangeLabel(e)"></span>
+                                </a>
+                            </template>
+                        </div>
+                    </div>
+
+                    <p class="text-[11px] text-slate-400 text-center mt-3">
+                        Angka kecil di lingkaran menunjukkan jumlah kegiatan. Klik tanggal untuk membaca rinciannya di panel Agenda.
+                    </p>
                 </div>
             </div>
 
@@ -143,7 +176,9 @@
                     <div class="px-5 py-3.5 border-b border-slate-100 bg-slate-50/50">
                         <h2 class="text-xs font-black text-slate-500 uppercase tracking-widest">Agenda &middot; <span x-text="selectedLabel"></span></h2>
                     </div>
-                    <div class="p-4 space-y-1">
+                    {{-- Seluruh rincian kegiatan kini bertumpu di sini, jadi tingginya
+                         dibatasi supaya hari yang padat tidak memanjangkan halaman. --}}
+                    <div class="p-4 space-y-1 max-h-[26rem] overflow-y-auto">
                         <template x-if="agenda.length === 0">
                             <p class="text-xs text-slate-400 text-center py-6">Tidak ada kegiatan pada tanggal ini.</p>
                         </template>
@@ -157,10 +192,12 @@
                                         'bg-indigo-100 text-indigo-600': item.tone === 'indigo',
                                         'bg-rose-100 text-rose-600': item.tone === 'rose',
                                     }">
-                                    <i :data-lucide="item.icon" class="w-4 h-4"></i>
+                                    <span x-show="item.kode" style="display:none" class="text-xs font-black" x-text="item.kode"></span>
+                                    <i x-show="!item.kode" :data-lucide="item.icon" class="w-4 h-4"></i>
                                 </span>
                                 <span class="min-w-0">
-                                    <span class="block text-sm font-bold text-slate-800 leading-snug truncate" x-text="item.label"></span>
+                                    <span class="block text-sm font-bold text-slate-800 leading-snug"
+                                        :class="item.bungkus ? '' : 'truncate'" x-text="item.label"></span>
                                     <span class="block text-xs text-slate-400 mt-0.5" x-text="item.sub"></span>
                                 </span>
                             </a>
@@ -234,7 +271,7 @@
                             <span class="w-40 shrink-0 text-xs font-semibold text-slate-700 truncate group-hover:text-indigo-700" :title="e.label" x-text="e.label"></span>
                             <span class="flex-1 relative h-4 rounded-full bg-slate-100">
                                 <span class="absolute top-0.5 bottom-0.5 rounded-full"
-                                    :class="e.finished ? 'bg-emerald-300' : 'bg-indigo-300'"
+                                    :class="e.bast ? 'bg-emerald-300' : 'bg-indigo-300'"
                                     :style="barStyle(e)"></span>
                                 <i data-lucide="flag" class="w-3.5 h-3.5 text-indigo-600 absolute -top-0.5" :style="flagStyle(e)"></i>
                             </span>
@@ -287,13 +324,128 @@
                 inRange(iso, e) { return iso >= e.start && iso <= e.end; },
                 travelsOn(iso) { return this.f.travel ? this.travels.filter(e => this.inRange(iso, e)) : []; },
                 contractsOn(iso) { return this.f.contract ? this.contracts.filter(e => this.inRange(iso, e)) : []; },
-                deadlinesOn(iso) { return this.f.contract ? this.contracts.filter(e => e.end === iso) : []; },
+                // Batas akhir yang masih menuntut tindakan. Kalau BAST sudah ada dan
+                // tidak melewati batas, tenggatnya sudah terpenuhi — tak perlu
+                // ditandai lagi. Kontrak yang BAST-nya terlambat tetap ditandai,
+                // karena pada hari itu pekerjaannya memang belum selesai.
+                deadlinesOn(iso) {
+                    return this.f.contract
+                        ? this.contracts.filter(e => e.batas === iso && (!e.bast || e.bast > e.batas))
+                        : [];
+                },
+                selesaiOn(iso) { return this.f.contract ? this.contracts.filter(e => e.bast === iso) : []; },
                 holidayOf(iso) { return this.f.holiday ? (this.holidays[iso] || null) : null; },
+
+                // Penanda sel: satu lingkaran per JENIS kegiatan, bukan per kegiatan.
+                // Kontrak berjalan dan batas akhir sengaja disatukan dalam satu
+                // lingkaran (bergaya pekat bila hari itu batas akhir) supaya sel
+                // tidak pernah memuat lebih dari tiga lingkaran.
+                penanda(iso) {
+                    if (!iso) return [];
+                    const out = [];
+
+                    const libur = this.holidayOf(iso);
+                    if (libur) {
+                        out.push({ kode: 'L', jumlah: 1, tip: 'Libur: ' + libur, cls: 'bg-rose-100 border-rose-300 text-rose-700' });
+                    }
+
+                    const spd = this.travelsOn(iso);
+                    if (spd.length) {
+                        out.push({
+                            kode: 'S', jumlah: spd.length, cls: 'bg-emerald-100 border-emerald-300 text-emerald-700',
+                            tip: spd.length === 1 ? 'Perjalanan dinas: ' + spd[0].sub : spd.length + ' perjalanan dinas',
+                        });
+                    }
+
+                    const kontrak = this.contractsOn(iso);
+                    if (kontrak.length) {
+                        const batas = this.deadlinesOn(iso);
+                        const selesai = this.selesaiOn(iso);
+                        // Tenggat yang belum terpenuhi lebih mendesak daripada
+                        // kabar selesai, jadi ia yang menentukan warnanya.
+                        out.push({
+                            kode: 'K', jumlah: kontrak.length,
+                            cls: batas.length
+                                ? 'bg-indigo-600 border-indigo-600 text-white'
+                                : (selesai.length ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-indigo-50 border-indigo-300 text-indigo-600'),
+                            tip: batas.length
+                                ? 'Batas akhir ' + batas.length + ' kontrak' + (kontrak.length > batas.length ? ' · ' + (kontrak.length - batas.length) + ' kontrak berjalan' : '')
+                                : (selesai.length
+                                    ? selesai.length + ' kontrak selesai (BAST)'
+                                    : kontrak.length + ' kontrak berjalan'),
+                        });
+                    }
+
+                    return out;
+                },
+
+                // Penanda layar besar: kontrak memakai kode hurufnya masing-masing.
+                // Jumlah lingkaran dipatok empat — itu yang muat di isi sel 91px —
+                // dan kelebihannya diringkas jadi satu lingkaran "+N" supaya tinggi
+                // sel tidak pernah bergantung pada banyaknya kegiatan.
+                penandaRinci(iso) {
+                    if (!iso) return [];
+                    const SLOT = 4;
+                    const out = [];
+
+                    const libur = this.holidayOf(iso);
+                    if (libur) {
+                        out.push({ teks: 'L', tip: 'Libur: ' + libur, cls: 'bg-rose-100 border-rose-300 text-rose-700' });
+                    }
+
+                    const spd = this.travelsOn(iso);
+                    if (spd.length) {
+                        out.push({
+                            teks: 'S', jumlah: spd.length, cls: 'bg-emerald-100 border-emerald-300 text-emerald-700',
+                            tip: spd.length === 1 ? 'Perjalanan dinas: ' + spd[0].sub : spd.length + ' perjalanan dinas',
+                        });
+                    }
+
+                    const kontrak = this.contractsOn(iso);
+                    const sisaSlot = SLOT - out.length;
+                    // Sisakan satu slot untuk "+N" hanya bila memang ada yang tersisa.
+                    const tampil = kontrak.length <= sisaSlot ? kontrak : kontrak.slice(0, Math.max(0, sisaSlot - 1));
+
+                    tampil.forEach(e => {
+                        const selesai = e.bast === iso;
+                        const batas = e.batas === iso && (!e.bast || e.bast > e.batas);
+                        out.push({
+                            teks: e.kode || 'K',
+                            cls: batas
+                                ? 'bg-indigo-600 border-indigo-600 text-white'
+                                : (selesai ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-indigo-50 border-indigo-300 text-indigo-600'),
+                            tip: (e.kode ? e.kode + ' — ' : '') + e.label
+                                + (batas ? ' (batas akhir)' : (selesai ? ' (selesai, BAST)' : '')),
+                        });
+                    });
+
+                    const tersisa = kontrak.length - tampil.length;
+                    if (tersisa > 0) {
+                        out.push({
+                            teks: '+' + tersisa, cls: 'bg-slate-100 border-slate-300 text-slate-500',
+                            tip: tersisa + ' kontrak lain — klik tanggal untuk melihat semuanya',
+                        });
+                    }
+
+                    return out;
+                },
+
+                // Legenda kode huruf hanya memuat kontrak yang aktif di bulan yang
+                // sedang tampil, bukan seluruh kontrak setahun — jumlahnya sedikit
+                // sehingga rujukannya tetap enak dibaca.
+                get kontrakBulanIni() {
+                    if (!this.f.contract) return [];
+                    const awal = toIso(new Date(this.tahun, this.viewMonth, 1));
+                    const akhir = toIso(new Date(this.tahun, this.viewMonth + 1, 0));
+
+                    return this.contracts.filter(e => e.start <= akhir && e.end >= awal);
+                },
 
                 // Prioritas warna: batas kontrak > libur > perjalanan dinas > masa kontrak.
                 dayType(iso) {
                     if (!iso) return '';
                     if (this.deadlinesOn(iso).length) return 'deadline';
+                    if (this.selesaiOn(iso).length) return 'selesai';
                     if (this.holidayOf(iso)) return 'holiday';
                     if (this.travelsOn(iso).length) return 'travel';
                     if (this.contractsOn(iso).length) return 'contract';
@@ -303,31 +455,13 @@
                     const [y, m, d] = iso.split('-').map(Number);
                     return toIso(new Date(y, m - 1, d + n));
                 },
-                bandClass(iso, type) {
-                    const l = this.dayType(this.shiftIso(iso, -1)) !== type;
-                    const r = this.dayType(this.shiftIso(iso, 1)) !== type;
-                    return l && r ? 'rounded-xl' : (l ? 'rounded-l-xl' : (r ? 'rounded-r-xl' : 'rounded-none'));
-                },
-                cellClass(iso) {
-                    if (!iso) return '';
-                    const t = this.dayType(iso);
-                    const minggu = new Date(iso + 'T00:00:00').getDay() === 0;
-                    let c = '';
-                    if (t === 'deadline') c = 'bg-indigo-600 text-white font-bold rounded-xl shadow-sm';
-                    else if (t === 'holiday') c = 'bg-rose-100 text-rose-700 font-bold rounded-xl';
-                    else if (t === 'travel') c = 'bg-emerald-100 text-emerald-900 font-semibold ' + this.bandClass(iso, 'travel');
-                    else if (t === 'contract') c = 'bg-indigo-50 text-indigo-700 font-semibold ' + this.bandClass(iso, 'contract');
-                    else c = (minggu ? 'text-rose-400' : 'text-slate-600') + ' hover:bg-slate-100 rounded-xl';
-                    if (iso === this.todayIso) c += ' ring-2 ring-amber-400';
-                    if (iso === this.selected) c += ' shadow-[inset_0_0_0_2px_#6366f1]';
-                    return c;
-                },
                 // Sel kalender tahun: warna sama dengan mode bulan, ukuran kecil.
                 yearCellClass(iso) {
                     const t = this.dayType(iso);
                     const minggu = new Date(iso + 'T00:00:00').getDay() === 0;
                     let c = '';
                     if (t === 'deadline') c = 'bg-indigo-600 text-white font-bold';
+                    else if (t === 'selesai') c = 'bg-emerald-500 text-white font-bold';
                     else if (t === 'holiday') c = 'bg-rose-100 text-rose-700 font-bold';
                     else if (t === 'travel') c = 'bg-emerald-100 text-emerald-800';
                     else if (t === 'contract') c = 'bg-indigo-50 text-indigo-700';
@@ -350,6 +484,7 @@
                     const hol = this.holidayOf(iso);
                     if (hol) parts.push('Libur: ' + hol);
                     this.deadlinesOn(iso).forEach(e => parts.push('Batas akhir: ' + e.label));
+                    this.selesaiOn(iso).forEach(e => parts.push('Selesai (BAST): ' + e.label));
                     this.travelsOn(iso).forEach(e => parts.push('SPPD ' + e.sub));
                     if (!parts.length && this.contractsOn(iso).length) parts.push(this.contractsOn(iso).length + ' kontrak berjalan');
                     return d + ' ' + bulanNama[m - 1] + (parts.length ? ' — ' + parts.join(' · ') : '');
@@ -374,9 +509,12 @@
                     return hari + ', ' + d + ' ' + bulanNama[m - 1];
                 },
                 diffDays(a, b) { return Math.round((new Date(b) - new Date(a)) / 86400000); },
+                tglSingkat(iso) {
+                    const [y, m, d] = iso.split('-').map(Number);
+                    return d + ' ' + bulanNama[m - 1].slice(0, 3);
+                },
                 rangeLabel(e) {
-                    const f = iso => { const [y, m, d] = iso.split('-').map(Number); return d + ' ' + bulanNama[m - 1].slice(0, 3); };
-                    return e.start === e.end ? f(e.start) : f(e.start) + '–' + f(e.end);
+                    return e.start === e.end ? this.tglSingkat(e.start) : this.tglSingkat(e.start) + '–' + this.tglSingkat(e.end);
                 },
 
                 get agenda() {
@@ -384,14 +522,44 @@
                     const items = [];
                     const hol = this.holidayOf(iso);
                     if (hol) items.push({ icon: 'sun', tone: 'rose', label: hol, sub: 'Hari libur', url: null });
-                    this.travelsOn(iso).forEach(e => items.push({ icon: 'plane', tone: 'emerald', label: e.label, sub: e.sub + ' · ' + this.rangeLabel(e), url: e.url }));
+                    // SPPD dibaca sebagai "siapa yang berangkat", baru "ke mana dan
+                    // kapan" — jadi nama pelaksana yang jadi baris utamanya.
+                    this.travelsOn(iso).forEach(e => items.push({
+                        icon: 'plane', tone: 'emerald',
+                        label: e.nama || e.sub,
+                        sub: e.tujuan + ' - ' + this.rangeLabel(e),
+                        // Daftar nama tidak boleh dipotong; justru itu isinya.
+                        bungkus: true,
+                        url: e.url,
+                    }));
                     this.contractsOn(iso).forEach(e => {
                         const hariKe = this.diffDays(e.start, iso) + 1;
-                        const total = this.diffDays(e.start, e.end) + 1;
-                        const isDeadline = e.end === iso;
+                        // Lama pelaksanaan dihitung terhadap batas kontrak, bukan
+                        // terhadap hari serah terima — supaya "hari ke-2 dari 5"
+                        // tetap berarti posisi di dalam masa kontraknya.
+                        const total = this.diffDays(e.start, e.batas) + 1;
+                        const selesai = e.bast === iso;
+                        const isDeadline = e.batas === iso && (!e.bast || e.bast > e.batas);
+
+                        let sub;
+                        if (selesai) {
+                            // Batas kontrak tetap disebut supaya terlihat pekerjaannya
+                            // selesai lebih cepat — atau justru terlambat.
+                            sub = 'Selesai (BAST) · batas kontrak ' + this.tglSingkat(e.batas);
+                        } else if (isDeadline) {
+                            sub = 'Batas akhir kontrak';
+                        } else {
+                            sub = 'Pelaksanaan hari ke-' + hariKe + ' dari ' + total;
+                        }
+
                         items.push({
-                            icon: isDeadline ? 'flag' : 'truck', tone: 'indigo', label: e.label,
-                            sub: isDeadline ? 'Batas akhir kontrak' : 'Pelaksanaan hari ke-' + hariKe + ' dari ' + total,
+                            icon: selesai ? 'check-circle-2' : (isDeadline ? 'flag' : 'truck'),
+                            tone: selesai ? 'emerald' : 'indigo',
+                            label: e.label,
+                            // Kode ditampilkan di sini juga supaya pembaca lama-lama
+                            // hafal huruf mana menunjuk kontrak mana.
+                            kode: e.kode || null,
+                            sub,
                             url: e.url,
                         });
                     });
@@ -401,10 +569,11 @@
                 get tenggat() {
                     if (!this.f.contract) return [];
                     return this.contracts
-                        .filter(e => !e.finished && e.end >= this.todayIso)
-                        .sort((a, b) => a.end.localeCompare(b.end))
+                        // Yang sudah BAST tidak lagi punya tenggat untuk dikejar.
+                        .filter(e => !e.finished && !e.bast && e.batas >= this.todayIso)
+                        .sort((a, b) => a.batas.localeCompare(b.batas))
                         .slice(0, 5)
-                        .map(e => ({ ...e, sisa: this.diffDays(this.todayIso, e.end) }));
+                        .map(e => ({ ...e, sisa: this.diffDays(this.todayIso, e.batas) }));
                 },
 
                 // Linimasa tahun (posisi % dalam setahun)
@@ -420,7 +589,9 @@
                     const l = this.pct(s);
                     return 'left:' + l.toFixed(2) + '%; width:' + Math.max(0.8, this.pct(t) - l).toFixed(2) + '%;';
                 },
-                flagStyle(e) { return 'left:' + Math.min(98, this.pct(e.end)).toFixed(2) + '%;'; },
+                // Bendera menandai batas kontrak, bukan ujung batang — batangnya
+                // berhenti di hari serah terima, yang bisa lebih awal dari batas.
+                flagStyle(e) { return 'left:' + Math.min(98, this.pct(e.batas)).toFixed(2) + '%;'; },
                 get ganttContracts() { return this.f.contract ? [...this.contracts].sort((a, b) => a.start.localeCompare(b.start)) : []; },
 
                 refreshIcons() { this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }); },
