@@ -33,12 +33,21 @@ class CalendarController extends Controller
             ->get()
             ->filter(fn ($to) => $to->package && $to->tanggal_berangkat && $to->tanggal_kembali)
             ->map(function ($to) {
-                $ketua = $to->personnels->sortBy('urutan')->first()?->employee?->nama ?? 'Pegawai';
-                $jumlah = $to->personnels->count();
+                $pelaksana = $to->personnels->sortBy('urutan')
+                    ->map(fn ($p) => $p->employee?->nama)
+                    ->filter()
+                    ->values();
+
+                $ketua = $pelaksana->first() ?? 'Pegawai';
+                $jumlah = $pelaksana->count();
 
                 return [
                     'label' => 'SPPD — ' . $to->tempat_tujuan,
+                    // 'sub' tetap bentuk ringkas untuk tooltip sel yang sempit;
+                    // 'nama' memuat semua pelaksana untuk panel Agenda.
                     'sub' => $ketua . ($jumlah > 1 ? ' +' . ($jumlah - 1) . ' pelaksana' : ''),
+                    'nama' => $jumlah ? $pelaksana->implode(', ') : 'Pegawai',
+                    'tujuan' => $to->tempat_tujuan,
                     'start' => $to->tanggal_berangkat->format('Y-m-d'),
                     'end' => $to->tanggal_kembali->format('Y-m-d'),
                     'url' => route('kabid.packages.travel-orders.show', [$to->package, $to]),
@@ -55,7 +64,11 @@ class CalendarController extends Controller
             ->whereHas('procurementProcess', fn ($q) => $q
                 ->whereNotNull('tanggal_surat_pesanan')
                 ->whereNotNull('tanggal_barang_diterima'))
-            ->with(['package:id,nama_paket', 'procurementProcess:id,procurement_package_id,tanggal_surat_pesanan,tanggal_barang_diterima'])
+            ->with([
+                'package:id,nama_paket',
+                'procurementProcess:id,procurement_package_id,tanggal_surat_pesanan,tanggal_barang_diterima',
+                'payment:id,procurement_package_id,tanggal_bast',
+            ])
             ->get()
             ->filter(function ($pp) use ($awalTahun, $akhirTahun) {
                 $p = $pp->procurementProcess;
@@ -65,16 +78,40 @@ class CalendarController extends Controller
                     && $p->tanggal_surat_pesanan->lte($akhirTahun)
                     && $p->tanggal_barang_diterima->gte($awalTahun);
             })
-            ->map(fn ($pp) => [
-                'label' => Str::limit($pp->package->nama_paket, 60),
-                'start' => $pp->procurementProcess->tanggal_surat_pesanan->format('Y-m-d'),
-                'end' => $pp->procurementProcess->tanggal_barang_diterima->format('Y-m-d'),
-                'finished' => in_array($pp->workflow_status, [
-                    ProcurementPackage::WORKFLOW_PAYMENT_PROCESS,
-                    ProcurementPackage::WORKFLOW_COMPLETED,
-                ]),
-                'url' => route('kabid.procurement-packages.execution.show', $pp->package),
-            ])->values();
+            ->map(function ($pp) {
+                $batas = $pp->procurementProcess->tanggal_barang_diterima->format('Y-m-d');
+                $bast = $pp->payment?->tanggal_bast
+                    ? Carbon::parse($pp->payment->tanggal_bast)->format('Y-m-d')
+                    : null;
+
+                return [
+                    'label' => Str::limit($pp->package->nama_paket, 60),
+                    'start' => $pp->procurementProcess->tanggal_surat_pesanan->format('Y-m-d'),
+                    // Kalender berhenti menandai di hari serah terima, bukan di batas
+                    // kontrak: setelah BAST pekerjaannya sudah selesai, jadi hari
+                    // sesudahnya tidak perlu ditandai apa-apa.
+                    'end' => $bast ?: $batas,
+                    'batas' => $batas,
+                    'bast' => $bast,
+                    'finished' => in_array($pp->workflow_status, [
+                        ProcurementPackage::WORKFLOW_PAYMENT_PROCESS,
+                        ProcurementPackage::WORKFLOW_COMPLETED,
+                    ]),
+                    'url' => route('kabid.procurement-packages.execution.show', $pp->package),
+                ];
+            })->values();
+
+        // Kode huruf identitas kontrak. Diurutkan tanggal mulai supaya kode yang
+        // sama selalu menunjuk kontrak yang sama selama daftarnya tidak berubah,
+        // dan supaya pembacaan legenda mengikuti urutan kalender.
+        $contracts = $contracts
+            ->sortBy(fn ($e) => $e['start'] . '|' . $e['label'])
+            ->values()
+            ->map(function ($e, $i) {
+                $e['kode'] = $this->kodeHuruf($i);
+
+                return $e;
+            });
 
         // Hari libur (map iso => keterangan).
         $holidays = Holiday::whereYear('holiday_date', $tahun)
@@ -89,5 +126,22 @@ class CalendarController extends Controller
             : ($tahun === now()->year ? now()->month - 1 : 0);
 
         return view('kabid.calendar.index', compact('tahun', 'travels', 'contracts', 'holidays', 'bulanAwal'));
+    }
+
+    /**
+     * Kode huruf ala kolom spreadsheet: A..Z, lalu AA, AB, dan seterusnya.
+     * Dinas biasanya hanya punya belasan kontrak setahun, jadi praktis selalu
+     * satu huruf — dua huruf cuma jaring pengaman supaya kode tidak pernah
+     * bertabrakan kalau suatu tahun kontraknya membengkak.
+     */
+    private function kodeHuruf(int $index): string
+    {
+        $kode = '';
+
+        for ($n = $index; $n >= 0; $n = intdiv($n, 26) - 1) {
+            $kode = chr(65 + $n % 26) . $kode;
+        }
+
+        return $kode;
     }
 }
