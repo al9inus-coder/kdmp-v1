@@ -200,10 +200,14 @@
              293px, jadi 661px harus digeser ke samping dan nama paket terpotong.
              Sebagai kartu, nama terbaca utuh dan tombol aksi tidak lagi tersembunyi
              di ujung kanan. --}}
-        <div class="sm:hidden divide-y divide-slate-100">
+        {{-- Ponsel: tiap baris jadi kartu berdiri sendiri di atas latar abu,
+             bukan baris berpembatas. Pemisahan lewat jarak dan garis tepi jauh
+             lebih terbaca di layar sempit daripada garis mendatar tunggal. --}}
+        <div class="sm:hidden bg-slate-50 p-3 pb-24 space-y-2.5">
             @forelse($baris as $b)
-                <a href="{{ $b['url'] }}" class="block px-4 py-4 active:bg-slate-50 transition-colors">
-                    <div class="flex items-start justify-between gap-3">
+                <a href="{{ $b['url'] }}"
+                    class="block bg-white border border-slate-200 rounded-xl p-3.5 active:bg-slate-50 transition-colors">
+                    <div class="flex items-start justify-between gap-2.5">
                         <p class="font-bold text-slate-900 text-sm leading-snug">
                             {{ $b['pkg']?->nama_paket ?? '-' }}
                         </p>
@@ -219,12 +223,14 @@
                         @endif
                     </p>
 
-                    <div class="flex items-baseline justify-between gap-3 mt-3 pt-3 border-t border-slate-100">
+                    <div class="flex items-baseline justify-between gap-2.5 mt-2.5 pt-2.5 border-t border-slate-100">
                         <span>
-                            <span class="text-sm font-extrabold text-slate-900">Rp {{ number_format($b['pkg']?->pagu ?? 0, 0, ',', '.') }}</span>
+                            <span class="text-[15px] font-extrabold text-slate-900">Rp {{ number_format($b['pkg']?->pagu ?? 0, 0, ',', '.') }}</span>
                             <span class="text-[10px] text-slate-400 font-medium">pagu</span>
                         </span>
-                        <span class="shrink-0 text-[10px] font-semibold text-slate-500">{{ $b['pkg']?->metode_pengadaan ?? '-' }}</span>
+                        <span class="shrink-0 text-[10px] font-bold text-slate-500 bg-slate-100 rounded-full px-2 py-0.5">
+                            {{ $b['pkg']?->metode_pengadaan ?? '-' }}
+                        </span>
                     </div>
 
                     <div class="flex items-center gap-2 mt-2.5">
@@ -237,7 +243,7 @@
                     </div>
                 </a>
             @empty
-                <div class="px-4 py-10">
+                <div class="py-10">
                     <x-ui.empty-state icon="package-x" title="Tidak Ada Paket" description="Belum ada paket penyedia yang sesuai dengan filter saat ini." />
                 </div>
             @endforelse
