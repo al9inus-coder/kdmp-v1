@@ -22,7 +22,14 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Carbon::setLocale('id');
-        Paginator::useBootstrapFive();
+
+        // Aplikasi ini memakai Tailwind, bukan Bootstrap. Panggilan
+        // useBootstrapFive() sebelumnya membuat pagination dirender dengan
+        // kelas .pagination/.page-link yang tidak punya CSS sama sekali,
+        // sehingga tampil sebagai deretan tautan telanjang di keenam halaman
+        // yang berhalaman. View Tailwind milik aplikasi ada di
+        // resources/views/vendor/pagination/tailwind.blade.php.
+        Paginator::useTailwind();
 
         // TLS berhenti di proxy depan (Cloudflare), nginx menerima HTTP polos —
         // paksa semua URL yang di-generate memakai https agar tidak kena blokir
