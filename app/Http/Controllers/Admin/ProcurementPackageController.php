@@ -37,7 +37,7 @@ class ProcurementPackageController extends Controller
             ->where('is_active', true)
             ->first();
 
-        if ($this->isTravelSwakelolaPackage($procurementPackage->package)) {
+        if ($procurementPackage->package->isSwakelolaPerjalanan()) {
             $travelStats = $this->buildTravelStats($procurementPackage->package);
 
             return view('kabid.procurement-packages.show-swakelola-travel', compact(
@@ -47,7 +47,7 @@ class ProcurementPackageController extends Controller
             ));
         }
 
-        if ($this->isLemburSwakelolaPackage($procurementPackage->package)) {
+        if ($procurementPackage->package->isSwakelolaLembur()) {
             $lemburStats = $this->buildLemburStats($procurementPackage->package);
 
             return view('kabid.procurement-packages.show-swakelola-lembur', compact(
@@ -183,23 +183,7 @@ class ProcurementPackageController extends Controller
             ->with('success', 'Kunci pelaksanaan dibuka. Paket kembali ke tahap Pelaksanaan Kontrak.');
     }
 
-    private function isTravelSwakelolaPackage(Package $package): bool
-    {
-        $jenisPengadaan = str($package->jenis_pengadaan ?? '')->lower();
-        $accountName = str($package->account?->nama ?? '')->lower();
 
-        return $jenisPengadaan->contains('swakelola')
-            && $accountName->contains('perjalanan dinas');
-    }
-
-    private function isLemburSwakelolaPackage(Package $package): bool
-    {
-        $jenisPengadaan = str($package->jenis_pengadaan ?? '')->lower();
-        $accountName = str($package->account?->nama ?? '')->lower();
-
-        return $jenisPengadaan->contains('swakelola')
-            && $accountName->contains('lembur');
-    }
 
     private function buildLemburStats(Package $package): array
     {
