@@ -94,6 +94,18 @@
             </div>
             <p class="text-2xl font-black text-slate-900 mt-3">{{ $formatM($totalPagu) }}</p>
             <p class="text-[11px] text-slate-400 mt-0.5">{{ $money($totalPagu) }}</p>
+            {{-- Pagu murni hanya disebut bila memang berbeda; kalau belum ada
+                 revisi, mengulang angka yang sama cuma jadi keramaian. --}}
+            @if(round($totalPaguMurni) != round($totalPagu))
+                <p class="text-[11px] text-slate-400 mt-0.5">
+                    murni <span class="font-semibold text-slate-500">{{ $formatM($totalPaguMurni) }}</span>
+                </p>
+            @endif
+            @if($subTanpaDpa > 0)
+                <p class="text-[11px] font-semibold text-amber-600 mt-1">
+                    {{ $subTanpaDpa }} sub kegiatan belum berplafon DPA
+                </p>
+            @endif
         </div>
 
         <div class="relative bg-white border border-slate-200 rounded-2xl p-5 shadow-sm overflow-hidden">

@@ -114,7 +114,52 @@ class DashboardController extends Controller
         }
 
         $totalPaket       = (clone $baseQuery)->count();
-        $totalPagu        = (clone $baseQuery)->sum('pagu');
+
+        // Pagu bersumber dari plafon DPA, bukan jumlah pagu paket. Keduanya
+        // berbeda dan makin melebar seiring revisi: ada baris DPA yang
+        // pagunya dinolkan saat perubahan sementara paketnya masih tercatat.
+        //
+        // Yang ditampilkan adalah pagu EFEKTIF — hasil revisi terakhir, jadi
+        // sudah memperhitungkan pergeseran dan perubahan. Pagu murni dibawa
+        // terpisah sebagai pembanding.
+        //
+        // Sub kegiatan yang belum punya baris DPA memakai jumlah pagu paket
+        // sebagai cadangan dan dihitung, mengikuti aturan yang sudah dipakai
+        // Monev — tanpa itu, server yang DPA-nya belum diisi akan menampilkan
+        // pagu nol.
+        $plafonSub = \App\Models\BudgetLine::plafonPerSubActivity($activeFiscalYear?->id);
+
+        // Cadangan hanya berlaku untuk sub kegiatan yang benar-benar ada dan
+        // aktif. Paket tanpa sub kegiatan tidak menempel pada cabang DPA mana
+        // pun — di data sekarang ada dua paket needs_review senilai Rp 118,9
+        // juta yang, tanpa saringan ini, ikut menggelembungkan pagu.
+        $paguPaketPerSub = (clone $baseQuery)
+            ->whereNotNull('sub_activity_id')
+            ->whereHas('subActivity', fn ($q) => $q->aktif())
+            ->selectRaw('sub_activity_id, SUM(pagu) AS total')
+            ->groupBy('sub_activity_id')
+            ->pluck('total', 'sub_activity_id');
+
+        $totalPagu = 0.0;
+        $totalPaguMurni = 0.0;
+        $subTanpaDpa = 0;
+
+        foreach ($paguPaketPerSub->keys()->merge($plafonSub->keys())->unique() as $subId) {
+            $dpa = $plafonSub[$subId] ?? null;
+
+            if ($dpa) {
+                $totalPagu += (float) $dpa['plafon'];
+                $totalPaguMurni += (float) $dpa['murni'];
+
+                continue;
+            }
+
+            $cadangan = (float) ($paguPaketPerSub[$subId] ?? 0);
+            $totalPagu += $cadangan;
+            $totalPaguMurni += $cadangan;
+            $subTanpaDpa++;
+        }
+
         $needsReviewCount = (clone $baseQuery)->where('status', 'needs_review')->count();
         $draftCount       = (clone $baseQuery)->where('status', 'draft')->count();
         $submittedCount   = (clone $baseQuery)->where('status', 'submitted')->count();
@@ -380,7 +425,7 @@ class DashboardController extends Controller
 
         return view('dashboard.kabid', compact(
             'activeFiscalYear',
-            'totalPaket', 'totalPagu', 'realisasi', 'sisaAnggaran', 'serapanPct',
+            'totalPaket', 'totalPagu', 'totalPaguMurni', 'subTanpaDpa', 'realisasi', 'sisaAnggaran', 'serapanPct',
             'needsReviewCount', 'draftCount', 'submittedCount', 'approvedCount',
             'submittedPagu', 'pendingPackages', 'pendingSppd', 'pendingSppdCount',
             'pendingSpj', 'pendingSpjCount', 'pendingReview', 'pendingReviewCount',
