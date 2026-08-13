@@ -4,13 +4,13 @@
     {
       "name": "ai-kdmp",
       "runtimeExecutable": "php",
-      "runtimeArgs": ["D:/laragon/www/ai-kdmp/artisan", "serve", "--host=127.0.0.1", "--port=8000"],
+      "runtimeArgs": ["E:/CODE/laragon/www/ai-kdmp/artisan", "serve", "--host=127.0.0.1", "--port=8000"],
       "port": 8000
     },
     {
       "name": "kdmp-serve",
       "runtimeExecutable": "php",
-      "runtimeArgs": ["artisan", "serve", "--port=8080"],
+      "runtimeArgs": ["E:/CODE/laragon/www/kdmp/artisan", "serve", "--host=127.0.0.1", "--port=8080"],
       "port": 8080
     }
   ]
