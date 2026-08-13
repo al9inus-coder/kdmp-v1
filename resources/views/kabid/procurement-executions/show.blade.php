@@ -8,7 +8,7 @@
     $akhir = $process->tanggal_barang_diterima?->copy()->startOfDay();
     $hariIni = now()->startOfDay();
 
-    $totalHari = ($mulai && $akhir) ? $mulai->diffInDays($akhir) + 1 : 1;
+    $totalHari = $process?->durasiHari() ?? 1;
 
     $finished = in_array($procurementPackage->workflow_status, [
         \App\Models\ProcurementPackage::WORKFLOW_PAYMENT_PROCESS,

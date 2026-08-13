@@ -53,10 +53,7 @@
         <td class="col-letter">E.</td>
         <td class="col-title">WAKTU PELAKSANAAN</td>
         @php
-            $durasiHari = 0;
-            if ($process->tanggal_surat_pesanan && $process->tanggal_barang_diterima) {
-                $durasiHari = $process->tanggal_surat_pesanan->diffInDays($process->tanggal_barang_diterima);
-            }
+            $durasiHari = $process?->durasiHari() ?? 0;
         @endphp
         <td class="col-value">{{ $durasiHari }} ( {{ \App\Helpers\Terbilang::make($durasiHari) }} ) Hari Kalender</td>
     </tr>

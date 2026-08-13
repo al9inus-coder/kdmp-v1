@@ -161,9 +161,12 @@
             <td style="vertical-align: top;">Lama Pekerjaan</td>
             <td style="vertical-align: top;">:</td>
             @php
-                $start = \Carbon\Carbon::parse($process->tanggal_surat_pesanan);
-                $end = \Carbon\Carbon::parse($process->tanggal_barang_diterima);
-                $durasiHari = $start->diffInDays($end) ?: 1;
+                // $start dan $end masih dipakai baris berikutnya untuk mencetak
+                // rentang tanggalnya. Dijaga null: dokumen ini bisa dibuka untuk
+                // paket yang tahap kontraknya belum ada sama sekali.
+                $start = \Carbon\Carbon::parse($process?->tanggal_surat_pesanan);
+                $end = \Carbon\Carbon::parse($process?->tanggal_barang_diterima);
+                $durasiHari = $process?->durasiHari() ?? 0;
             @endphp
             <td style="vertical-align: top;">{{ $durasiHari }} Hari</td>
         </tr>
