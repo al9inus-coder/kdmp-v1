@@ -106,6 +106,26 @@ class Package extends Model
     }
 
     /**
+     * Paket swakelola perjalanan dinas — dikenali dari jenis pengadaan dan
+     * nama rekening belanjanya, bukan dari kolom khusus.
+     *
+     * Sebelumnya aturan ini tersalin sebagai metode private di controller
+     * pengadaan Kabid dan Admin. Diangkat ke sini supaya daftar swakelola
+     * bisa ikut memakainya untuk memilih label aksi yang tepat.
+     */
+    public function isSwakelolaPerjalanan(): bool
+    {
+        return str($this->jenis_pengadaan ?? '')->lower()->contains('swakelola')
+            && str($this->account?->nama ?? '')->lower()->contains('perjalanan dinas');
+    }
+
+    public function isSwakelolaLembur(): bool
+    {
+        return str($this->jenis_pengadaan ?? '')->lower()->contains('swakelola')
+            && str($this->account?->nama ?? '')->lower()->contains('lembur');
+    }
+
+    /**
      * Realisasi belanja paket ini, mencakup ketiga jalurnya sekaligus.
      *
      * Aturan kapan sesuatu dianggap terealisasi:

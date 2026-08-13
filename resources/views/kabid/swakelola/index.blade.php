@@ -43,7 +43,25 @@
     </x-slot:actions>
 
     {{-- KPI Ruang Eksekusi --}}
-    <div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+    {{-- Ponsel: ruang eksekusi jadi satu baris pil yang digeser mendatar,
+         menggantikan kartu 2x2 yang memakan 490px sebelum data pertama. --}}
+    <div class="sm:hidden -mx-1 px-1 mb-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <a href="{{ $ruangUrl(null) }}"
+            class="shrink-0 inline-flex items-baseline gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors
+                {{ $ruangFilter ? 'bg-white border-slate-200 text-slate-600' : 'bg-slate-800 border-slate-800 text-white' }}">
+            <span class="text-sm font-bold">{{ $stats['ruang']['count'] }}</span> Semua
+        </a>
+        @foreach($ruangCards as $key => $card)
+            <a href="{{ $ruangFilter === $key ? $ruangUrl(null) : $ruangUrl($key) }}"
+                class="shrink-0 inline-flex items-baseline gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors
+                    {{ $ruangFilter === $key ? 'bg-slate-800 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-600' }}">
+                <span class="w-1.5 h-1.5 rounded-full self-center {{ $card['bar'] }}"></span>
+                <span class="text-sm font-bold">{{ $stats[$key]['count'] }}</span> {{ $card['label'] }}
+            </a>
+        @endforeach
+    </div>
+
+    <div class="hidden sm:grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         @foreach($ruangCards as $key => $card)
             @php $isActive = $ruangFilter === $key; @endphp
             <a href="{{ $isActive ? $ruangUrl(null) : $ruangUrl($key) }}"
@@ -121,8 +139,59 @@
     </x-ui.card>
 
     {{-- Tabel --}}
-    <x-ui.card padding="none">
-        <div class="overflow-x-auto">
+    <x-ui.card padding="none" class="max-sm:-m-4 max-sm:rounded-none max-sm:border-0 max-sm:!shadow-none">
+        {{-- Ponsel: tiap paket jadi kartu. Aksi naik ke dalam kartu dan diberi
+             nama sesuai jenis swakelolanya — di tabel ia tersembunyi sebagai
+             ikon di kolom paling kanan, bagian paling sulit dijangkau. --}}
+        <div class="sm:hidden bg-slate-50 pt-3 pb-24 space-y-2.5">
+            @forelse($packages as $package)
+                @php
+                    $aksiLabel = $package->isSwakelolaPerjalanan() ? 'Kelola SPPD'
+                        : ($package->isSwakelolaLembur() ? 'Kelola Lembur' : 'Buka Paket');
+                @endphp
+                <div class="bg-white border border-slate-200 rounded-xl p-3.5">
+                    <div class="flex items-start justify-between gap-2.5">
+                        <p class="font-bold text-slate-900 text-sm leading-snug">{{ $package->nama_paket }}</p>
+                        <span class="shrink-0 text-[10px] font-semibold text-slate-400 bg-slate-100 rounded px-1.5 py-0.5 tracking-wide">
+                            {{ $package->id_rup ?? '-' }}
+                        </span>
+                    </div>
+
+                    <p class="text-[11px] text-slate-400 mt-1 truncate">{{ $package->subActivity->nama ?? '-' }}</p>
+
+                    <div class="flex items-baseline justify-between gap-2.5 mt-2.5 pt-2.5 border-t border-slate-100">
+                        <span>
+                            <span class="text-[15px] font-extrabold text-slate-900">Rp {{ number_format((float) $package->pagu, 0, ',', '.') }}</span>
+                            <span class="text-[10px] text-slate-400 font-medium">pagu</span>
+                        </span>
+                        @if($package->status === 'needs_review')
+                            <x-ui.badge variant="danger">Needs Review</x-ui.badge>
+                        @elseif($package->status === 'draft')
+                            <x-ui.badge variant="warning">Draft</x-ui.badge>
+                        @elseif($package->status === 'approved')
+                            <x-ui.badge variant="success">Approved</x-ui.badge>
+                        @else
+                            <x-ui.badge variant="draft">{{ $package->status }}</x-ui.badge>
+                        @endif
+                    </div>
+
+                    <p class="text-[11px] text-slate-400 mt-2">{{ $package->metode_pengadaan ?? '-' }}</p>
+
+                    <div class="mt-3">
+                        <a href="{{ route('kabid.packages.show', $package) }}"
+                            class="block text-center px-3 py-2 rounded-lg text-xs font-bold bg-slate-800 text-white active:bg-slate-900 transition-colors">
+                            {{ $aksiLabel }}
+                        </a>
+                    </div>
+                </div>
+            @empty
+                <div class="py-10">
+                    <x-ui.empty-state icon="handshake" title="Belum Ada Data" description="Data paket swakelola belum tersedia." />
+                </div>
+            @endforelse
+        </div>
+
+        <div class="hidden sm:block overflow-x-auto">
             <table class="w-full text-sm text-left">
                 <thead class="bg-slate-50 border-b border-slate-100">
                     <tr>

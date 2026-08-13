@@ -48,7 +48,25 @@
     </x-slot:actions>
 
     {{-- KPI --}}
-    <div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+    {{-- Ponsel: jenis jadi satu baris pil, menggantikan kartu 2x2 yang memakan
+         490px sebelum baris data pertama muncul. --}}
+    <div class="sm:hidden -mx-1 px-1 mb-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <a href="{{ $jenisUrl(null) }}"
+            class="shrink-0 inline-flex items-baseline gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors
+                {{ $typeFilter ? 'bg-white border-slate-200 text-slate-600' : 'bg-slate-800 border-slate-800 text-white' }}">
+            <span class="text-sm font-bold">{{ $stats['all']['count'] }}</span> Semua
+        </a>
+        @foreach($jenisCards as $key => $card)
+            <a href="{{ $typeFilter === $key ? $jenisUrl(null) : $jenisUrl($key) }}"
+                class="shrink-0 inline-flex items-baseline gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors
+                    {{ $typeFilter === $key ? 'bg-slate-800 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-600' }}">
+                <span class="w-1.5 h-1.5 rounded-full self-center {{ $card['bar'] }}"></span>
+                <span class="text-sm font-bold">{{ $stats[$key]['count'] }}</span> {{ $card['label'] }}
+            </a>
+        @endforeach
+    </div>
+
+    <div class="hidden sm:grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         {{-- Kartu jenis (sekaligus filter) --}}
         @foreach($jenisCards as $key => $card)
             @php $isActive = $typeFilter === $key; @endphp
@@ -155,8 +173,66 @@
     </x-ui.card>
 
     {{-- Tabel --}}
-    <x-ui.card padding="none">
-        <div class="overflow-x-auto">
+    <x-ui.card padding="none" class="max-sm:-m-4 max-sm:rounded-none max-sm:border-0 max-sm:!shadow-none">
+        {{-- Ponsel: realisasi jadi angka utama dan pagu jadi keterangan, sebab
+             paket dikecualikan dibeli berulang sepanjang tahun — yang dicari
+             biasanya "sudah terpakai berapa", bukan "pagunya berapa".
+             Paket yang sudah dirampungkan menyebut "Paket selesai": persentase
+             berhenti relevan begitu paketnya ditutup, dan serapan 100% belum
+             tentu berarti selesai. --}}
+        <div class="sm:hidden bg-slate-50 pt-3 pb-24 space-y-2.5">
+            @forelse($procurementPackages as $pp)
+                @php
+                    $pkg = $pp->package;
+                    $meta = $typeLabels[$pp->dikecualikan_type] ?? ['label' => $pp->dikecualikan_type, 'badge' => 'bg-slate-100 text-slate-700 border-slate-200'];
+                    $realisasi = (float) ($pp->realisasi_sum ?? 0);
+                    $pagu = (float) ($pkg->pagu ?? 0);
+                    $pct = $pagu > 0 ? min(100, round($realisasi / $pagu * 100)) : 0;
+                    $tuntas = $pp->workflow_status === \App\Models\ProcurementPackage::WORKFLOW_COMPLETED;
+                @endphp
+                <div class="bg-white border border-slate-200 rounded-xl p-3.5">
+                    <div class="flex items-start justify-between gap-2.5">
+                        <p class="font-bold text-slate-900 text-sm leading-snug">{{ $pkg->nama_paket ?? '-' }}</p>
+                        <span class="shrink-0 text-[10px] font-semibold text-slate-400 bg-slate-100 rounded px-1.5 py-0.5 tracking-wide">
+                            {{ $pkg->id_rup ?? '-' }}
+                        </span>
+                    </div>
+
+                    <p class="text-[11px] text-slate-400 mt-1 truncate">{{ $pkg->subActivity->nama ?? '-' }}</p>
+
+                    <div class="flex items-baseline justify-between gap-2.5 mt-2.5 pt-2.5 border-t border-slate-100">
+                        <span>
+                            <span class="text-[15px] font-extrabold text-slate-900">{{ $money($realisasi) }}</span>
+                            <span class="text-[10px] text-slate-400 font-medium">dari {{ $money($pagu) }}</span>
+                        </span>
+                        <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border {{ $meta['badge'] }}">
+                            {{ $meta['label'] }}
+                        </span>
+                    </div>
+
+                    <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden mt-2.5">
+                        <div class="h-full rounded-full bg-emerald-500" style="width: {{ $pct }}%"></div>
+                    </div>
+
+                    @if($tuntas)
+                        <p class="text-[11px] font-bold text-emerald-600 mt-2 flex items-center gap-1.5">
+                            <i data-lucide="check" class="w-3.5 h-3.5"></i> Paket selesai
+                        </p>
+                    @else
+                        <p class="text-[11px] text-slate-400 mt-2">
+                            {{ $pct }}% terserap
+                            &bull; {{ $pp->external_records_count > 0 ? $pp->external_records_count . ' dokumen' : 'belum ada dokumen' }}
+                        </p>
+                    @endif
+                </div>
+            @empty
+                <div class="py-10">
+                    <x-ui.empty-state icon="file-x" title="Belum Ada Data" description="Belum ada paket dikecualikan yang sesuai filter." />
+                </div>
+            @endforelse
+        </div>
+
+        <div class="hidden sm:block overflow-x-auto">
             <table class="w-full text-sm text-left">
                 <thead class="bg-slate-50 border-b border-slate-100">
                     <tr>
