@@ -104,9 +104,9 @@
         @endforeach
     </div>
 
-    <x-ui.card padding="none">
+    <x-ui.card padding="none" class="max-sm:-m-4 max-sm:rounded-none max-sm:border-0 max-sm:!shadow-none">
         {{-- Toolbar --}}
-        <div class="px-6 py-4 border-b border-slate-100">
+        <div class="px-4 py-3 sm:px-6 sm:py-4 border-b border-slate-100">
             <form action="{{ route('kabid.penyedia.index') }}" method="GET" class="w-full">
                 @if($status)
                     <input type="hidden" name="status" value="{{ $status }}">
@@ -203,7 +203,7 @@
         {{-- Ponsel: tiap baris jadi kartu berdiri sendiri di atas latar abu,
              bukan baris berpembatas. Pemisahan lewat jarak dan garis tepi jauh
              lebih terbaca di layar sempit daripada garis mendatar tunggal. --}}
-        <div class="sm:hidden bg-slate-50 p-3 pb-24 space-y-2.5">
+        <div class="sm:hidden bg-slate-50 pt-3 pb-24 space-y-2.5">
             @forelse($baris as $b)
                 <a href="{{ $b['url'] }}"
                     class="block bg-white border border-slate-200 rounded-xl p-3.5 active:bg-slate-50 transition-colors">
@@ -308,11 +308,11 @@
         </div>
 
         @if($procurementPackages->hasPages())
-            <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+            <div class="px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/50">
                 {{ $procurementPackages->links() }}
             </div>
         @else
-            <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+            <div class="px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/50">
                 <p class="text-sm text-slate-500">
                     Menampilkan <span class="font-semibold text-slate-700">{{ $procurementPackages->count() }}</span> paket
                 </p>
