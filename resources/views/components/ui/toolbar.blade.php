@@ -29,7 +29,9 @@
 
         <!-- Slot khusus Filter (Dropdown, Datepicker, dll) -->
         @if(isset($filters))
-            <div class="flex flex-wrap items-center gap-2">
+            {{-- min-w-0 supaya filter yang isinya panjang boleh menyusut di layar
+                 sempit, bukan mendorong dirinya keluar layar. --}}
+            <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto min-w-0">
                 {{ $filters }}
             </div>
         @endif
