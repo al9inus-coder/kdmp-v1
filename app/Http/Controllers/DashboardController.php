@@ -160,17 +160,24 @@ class DashboardController extends Controller
         // ── Anggaran: realisasi, sisa, serapan ─────────────────────────────
         $fiscalYearId = $activeFiscalYear?->id;
 
-        $realisasiPenyedia = \App\Models\ProcurementProcess::whereHas('procurementPackage', function ($q) use ($fiscalYearId) {
-            $q->where('workflow_status', ProcurementPackage::WORKFLOW_COMPLETED)
-                ->when($fiscalYearId, fn ($qq) => $qq->whereHas('package', fn ($p) => $p->where('fiscal_year_id', $fiscalYearId)));
-        })->sum('nilai_kontrak');
+        // Realisasi dijumlah lewat Package::realisasi() supaya belanja
+        // swakelola ikut terhitung. Sebelumnya hanya kontrak penyedia dan
+        // catatan dikecualikan yang dijumlah, sementara pagu swakelola tetap
+        // masuk penyebut — perjalanan dinas dan lembur tidak pernah bisa
+        // muncul sebagai realisasi, sehingga serapan selalu lebih rendah dan
+        // sisa anggaran selalu lebih tinggi dari kenyataan.
+        $sbuRates = \App\Models\SbuLembur::all();
 
-        $realisasiDikecualikan = \App\Models\ProcurementExternalRecord::whereHas('procurementPackage', function ($q) use ($fiscalYearId) {
-            $q->whereNotNull('dikecualikan_type')
-                ->when($fiscalYearId, fn ($qq) => $qq->whereHas('package', fn ($p) => $p->where('fiscal_year_id', $fiscalYearId)));
-        })->sum('nilai_kontrak');
-
-        $realisasi    = (float) $realisasiPenyedia + (float) $realisasiDikecualikan;
+        $realisasi = (float) (clone $baseQuery)
+            ->with([
+                'procurementPackage.procurementProcess',
+                'procurementPackage.externalRecords',
+                'procurementPackage.package',
+                'travelOrders.personnels',
+                'overtimes.details.employee',
+            ])
+            ->get()
+            ->sum(fn (Package $pkg) => $pkg->realisasi($sbuRates));
         $sisaAnggaran = (float) $totalPagu - $realisasi;
         $serapanPct   = $totalPagu > 0 ? round($realisasi / $totalPagu * 100, 1) : 0;
 

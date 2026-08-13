@@ -104,6 +104,59 @@ class Package extends Model
     {
         return $this->hasMany(Overtime::class);
     }
+
+    /**
+     * Realisasi belanja paket ini, mencakup ketiga jalurnya sekaligus.
+     *
+     * Aturan kapan sesuatu dianggap terealisasi:
+     * - Pengadaan  : lihat ProcurementPackage::getRealisasiAttribute() — untuk
+     *                metode Dikecualikan seluruh catatan eksternal dijumlah,
+     *                selain itu nilai kontrak baru dihitung setelah tahapannya
+     *                selesai, bukan saat masih diproses pembayarannya.
+     * - Perjalanan : hanya SPJ (biaya rampung) yang sudah DISETUJUI.
+     * - Lembur     : hanya periode yang sudah DIKUNCI.
+     *
+     * Aturan ini sebelumnya disalin di enam view (monev kabid & admin, cetak
+     * monev, dan kartu kendali). Dasbor memanggil metode ini supaya tidak
+     * menambah salinan ketujuh; keenam view itu masih menyimpan salinannya
+     * sendiri dan layak dipindahkan ke sini juga.
+     *
+     * @param  \Illuminate\Support\Collection|null  $sbuRates  tarif SBU lembur,
+     *         dioper dari luar bila memanggil untuk banyak paket agar tidak
+     *         mengambil ulang dari database tiap kali.
+     */
+    public function realisasi($sbuRates = null): float
+    {
+        $sbuRates ??= SbuLembur::all();
+        $total = 0.0;
+
+        if ($this->procurementPackage) {
+            $total += (float) $this->procurementPackage->realisasi;
+        }
+
+        foreach ($this->travelOrders as $travelOrder) {
+            if ($travelOrder->spjStatus() !== TravelOrder::SPJ_APPROVED) {
+                continue;
+            }
+
+            foreach ($travelOrder->personnels as $personnel) {
+                $total += (float) $personnel->uang_harian
+                    + (float) $personnel->biaya_penginapan
+                    + (float) $personnel->biaya_representasi
+                    + (float) $personnel->biaya_transport
+                    + (float) ($personnel->biaya_taksi ?? 0);
+            }
+        }
+
+        foreach ($this->overtimes as $overtime) {
+            if ($overtime->is_locked) {
+                $total += (float) $overtime->calculateTotalRealisasi($sbuRates);
+            }
+        }
+
+        return $total;
+    }
+
     public static function monthNames(): array
     {
         return [
