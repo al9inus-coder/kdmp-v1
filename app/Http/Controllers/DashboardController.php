@@ -114,7 +114,52 @@ class DashboardController extends Controller
         }
 
         $totalPaket       = (clone $baseQuery)->count();
-        $totalPagu        = (clone $baseQuery)->sum('pagu');
+
+        // Pagu bersumber dari plafon DPA, bukan jumlah pagu paket. Keduanya
+        // berbeda dan makin melebar seiring revisi: ada baris DPA yang
+        // pagunya dinolkan saat perubahan sementara paketnya masih tercatat.
+        //
+        // Yang ditampilkan adalah pagu EFEKTIF — hasil revisi terakhir, jadi
+        // sudah memperhitungkan pergeseran dan perubahan. Pagu murni dibawa
+        // terpisah sebagai pembanding.
+        //
+        // Sub kegiatan yang belum punya baris DPA memakai jumlah pagu paket
+        // sebagai cadangan dan dihitung, mengikuti aturan yang sudah dipakai
+        // Monev — tanpa itu, server yang DPA-nya belum diisi akan menampilkan
+        // pagu nol.
+        $plafonSub = \App\Models\BudgetLine::plafonPerSubActivity($activeFiscalYear?->id);
+
+        // Cadangan hanya berlaku untuk sub kegiatan yang benar-benar ada dan
+        // aktif. Paket tanpa sub kegiatan tidak menempel pada cabang DPA mana
+        // pun — di data sekarang ada dua paket needs_review senilai Rp 118,9
+        // juta yang, tanpa saringan ini, ikut menggelembungkan pagu.
+        $paguPaketPerSub = (clone $baseQuery)
+            ->whereNotNull('sub_activity_id')
+            ->whereHas('subActivity', fn ($q) => $q->aktif())
+            ->selectRaw('sub_activity_id, SUM(pagu) AS total')
+            ->groupBy('sub_activity_id')
+            ->pluck('total', 'sub_activity_id');
+
+        $totalPagu = 0.0;
+        $totalPaguMurni = 0.0;
+        $subTanpaDpa = 0;
+
+        foreach ($paguPaketPerSub->keys()->merge($plafonSub->keys())->unique() as $subId) {
+            $dpa = $plafonSub[$subId] ?? null;
+
+            if ($dpa) {
+                $totalPagu += (float) $dpa['plafon'];
+                $totalPaguMurni += (float) $dpa['murni'];
+
+                continue;
+            }
+
+            $cadangan = (float) ($paguPaketPerSub[$subId] ?? 0);
+            $totalPagu += $cadangan;
+            $totalPaguMurni += $cadangan;
+            $subTanpaDpa++;
+        }
+
         $needsReviewCount = (clone $baseQuery)->where('status', 'needs_review')->count();
         $draftCount       = (clone $baseQuery)->where('status', 'draft')->count();
         $submittedCount   = (clone $baseQuery)->where('status', 'submitted')->count();
@@ -160,17 +205,24 @@ class DashboardController extends Controller
         // ── Anggaran: realisasi, sisa, serapan ─────────────────────────────
         $fiscalYearId = $activeFiscalYear?->id;
 
-        $realisasiPenyedia = \App\Models\ProcurementProcess::whereHas('procurementPackage', function ($q) use ($fiscalYearId) {
-            $q->where('workflow_status', ProcurementPackage::WORKFLOW_COMPLETED)
-                ->when($fiscalYearId, fn ($qq) => $qq->whereHas('package', fn ($p) => $p->where('fiscal_year_id', $fiscalYearId)));
-        })->sum('nilai_kontrak');
+        // Realisasi dijumlah lewat Package::realisasi() supaya belanja
+        // swakelola ikut terhitung. Sebelumnya hanya kontrak penyedia dan
+        // catatan dikecualikan yang dijumlah, sementara pagu swakelola tetap
+        // masuk penyebut — perjalanan dinas dan lembur tidak pernah bisa
+        // muncul sebagai realisasi, sehingga serapan selalu lebih rendah dan
+        // sisa anggaran selalu lebih tinggi dari kenyataan.
+        $sbuRates = \App\Models\SbuLembur::all();
 
-        $realisasiDikecualikan = \App\Models\ProcurementExternalRecord::whereHas('procurementPackage', function ($q) use ($fiscalYearId) {
-            $q->whereNotNull('dikecualikan_type')
-                ->when($fiscalYearId, fn ($qq) => $qq->whereHas('package', fn ($p) => $p->where('fiscal_year_id', $fiscalYearId)));
-        })->sum('nilai_kontrak');
-
-        $realisasi    = (float) $realisasiPenyedia + (float) $realisasiDikecualikan;
+        $realisasi = (float) (clone $baseQuery)
+            ->with([
+                'procurementPackage.procurementProcess',
+                'procurementPackage.externalRecords',
+                'procurementPackage.package',
+                'travelOrders.personnels',
+                'overtimes.details.employee',
+            ])
+            ->get()
+            ->sum(fn (Package $pkg) => $pkg->realisasi($sbuRates));
         $sisaAnggaran = (float) $totalPagu - $realisasi;
         $serapanPct   = $totalPagu > 0 ? round($realisasi / $totalPagu * 100, 1) : 0;
 
@@ -303,19 +355,24 @@ class DashboardController extends Controller
             $travelSubActivities[$subAct->id]['pagu'] += (float) $pkg->pagu;
             $totalTravelPagu += (float) $pkg->pagu;
             
-            $realisasi = 0.0;
+            // Penampung per paket. JANGAN dinamai $realisasi: nama itu sudah
+            // dipakai realisasi anggaran di atas, dan menimpanya membuat kartu
+            // Realisasi di dasbor menampilkan sisa nilai perulangan ini —
+            // sementara Sisa Anggaran dan Serapan tetap benar karena sudah
+            // terlanjur dihitung sebelum baris ini.
+            $realisasiSpd = 0.0;
             foreach ($pkg->travelOrders ?? [] as $travelOrder) {
                 if ($travelOrder->spjStatus() !== \App\Models\TravelOrder::SPJ_APPROVED) { continue; }
                 foreach ($travelOrder->personnels ?? [] as $personnel) {
-                    $realisasi += (float) $personnel->uang_harian
+                    $realisasiSpd += (float) $personnel->uang_harian
                         + (float) $personnel->biaya_penginapan
                         + (float) $personnel->biaya_representasi
                         + (float) $personnel->biaya_transport
                         + (float) ($personnel->biaya_taksi ?? 0);
                 }
             }
-            $travelSubActivities[$subAct->id]['realisasi'] += $realisasi;
-            $totalTravelRealisasi += $realisasi;
+            $travelSubActivities[$subAct->id]['realisasi'] += $realisasiSpd;
+            $totalTravelRealisasi += $realisasiSpd;
         }
 
         // Sort by pagu descending
@@ -368,7 +425,7 @@ class DashboardController extends Controller
 
         return view('dashboard.kabid', compact(
             'activeFiscalYear',
-            'totalPaket', 'totalPagu', 'realisasi', 'sisaAnggaran', 'serapanPct',
+            'totalPaket', 'totalPagu', 'totalPaguMurni', 'subTanpaDpa', 'realisasi', 'sisaAnggaran', 'serapanPct',
             'needsReviewCount', 'draftCount', 'submittedCount', 'approvedCount',
             'submittedPagu', 'pendingPackages', 'pendingSppd', 'pendingSppdCount',
             'pendingSpj', 'pendingSpjCount', 'pendingReview', 'pendingReviewCount',
