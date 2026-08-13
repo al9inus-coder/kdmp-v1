@@ -84,9 +84,11 @@
             <td style="vertical-align: top; padding: 5px;">Jangka Waktu Pelaksanaan</td>
             <td style="vertical-align: top; padding: 5px; border-right: none;">:</td>
             @php
-                $start = \Carbon\Carbon::parse($process->tanggal_surat_pesanan);
-                $end = \Carbon\Carbon::parse($process->tanggal_barang_diterima);
-                $durasiHari = $start->diffInDays($end) ?: 1;
+                // Dijaga null: dokumen ini bisa dibuka untuk paket yang tahap
+                // kontraknya belum ada sama sekali.
+                $start = \Carbon\Carbon::parse($process?->tanggal_surat_pesanan);
+                $end = \Carbon\Carbon::parse($process?->tanggal_barang_diterima);
+                $durasiHari = $process?->durasiHari() ?? 0;
             @endphp
             <td style="vertical-align: top; padding: 5px; border-left: none;">{{ $durasiHari }} hari kalender ({{ $start->translatedFormat('d F Y') }} s.d {{ $end->translatedFormat('d F Y') }})</td>
         </tr>

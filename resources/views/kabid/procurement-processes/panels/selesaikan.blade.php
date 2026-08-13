@@ -22,9 +22,7 @@
         \App\Models\ProcurementPackage::WORKFLOW_COMPLETED,
     ]);
 
-    $durasi = ($process->tanggal_surat_pesanan && $process->tanggal_barang_diterima)
-        ? $process->tanggal_surat_pesanan->diffInDays($process->tanggal_barang_diterima) + 1
-        : null;
+    $durasi = $process?->durasiHari();
 @endphp
 
 @if($locked)
