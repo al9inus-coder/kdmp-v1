@@ -303,19 +303,24 @@ class DashboardController extends Controller
             $travelSubActivities[$subAct->id]['pagu'] += (float) $pkg->pagu;
             $totalTravelPagu += (float) $pkg->pagu;
             
-            $realisasi = 0.0;
+            // Penampung per paket. JANGAN dinamai $realisasi: nama itu sudah
+            // dipakai realisasi anggaran di atas, dan menimpanya membuat kartu
+            // Realisasi di dasbor menampilkan sisa nilai perulangan ini —
+            // sementara Sisa Anggaran dan Serapan tetap benar karena sudah
+            // terlanjur dihitung sebelum baris ini.
+            $realisasiSpd = 0.0;
             foreach ($pkg->travelOrders ?? [] as $travelOrder) {
                 if ($travelOrder->spjStatus() !== \App\Models\TravelOrder::SPJ_APPROVED) { continue; }
                 foreach ($travelOrder->personnels ?? [] as $personnel) {
-                    $realisasi += (float) $personnel->uang_harian
+                    $realisasiSpd += (float) $personnel->uang_harian
                         + (float) $personnel->biaya_penginapan
                         + (float) $personnel->biaya_representasi
                         + (float) $personnel->biaya_transport
                         + (float) ($personnel->biaya_taksi ?? 0);
                 }
             }
-            $travelSubActivities[$subAct->id]['realisasi'] += $realisasi;
-            $totalTravelRealisasi += $realisasi;
+            $travelSubActivities[$subAct->id]['realisasi'] += $realisasiSpd;
+            $totalTravelRealisasi += $realisasiSpd;
         }
 
         // Sort by pagu descending
