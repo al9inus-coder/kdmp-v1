@@ -39,7 +39,7 @@
 
 <x-ui.toast />
 
-<x-ui.workspace title="Pengadaan Dikecualikan" description="Pengadaan tanpa tahapan workflow — klik kartu jenis untuk memfilter, pantau kelengkapan dokumen & realisasi.">
+<x-ui.workspace title="Pengadaan Dikecualikan" description="Pengadaan tanpa tahapan workflow — klik kartu jenis untuk memfilter, pantau kelengkapan dokumen & realisasi." class="max-sm:-mx-4 max-sm:w-auto max-sm:rounded-none max-sm:border-0 max-sm:[box-shadow:none]">
     <x-slot:actions>
         <div class="flex items-center gap-2 bg-slate-50 rounded-full px-4 py-1.5 text-sm text-slate-600 font-medium border border-slate-100 shadow-sm">
             <i data-lucide="file-warning" class="w-4 h-4 text-amber-500"></i>
@@ -180,7 +180,7 @@
              Paket yang sudah dirampungkan menyebut "Paket selesai": persentase
              berhenti relevan begitu paketnya ditutup, dan serapan 100% belum
              tentu berarti selesai. --}}
-        <div class="sm:hidden bg-slate-50 pt-3 pb-24 space-y-2.5">
+        <div class="sm:hidden bg-slate-50 px-4 pt-3 pb-24 space-y-2.5">
             @forelse($procurementPackages as $pp)
                 @php
                     $pkg = $pp->package;

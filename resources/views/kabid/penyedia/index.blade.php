@@ -39,7 +39,7 @@
 
 <x-ui.toast />
 
-<x-ui.workspace title="Pengadaan Penyedia" description="Ikuti tahapan workflow: persiapan, pemilihan penyedia, pelaksanaan, hingga pembayaran. Klik kartu tahapan untuk memfilter.">
+<x-ui.workspace title="Pengadaan Penyedia" description="Ikuti tahapan workflow: persiapan, pemilihan penyedia, pelaksanaan, hingga pembayaran. Klik kartu tahapan untuk memfilter." class="max-sm:-mx-4 max-sm:w-auto max-sm:rounded-none max-sm:border-0 max-sm:[box-shadow:none]">
     <x-slot:actions>
         <div class="flex items-center gap-2 bg-slate-50 rounded-full px-4 py-1.5 text-sm text-slate-600 font-medium border border-slate-100 shadow-sm">
             <i data-lucide="briefcase-business" class="w-4 h-4 text-emerald-500"></i>
@@ -203,7 +203,7 @@
         {{-- Ponsel: tiap baris jadi kartu berdiri sendiri di atas latar abu,
              bukan baris berpembatas. Pemisahan lewat jarak dan garis tepi jauh
              lebih terbaca di layar sempit daripada garis mendatar tunggal. --}}
-        <div class="sm:hidden bg-slate-50 pt-3 pb-24 space-y-2.5">
+        <div class="sm:hidden bg-slate-50 px-4 pt-3 pb-24 space-y-2.5">
             @forelse($baris as $b)
                 <a href="{{ $b['url'] }}"
                     class="block bg-white border border-slate-200 rounded-xl p-3.5 active:bg-slate-50 transition-colors">

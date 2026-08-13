@@ -34,7 +34,7 @@
 
 <x-ui.toast />
 
-<x-ui.workspace title="Daftar Swakelola" description="Paket pengadaan jenis Swakelola — klik kartu jenis ruang untuk memfilter.">
+<x-ui.workspace title="Daftar Swakelola" description="Paket pengadaan jenis Swakelola — klik kartu jenis ruang untuk memfilter." class="max-sm:-mx-4 max-sm:w-auto max-sm:rounded-none max-sm:border-0 max-sm:[box-shadow:none]">
     <x-slot:actions>
         <div class="flex items-center gap-2 bg-slate-50 rounded-full px-4 py-1.5 text-sm text-slate-600 font-medium border border-slate-100 shadow-sm">
             <i data-lucide="handshake" class="w-4 h-4 text-emerald-500"></i>
@@ -143,7 +143,7 @@
         {{-- Ponsel: tiap paket jadi kartu. Aksi naik ke dalam kartu dan diberi
              nama sesuai jenis swakelolanya — di tabel ia tersembunyi sebagai
              ikon di kolom paling kanan, bagian paling sulit dijangkau. --}}
-        <div class="sm:hidden bg-slate-50 pt-3 pb-24 space-y-2.5">
+        <div class="sm:hidden bg-slate-50 px-4 pt-3 pb-24 space-y-2.5">
             @forelse($packages as $package)
                 @php
                     $aksiLabel = $package->isSwakelolaPerjalanan() ? 'Kelola SPPD'
