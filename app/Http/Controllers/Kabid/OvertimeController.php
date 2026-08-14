@@ -22,6 +22,10 @@ class OvertimeController extends BaseOvertimeController
     {
         Gate::authorize('view', $package);
 
+        // {month} dibuatkan barisnya lewat firstOrCreate, jadi bulan di luar
+        // 1–12 akan mengendap jadi periode sampah yang tak bisa dibuka.
+        abort_unless(is_numeric($month) && (int) $month >= 1 && (int) $month <= 12, 404);
+
         $year = $package->created_at ? $package->created_at->format('Y') : date('Y');
 
         $overtime = Overtime::firstOrCreate([

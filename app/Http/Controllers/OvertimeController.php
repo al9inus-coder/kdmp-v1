@@ -19,6 +19,9 @@ class OvertimeController extends Controller
 
     public function show(Package $package, $month)
     {
+        // Lihat catatan sama di Kabid\OvertimeController::show().
+        abort_unless(is_numeric($month) && (int) $month >= 1 && (int) $month <= 12, 404);
+
         $year = date('Y'); // fallback if package doesn't have year
         // We can use package created_at year or a specific field if it exists. Let's assume current year or package created_at.
         $year = $package->created_at ? $package->created_at->format('Y') : date('Y');
@@ -994,14 +997,22 @@ class OvertimeController extends Controller
         $request->validate([
             'rate_lembur_fix' => 'nullable|numeric|min:0',
             'rate_makan_fix' => 'nullable|numeric|min:0',
+            // Dibatasi 0-100 supaya salah ketik seperti 500 tidak memotong
+            // gaji jauh melebihi nominalnya.
+            'persen_pajak_fix' => 'nullable|numeric|min:0|max:100',
+        ], [
+            'persen_pajak_fix.max' => 'Tarif pajak tidak boleh lebih dari 100%.',
         ]);
 
+        // Ketiganya dikosongkan berarti kembali mengikuti master — tarif dari
+        // Master SBU, persentase dari Master Pajak.
         $detail->update([
             'rate_lembur_fix' => $request->rate_lembur_fix,
             'rate_makan_fix' => $request->rate_makan_fix,
+            'persen_pajak_fix' => $request->persen_pajak_fix,
         ]);
 
-        return redirect()->back()->with('success', 'Standar Biaya (SBU) berhasil diperbarui.');
+        return redirect()->back()->with('success', 'Penyesuaian tarif berhasil disimpan.');
     }
 
 

@@ -71,9 +71,16 @@ class Overtime extends Model
 
             // Tarif: snapshot per-detail menang; selain itu pemetaan golongan SBU
             // yang toleran format (tanpa fallback tarif lain).
-            $valLembur = !is_null($detail->rate_lembur_fix)
-                ? $detail->rate_lembur_fix
-                : (SbuLembur::pickRate($sbuRates, 'Uang Lembur', $golongan)?->besaran ?? 0);
+            $rateMissing = false;
+            if (!is_null($detail->rate_lembur_fix)) {
+                $valLembur = $detail->rate_lembur_fix;
+            } else {
+                $rateLembur = SbuLembur::pickRate($sbuRates, 'Uang Lembur', $golongan);
+                $valLembur = $rateLembur?->besaran ?? 0;
+                // Baris SBU golongan ini tidak ada — jangan tebak tarif lain,
+                // tandai supaya tampilan bisa memperingatkan operator.
+                $rateMissing = !$rateLembur;
+            }
             $valMakan = !is_null($detail->rate_makan_fix)
                 ? $detail->rate_makan_fix
                 : (SbuLembur::pickRate($sbuRates, 'Uang Makan Lembur', $golongan)?->besaran ?? 0);
@@ -103,9 +110,11 @@ class Overtime extends Model
                 'hari' => $hari,
                 'valLembur' => $valLembur,
                 'valMakan' => $valMakan,
+                'rateMissing' => $rateMissing,
                 'uangLembur' => $uangLembur,
                 'uangMakan' => $uangMakan,
                 'pajak' => $pajak,
+                'persenPajak' => $persenPajak,
                 'diterima' => $diterima,
             ];
 
