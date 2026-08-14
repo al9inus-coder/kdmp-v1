@@ -11,6 +11,7 @@ class Account extends Model
         'kode',
         'nama',
         'is_active',
+        'skema_pajak',
     ];
 
     protected $casts = [

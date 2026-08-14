@@ -6,6 +6,19 @@
     $kodeProgram = $package->program?->kode ?? '2.11.04';
     $completed = $procurementPackage->workflow_status === \App\Models\ProcurementPackage::WORKFLOW_COMPLETED;
 
+    // Skema bawaan dari rekening belanja, dipakai sebagai keterangan pada
+    // pilihan "Ikuti rekening belanja".
+    $skemaRekening = $package->account?->skema_pajak ?: \App\Services\Pajak\SkemaPajak::STANDAR;
+
+    // Kualifikasi diambil dari tarif PPh Final 4(2) yang terdaftar, bukan
+    // daftar tetap — supaya menambah kualifikasi cukup lewat /admin/pajak.
+    $kualifikasiKonstruksi = \App\Models\TarifPajak::aktif()
+        ->where('jenis', \App\Models\TarifPajak::PPH4_2_KONSTRUKSI)
+        ->orderBy('persen')
+        ->pluck('kunci')
+        ->filter()
+        ->values();
+
     $docs = [
         'bap' => ['label' => 'BAP', 'icon' => 'file-check-2'],
         'kwitansi' => ['label' => 'Kwitansi', 'icon' => 'receipt'],
@@ -32,6 +45,7 @@
         docType: 'bap',
         previewLoading: true,
         nonPkp: {{ old('is_non_pkp', $payment->is_non_pkp) ? 'true' : 'false' }},
+        skemaPajak: @js(old('skema_pajak', $payment->skema_pajak ?? '')),
         bapNo: @js(old('nomor_bap', $payment->nomor_bap)),
         kwtNo: @js(old('nomor_kwitansi', $payment->nomor_kwitansi)),
         printBase: @js($printBase),
@@ -310,6 +324,37 @@
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+
+                            {{-- Skema pajak. Bawaannya mengikuti rekening belanja; pilihan di
+                                 sini mengalahkannya untuk pembayaran ini saja. Kualifikasi
+                                 hanya berarti pada skema konstruksi, jadi ia menyusut sendiri
+                                 saat skema lain dipilih. --}}
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-semibold text-slate-600 mb-1.5">Skema Pajak</label>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <select name="skema_pajak" x-model="skemaPajak"
+                                        class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                                        <option value="">Ikuti rekening belanja ({{ \App\Services\Pajak\SkemaPajak::pilihan()[$skemaRekening] ?? 'Standar' }})</option>
+                                        @foreach(\App\Services\Pajak\SkemaPajak::pilihan() as $kode => $label)
+                                            <option value="{{ $kode }}">{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+
+                                    <div class="transition-opacity" :class="skemaPajak === 'konstruksi' ? 'opacity-100' : 'opacity-50'">
+                                        <select name="kualifikasi_pajak" :disabled="skemaPajak !== 'konstruksi'"
+                                            class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm disabled:bg-slate-100 disabled:cursor-not-allowed">
+                                            <option value="">Kualifikasi penyedia —</option>
+                                            @foreach($kualifikasiKonstruksi as $k)
+                                                <option value="{{ $k }}" @selected(old('kualifikasi_pajak', $payment->kualifikasi_pajak) === $k)>{{ $k }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                                <p class="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
+                                    Tarif yang berlaku dibekukan saat disimpan, jadi menyesuaikan tarif
+                                    nanti tidak mengubah dokumen yang sudah dicetak.
+                                </p>
                             </div>
                         </div>
                     </section>

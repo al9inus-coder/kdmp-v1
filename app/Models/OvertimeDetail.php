@@ -13,6 +13,7 @@ class OvertimeDetail extends Model
         'use_uang_makan',
         'rate_lembur_fix',
         'rate_makan_fix',
+        'persen_pajak_fix',
         'golongan_fix',
     ];
 

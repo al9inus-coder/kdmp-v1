@@ -54,6 +54,8 @@ class ProcurementPaymentController extends Controller
             'nama_pptk' => 'required|string',
             'nip_pptk' => 'required|string',
             'pangkat_golongan_pptk' => 'required|string',
+            'skema_pajak' => 'nullable|string|in:' . implode(',', array_keys(\App\Services\Pajak\SkemaPajak::pilihan())),
+            'kualifikasi_pajak' => 'nullable|string|max:255',
         ]);
 
         $procurementPackage->payment()->updateOrCreate(
@@ -73,8 +75,21 @@ class ProcurementPaymentController extends Controller
                 'nama_pptk' => $request->nama_pptk,
                 'nip_pptk' => $request->nip_pptk,
                 'pangkat_golongan_pptk' => $request->pangkat_golongan_pptk,
+                'skema_pajak' => $request->skema_pajak,
+                'kualifikasi_pajak' => $request->kualifikasi_pajak,
             ]
         );
+
+        // Bekukan tarif yang dipakai — lihat alasannya di controller Kabid.
+        $procurementPackage->refresh()->load('payment', 'package.account', 'procurementProcess');
+        $pajak = \App\Services\Pajak\PajakPengadaan::hitung($procurementPackage);
+        $skema = $pajak['skema'];
+
+        $procurementPackage->payment->update([
+            'persen_ppn_fix' => $skema === \App\Services\Pajak\SkemaPajak::RESTORAN ? null : $pajak['persenKonsumsi'],
+            'persen_restoran_fix' => $skema === \App\Services\Pajak\SkemaPajak::RESTORAN ? $pajak['persenKonsumsi'] : null,
+            'persen_pph_fix' => $pajak['persenPph'],
+        ]);
 
         // Update workflow status
         $procurementPackage->update([

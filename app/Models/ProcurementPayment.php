@@ -22,6 +22,11 @@ class ProcurementPayment extends Model
         'nama_pptk',
         'nip_pptk',
         'pangkat_golongan_pptk',
+        'skema_pajak',
+        'kualifikasi_pajak',
+        'persen_ppn_fix',
+        'persen_pph_fix',
+        'persen_restoran_fix',
     ];
 
     protected $casts = [

@@ -426,6 +426,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::resource('sbu-penginapans', App\Http\Controllers\SbuPenginapanController::class)->except(['show']);
         Route::resource('sbu-tiket-pesawats', App\Http\Controllers\SbuTiketPesawatController::class)->except(['show']);
         Route::resource('sbu-lemburs', App\Http\Controllers\SbuLemburController::class)->except(['show', 'create', 'edit']);
+        Route::resource('pajak', App\Http\Controllers\PajakController::class)->except(['show', 'create', 'edit']);
     });
     
     // Procurement Packages & sub-resources

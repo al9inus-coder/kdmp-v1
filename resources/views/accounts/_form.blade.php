@@ -51,6 +51,25 @@
             </x-ui.select>
             @error('is_active') <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
         </div>
+
+        <div>
+            <label for="skema_pajak" class="block text-sm font-semibold text-slate-700 mb-1.5">
+                Skema Pajak
+            </label>
+            <x-ui.select name="skema_pajak" id="skema_pajak" :invalid="$hasError('skema_pajak')">
+                <option value="">Standar — PPN + PPh 22/23</option>
+                @foreach(\App\Services\Pajak\SkemaPajak::pilihan() as $kode => $label)
+                    @continue($kode === \App\Services\Pajak\SkemaPajak::STANDAR)
+                    <option value="{{ $kode }}" @selected($val('skema_pajak') === $kode)>{{ $label }}</option>
+                @endforeach
+            </x-ui.select>
+            <p class="mt-1.5 text-xs text-slate-400 leading-relaxed">
+                Berlaku untuk semua paket yang memakai rekening ini. Isi
+                <span class="font-semibold text-slate-500">Restoran</span> pada rekening makanan
+                dan minuman. Masih bisa diubah per pembayaran bila diperlukan.
+            </p>
+            @error('skema_pajak') <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p> @enderror
+        </div>
     </div>
 </section>
 

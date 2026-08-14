@@ -24,6 +24,9 @@ class AccountRequest extends FormRequest
             ],
             'nama' => ['required', 'string'],
             'is_active' => ['required', 'boolean'],
+            // Skema pajak bawaan untuk rekening ini. Kosong berarti ikut
+            // skema standar; diisi 'restoran' pada rekening makanan dan minuman.
+            'skema_pajak' => ['nullable', 'string', Rule::in(array_keys(\App\Services\Pajak\SkemaPajak::pilihan()))],
         ];
     }
 
@@ -33,6 +36,7 @@ class AccountRequest extends FormRequest
             'kode' => 'kode rekening belanja',
             'nama' => 'nama rekening belanja',
             'is_active' => 'status aktif',
+            'skema_pajak' => 'skema pajak',
         ];
     }
 }

@@ -1019,7 +1019,8 @@ class OvertimeController extends Controller
         $userRole = auth()->user()->getRoleNames()->first() ?? '';
         if (in_array($userRole, ['Admin', 'Kabid'])) {
             $sbuRates = \App\Models\SbuLembur::all();
-            
+            $tarifPajak = \App\Models\TarifPajak::aktif()->get();
+
             foreach ($overtime->details as $detail) {
                 $golongan = $detail->employee->golongan ?? null;
 
@@ -1032,6 +1033,13 @@ class OvertimeController extends Controller
 
                 if (is_null($detail->rate_makan_fix)) {
                     $updateData['rate_makan_fix'] = \App\Models\SbuLembur::pickRate($sbuRates, 'Uang Makan Lembur', $golongan)?->besaran ?? 0;
+                }
+
+                // Persentase pajak ikut dibekukan bersama tarif. Tanpa ini,
+                // menyesuaikan tarif pajak nanti akan mengubah nominal bulan
+                // yang sudah ditutup dan sudah dibayarkan.
+                if (is_null($detail->persen_pajak_fix)) {
+                    $updateData['persen_pajak_fix'] = \App\Models\TarifPajak::untukGolongan($tarifPajak, $golongan)?->persen ?? 0;
                 }
 
                 $detail->update($updateData);

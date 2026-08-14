@@ -207,23 +207,23 @@
             <td>Rp. <span style="float: right;">{{ number_format($process->nilai_kontrak, 0, ',', '.') }}</span></td>
         </tr>
         @php
-            // Hitung DPP
-            $dpp = $process->nilai_kontrak / 1.11;
-            // PPN
-            $ppn = $dpp * 0.11;
-            // PPh (Barang = 1.5%, selain Barang = 2%)
-            $jenisPengadaan = strtolower($procurementPackage->package->jenis_pengadaan);
-            $isBarang = str_contains($jenisPengadaan, 'barang');
-            $tarifPph = $isBarang ? 0.015 : 0.02;
-            $teksPph = $isBarang ? 'PPh 22 1,5%' : 'PPh 23 2%';
-            $pph = $dpp * $tarifPph;
-            
-            $totalPotongan = $pph + $ppn;
-            $jumlahBayar = $process->nilai_kontrak - $totalPotongan;
+            // Seluruh perhitungan pajak berasal dari satu tempat. Pembagi DPP
+            // diturunkan dari tarif yang sama dengan yang memotong, jadi
+            // mengubah tarif lewat /admin/pajak tidak membuat keduanya
+            // berselisih.
+            $pajak = \App\Services\Pajak\PajakPengadaan::hitung($procurementPackage);
+
+            $dpp = $pajak['dpp'];
+            $ppn = $pajak['konsumsi'];
+            $pph = $pajak['pph'];
+            $teksPph = $pajak['labelPph'];
+            $teksKonsumsi = $pajak['labelKonsumsi'];
+            $totalPotongan = $pajak['totalPotongan'];
+            $jumlahBayar = $pajak['jumlahBayar'];
         @endphp
         <tr>
             <td style="text-align: center; vertical-align: top;">2.</td>
-            <td>Potongan-potongan<br>a. Pajak-Pajak<br>&nbsp;&nbsp;&nbsp;{{ $teksPph }}<br>&nbsp;&nbsp;&nbsp;PPN 11%<br>&nbsp;&nbsp;&nbsp;Retensi</td>
+            <td>Potongan-potongan<br>a. Pajak-Pajak<br>&nbsp;&nbsp;&nbsp;{{ $teksPph }}<br>&nbsp;&nbsp;&nbsp;{{ $teksKonsumsi }}<br>&nbsp;&nbsp;&nbsp;Retensi</td>
             <td></td>
             <td>
                 <br>
