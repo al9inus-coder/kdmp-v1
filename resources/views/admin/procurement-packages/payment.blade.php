@@ -220,6 +220,10 @@
                         @empty
                             <p class="text-xs text-slate-500 mt-0.5">Tidak ada pajak dipungut</p>
                         @endforelse
+                        <div class="mt-2 pt-2 border-t border-slate-100 flex items-baseline justify-between gap-2">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Diterima Penyedia</p>
+                            <p class="text-sm font-extrabold text-emerald-600 tabular-nums">Rp {{ number_format($pajakBeku['jumlahBayar'], 0, ',', '.') }}</p>
+                        </div>
                     </div>
                     <div class="px-4 py-2.5">
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">PPTK</p>

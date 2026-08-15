@@ -40,12 +40,17 @@ class PajakPengadaan
         ];
     }
 
+    /**
+     * Label sengaja pendek: ia muncul di kolom sempit pada daftar pajak, dan
+     * label panjang terpotong jadi "Setelah dikuran…" yang justru mengaburkan
+     * pajak mana yang dikurangkan.
+     */
     public static function pilihanDasar(): array
     {
         return [
-            self::DASAR_BRUTO => 'Bruto (nilai kontrak penuh)',
-            self::DASAR_SETELAH_PPN => 'Setelah dikurangi PPN',
-            self::DASAR_SETELAH_PBJT => 'Setelah dikurangi PBJT',
+            self::DASAR_BRUTO => 'Bruto (nilai penuh)',
+            self::DASAR_SETELAH_PPN => 'Setelah PPN',
+            self::DASAR_SETELAH_PBJT => 'Setelah PBJT',
         ];
     }
 

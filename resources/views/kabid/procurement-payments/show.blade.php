@@ -112,6 +112,11 @@
             })
             .catch(() => { this.pajakGagal = true; });
         },
+        /** Nominal hasil hitungan server untuk satu jenis pajak. Satu jenis
+            hanya boleh sekali per pembayaran, jadi jenis cukup jadi kuncinya. */
+        nominalBaris(jenis) {
+            return this.pajak?.baris?.find(x => x.jenis === jenis) ?? null;
+        },
         pajak: null,
         pajakMemuat: false,
         pajakGagal: false,
@@ -402,7 +407,178 @@
                         </div>
                     </section>
 
-                    {{-- 2. Setoran penyedia — pindahan dari tahap Pemilihan Penyedia --}}
+                    {{-- 2. Pajak & potongan.
+                         Seksi tersendiri, bukan menumpang di Dokumen Tambahan: ini
+                         satu-satunya bagian form yang menentukan berapa uang yang
+                         benar-benar diterima penyedia. --}}
+                    <section>
+                        <div class="flex items-center gap-3 mb-3">
+                            <p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Pajak &amp; Potongan</p>
+                            <span class="flex-1 h-px bg-slate-100"></span>
+                            <span class="text-[11px] text-slate-400 whitespace-nowrap hidden sm:inline">menentukan jumlah yang dibayar</span>
+                        </div>
+
+                        <div class="rounded-xl border border-slate-200 overflow-hidden">
+                            {{-- Prasetel hanya mengisikan usulan lalu berhenti berperan,
+                                 jadi ia bilah tipis — bukan tiga kotak sejajar yang
+                                 terlihat seperti isian utama. --}}
+                            <div class="px-3.5 py-2 bg-slate-50 border-b border-slate-200 flex items-center gap-2 flex-wrap">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Prasetel</span>
+                                <select name="skema_pajak" x-model="skemaPajak" @change="pakaiUsulan()"
+                                    class="rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-[11px] py-1 pl-2 pr-7">
+                                    <option value="">Ikuti rekening ({{ \App\Services\Pajak\SkemaPajak::pilihan()[$skemaRekening] ?? 'Standar' }})</option>
+                                    @foreach(\App\Services\Pajak\SkemaPajak::pilihan() as $kode => $label)
+                                        <option value="{{ $kode }}">{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                <select name="jenis_pph" x-model="jenisPph" @change="pakaiUsulan()"
+                                    x-show="skemaPajak !== 'konstruksi'"
+                                    class="rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-[11px] py-1 pl-2 pr-7">
+                                    <option value="">Ikuti jenis pengadaan ({{ $pilihanJenisPph[$jenisPphTurunan] ?? 'PPh 23 — Jasa' }})</option>
+                                    @foreach($pilihanJenisPph as $kode => $label)
+                                        <option value="{{ $kode }}">{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                <select name="kualifikasi_pajak" x-ref="kualifikasiPajak" @change="pakaiUsulan()"
+                                    x-show="skemaPajak === 'konstruksi'" style="display: none;"
+                                    class="rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-[11px] py-1 pl-2 pr-7">
+                                    <option value="">Kualifikasi penyedia —</option>
+                                    @foreach($kualifikasiKonstruksi as $k)
+                                        <option value="{{ $k }}" @selected(old('kualifikasi_pajak', $payment->kualifikasi_pajak) === $k)>{{ $k }}</option>
+                                    @endforeach
+                                </select>
+                                <button type="button" @click="pakaiUsulan()"
+                                    class="ml-auto text-[11px] font-bold text-slate-500 hover:text-slate-700 underline">Pakai usulan</button>
+                            </div>
+
+                            {{-- Penanda bahwa daftar pajak ikut dikirim. Isian pajak[] hanya
+                                 ada di dalam x-for, jadi menghapus semua baris membuat
+                                 formulir tidak mengirim apa pun — dan tanpa penanda ini
+                                 server tidak bisa membedakannya dari "tidak ada data
+                                 pajak di permintaan ini", lalu memungut usulan lagi. --}}
+                            <input type="hidden" name="pajak_diisi" value="1">
+
+                            <div class="hidden sm:grid sm:grid-cols-12 gap-3 px-4 py-2 bg-slate-50/60 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                <div class="col-span-4">Pajak</div>
+                                <div class="col-span-2">Tarif</div>
+                                <div class="col-span-3">Dasar pengenaan</div>
+                                <div class="col-span-3 text-right">Potongan</div>
+                            </div>
+
+                            <template x-if="barisPajak.length === 0">
+                                <p class="px-4 py-4 text-[11.5px] text-slate-400 text-center leading-relaxed">
+                                    Tidak ada pajak yang dipungut pada pembayaran ini.<br>
+                                    <span class="text-[10.5px]">Baris potongan tidak akan muncul di BAP.</span>
+                                </p>
+                            </template>
+
+                            <template x-for="(b, i) in barisPajak" :key="i">
+                                <div class="px-4 py-2.5 border-b border-slate-100 grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3 sm:items-center">
+                                    <div class="sm:col-span-4">
+                                        <label class="sm:hidden block text-[10px] font-semibold text-slate-400 mb-1">Pajak</label>
+                                        <select :name="'pajak[' + i + '][jenis]'" x-model="b.jenis" @change="muatPajak()"
+                                            class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-xs">
+                                            @foreach($pilihanJenisPajak as $kode => $label)
+                                                <option value="{{ $kode }}">{{ $label }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                    <div class="sm:col-span-2">
+                                        <label class="sm:hidden block text-[10px] font-semibold text-slate-400 mb-1">Tarif</label>
+                                        <div class="relative">
+                                            <input type="number" step="0.01" min="0" max="100"
+                                                :name="'pajak[' + i + '][persen]'" x-model="b.persen" @input="muatPajak()"
+                                                class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-xs pr-6 text-right">
+                                            <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400">%</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="sm:col-span-3">
+                                        <label class="sm:hidden block text-[10px] font-semibold text-slate-400 mb-1">Dasar pengenaan</label>
+                                        <select :name="'pajak[' + i + '][dasar]'" x-model="b.dasar" @change="muatPajak()"
+                                            class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-xs">
+                                            @foreach($pilihanDasarPajak as $kode => $label)
+                                                <option value="{{ $kode }}">{{ $label }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                    {{-- Nominalnya di baris yang sedang diubah, bukan di panel
+                                         terpisah — supaya angka yang sama tidak tampil dua kali
+                                         dan akibat tiap perubahan langsung terlihat. --}}
+                                    <div class="sm:col-span-3 flex items-center justify-between sm:justify-end gap-2">
+                                        <span class="sm:hidden text-[10px] font-semibold text-slate-400">Potongan</span>
+                                        <span class="text-right leading-tight">
+                                            <span class="block text-xs font-bold text-slate-800 tabular-nums"
+                                                x-text="nominalBaris(b.jenis)?.nominal ?? '—'"></span>
+                                            <span class="block text-[10px] text-slate-400 tabular-nums"
+                                                x-text="nominalBaris(b.jenis) ? 'dari ' + nominalBaris(b.jenis).nilaiDasar : ''"></span>
+                                        </span>
+                                        <button type="button" @click="hapusBaris(i)" title="Hapus pajak ini"
+                                            class="text-slate-300 hover:text-rose-600 shrink-0">
+                                            <i data-lucide="x" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+
+                                    <input type="hidden" :name="'pajak[' + i + '][kunci]'" :value="b.kunci || ''">
+                                </div>
+                            </template>
+
+                            <div class="px-4 py-2 border-b border-slate-100">
+                                <button type="button" @click="tambahBaris()"
+                                    class="text-[11.5px] font-black text-emerald-700 hover:text-emerald-800">+ Tambah pajak</button>
+                            </div>
+
+                            {{-- Kaki menggantikan panel ringkasan yang dulu berdiri sendiri. --}}
+                            <div class="px-4 py-3 bg-slate-50 space-y-1 text-xs">
+                                <div class="flex justify-between text-slate-500">
+                                    <span>Nilai kontrak</span>
+                                    <span class="tabular-nums" x-text="pajak?.nilaiKontrak ?? '—'"></span>
+                                </div>
+                                <div class="flex justify-between text-slate-500">
+                                    <span>Total potongan</span>
+                                    <span class="tabular-nums" x-text="pajak?.totalPotongan ?? '—'"></span>
+                                </div>
+                                <div class="flex justify-between pt-1.5 border-t border-slate-200 font-black">
+                                    <span class="text-slate-600">Diterima penyedia</span>
+                                    <span class="text-emerald-700 text-sm tabular-nums" x-text="pajak?.jumlahBayar ?? '—'"></span>
+                                </div>
+                                <p x-show="pajakMemuat" class="text-[10.5px] text-slate-400 pt-0.5">menghitung…</p>
+                                <p x-show="pajakGagal" style="display: none;" class="text-[10.5px] text-rose-600 pt-0.5">
+                                    Pratinjau gagal dimuat. Angka pastinya tetap dihitung saat disimpan.
+                                </p>
+                            </div>
+                        </div>
+
+                        @if($jenisPphBeda)
+                            <p class="mt-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-800 leading-relaxed">
+                                Jenis pengadaan paket ini <b>{{ $package->jenis_pengadaan }}</b>
+                                (bawaannya {{ $pilihanJenisPph[$jenisPphTurunan] ?? '—' }}), tetapi pembayaran
+                                ini memakai <b>{{ $pilihanJenisPph[$jenisPphTersimpan] }}</b>. Perbedaannya
+                                dipertahankan — ubah di sini bila tidak sengaja.
+                            </p>
+                        @endif
+
+                        @if($nilaiKontrakBergeser)
+                            <p class="mt-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-800 leading-relaxed">
+                                Dokumen pembayaran ini memakai nilai kontrak
+                                <b>Rp {{ number_format($nilaiKontrakBeku, 0, ',', '.') }}</b>,
+                                sedangkan nilai kontrak yang berlaku sekarang
+                                <b>Rp {{ number_format($nilaiKontrakKini, 0, ',', '.') }}</b>.
+                                BAP yang sudah dicetak tidak ikut berubah — simpan ulang data
+                                pembayaran bila memang ingin memakai nilai yang baru.
+                            </p>
+                        @endif
+
+                        <p class="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
+                            Pilihan di sini dikunci saat disimpan — beserta rupiahnya. Menyesuaikan
+                            tarif, rekening, jenis pengadaan, bahkan nilai kontrak nanti tidak akan
+                            mengubah dokumen yang sudah dicetak.
+                        </p>
+                    </section>
+
+                    {{-- 3. Setoran penyedia — pindahan dari tahap Pemilihan Penyedia --}}
                     <section>
                         <div class="flex items-center gap-3 mb-3">
                             <p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Setoran Penyedia</p>
@@ -435,7 +611,7 @@
                         </div>
                     </section>
 
-                    {{-- 3. PPTK --}}
+                    {{-- 4. PPTK --}}
                     <section>
                         <div class="flex items-center gap-3 mb-3">
                             <p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Data PPTK</p>
@@ -462,7 +638,7 @@
                         </div>
                     </section>
 
-                    {{-- 4. Dokumen tambahan --}}
+                    {{-- 5. Dokumen tambahan --}}
                     <section>
                         <div class="flex items-center gap-3 mb-3">
                             <p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Dokumen Tambahan</p>
@@ -504,172 +680,6 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-
-                            {{-- Skema pajak hanyalah PRASETEL: ia mengisikan usulan lalu
-                                 berhenti berperan. Yang menghitung adalah daftar pajak di
-                                 bawahnya, yang tersimpan konkret pada pembayaran ini. --}}
-                            <div class="sm:col-span-2">
-                                <label class="block text-xs font-semibold text-slate-600 mb-1.5">
-                                    Prasetel <span class="font-normal text-slate-400">— mengisikan usulan; boleh ditimpa di bawah</span>
-                                </label>
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                    <select name="skema_pajak" x-model="skemaPajak" @change="pakaiUsulan()"
-                                        class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                                        <option value="">Ikuti rekening belanja ({{ \App\Services\Pajak\SkemaPajak::pilihan()[$skemaRekening] ?? 'Standar' }})</option>
-                                        @foreach(\App\Services\Pajak\SkemaPajak::pilihan() as $kode => $label)
-                                            <option value="{{ $kode }}">{{ $label }}</option>
-                                        @endforeach
-                                    </select>
-
-                                    {{-- Jenis PPh dulu tersirat dari jenis pengadaan paket. Dijadikan
-                                         pilihan tersendiri sebab jenis pengadaan tidak selalu bisa
-                                         dipercaya: belanja makan-minum yang sama terdaftar Barang di
-                                         satu paket dan Jasa Lainnya di paket lain. --}}
-                                    <div x-show="skemaPajak !== 'konstruksi'">
-                                        <select name="jenis_pph" x-model="jenisPph" @change="pakaiUsulan()"
-                                            class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                                            <option value="">Ikuti jenis pengadaan ({{ $pilihanJenisPph[$jenisPphTurunan] ?? 'PPh 23 — Jasa' }})</option>
-                                            @foreach($pilihanJenisPph as $kode => $label)
-                                                <option value="{{ $kode }}">{{ $label }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    {{-- style="display:none" bukan x-cloak: atribut itu tidak
-                                         punya aturan CSS di proyek ini, jadi tidak menyembunyikan
-                                         apa pun sebelum Alpine jalan. --}}
-                                    <div x-show="skemaPajak === 'konstruksi'" style="display: none;"
-                                        class="flex items-center px-3 rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-500">
-                                        PPh Final Pasal 4(2)
-                                    </div>
-
-                                    <div class="transition-opacity" :class="skemaPajak === 'konstruksi' ? 'opacity-100' : 'opacity-50'">
-                                        <select name="kualifikasi_pajak" x-ref="kualifikasiPajak" @change="pakaiUsulan()"
-                                            :disabled="skemaPajak !== 'konstruksi'"
-                                            class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm disabled:bg-slate-100 disabled:cursor-not-allowed">
-                                            <option value="">Kualifikasi penyedia —</option>
-                                            @foreach($kualifikasiKonstruksi as $k)
-                                                <option value="{{ $k }}" @selected(old('kualifikasi_pajak', $payment->kualifikasi_pajak) === $k)>{{ $k }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                </div>
-
-                                @if($jenisPphBeda)
-                                    <p class="mt-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-800 leading-relaxed">
-                                        Jenis pengadaan paket ini <b>{{ $package->jenis_pengadaan }}</b>
-                                        (bawaannya {{ $pilihanJenisPph[$jenisPphTurunan] ?? '—' }}), tetapi pembayaran
-                                        ini memakai <b>{{ $pilihanJenisPph[$jenisPphTersimpan] }}</b>. Perbedaannya
-                                        dipertahankan — ubah di sini bila tidak sengaja.
-                                    </p>
-                                @endif
-
-                                {{-- Daftar pajak yang diterapkan. Ada barisnya = dipungut,
-                                     dihapus = tidak dipungut. Inilah yang tersimpan dan
-                                     dipakai menghitung; prasetel di atas hanya mengisinya. --}}
-                                <div class="mt-3 rounded-xl border border-slate-200 overflow-hidden">
-                                    {{-- Penanda bahwa daftar pajak ikut dikirim. Isian pajak[] hanya
-                                         ada di dalam x-for, jadi menghapus semua baris membuat
-                                         formulir tidak mengirim apa pun — dan tanpa penanda ini
-                                         server tidak bisa membedakannya dari "tidak ada data
-                                         pajak di permintaan ini", lalu memungut usulan lagi. --}}
-                                    <input type="hidden" name="pajak_diisi" value="1">
-                                    <div class="px-3.5 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-2">
-                                        <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Pajak yang diterapkan</span>
-                                        <div class="flex items-center gap-2">
-                                            <button type="button" @click="pakaiUsulan()"
-                                                class="text-[11px] font-semibold text-slate-500 hover:text-slate-700">Pakai usulan sistem</button>
-                                            <button type="button" @click="tambahBaris()"
-                                                class="text-[11px] font-bold text-emerald-700 hover:text-emerald-800">+ Tambah</button>
-                                        </div>
-                                    </div>
-
-                                    <template x-if="barisPajak.length === 0">
-                                        <p class="px-3.5 py-3 text-[11px] text-slate-400">
-                                            Tidak ada pajak yang dipungut pada pembayaran ini. Baris potongan
-                                            tidak akan muncul di BAP.
-                                        </p>
-                                    </template>
-
-                                    <template x-for="(b, i) in barisPajak" :key="i">
-                                        <div class="px-3.5 py-2.5 border-b border-slate-100 last:border-b-0 grid grid-cols-12 gap-2 items-center">
-                                            <select :name="'pajak[' + i + '][jenis]'" x-model="b.jenis" @change="muatPajak()"
-                                                class="col-span-12 sm:col-span-5 rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-xs">
-                                                @foreach($pilihanJenisPajak as $kode => $label)
-                                                    <option value="{{ $kode }}">{{ $label }}</option>
-                                                @endforeach
-                                            </select>
-
-                                            <div class="col-span-4 sm:col-span-2 relative">
-                                                <input type="number" step="0.01" min="0" max="100"
-                                                    :name="'pajak[' + i + '][persen]'" x-model="b.persen" @input="muatPajak()"
-                                                    class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-xs pr-6">
-                                                <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400">%</span>
-                                            </div>
-
-                                            <select :name="'pajak[' + i + '][dasar]'" x-model="b.dasar" @change="muatPajak()"
-                                                class="col-span-7 sm:col-span-4 rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-xs">
-                                                @foreach($pilihanDasarPajak as $kode => $label)
-                                                    <option value="{{ $kode }}">{{ $label }}</option>
-                                                @endforeach
-                                            </select>
-
-                                            <input type="hidden" :name="'pajak[' + i + '][kunci]'" :value="b.kunci || ''">
-
-                                            <button type="button" @click="hapusBaris(i)" title="Hapus pajak ini"
-                                                class="col-span-1 justify-self-end text-slate-300 hover:text-rose-600">
-                                                <i data-lucide="x" class="w-4 h-4"></i>
-                                            </button>
-                                        </div>
-                                    </template>
-                                </div>
-
-                                @if($nilaiKontrakBergeser)
-                                    <p class="mt-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-800 leading-relaxed">
-                                        Dokumen pembayaran ini memakai nilai kontrak
-                                        <b>Rp {{ number_format($nilaiKontrakBeku, 0, ',', '.') }}</b>,
-                                        sedangkan nilai kontrak yang berlaku sekarang
-                                        <b>Rp {{ number_format($nilaiKontrakKini, 0, ',', '.') }}</b>.
-                                        BAP yang sudah dicetak tidak ikut berubah — simpan ulang data
-                                        pembayaran bila memang ingin memakai nilai yang baru.
-                                    </p>
-                                @endif
-
-                                {{-- Ringkasan dihitung server supaya rumusnya tetap satu sumber. --}}
-                                <div class="mt-2.5 rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-3">
-                                    <div class="flex items-center justify-between mb-1.5">
-                                        <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Potongan menurut pilihan ini</span>
-                                        <span x-show="pajakMemuat" class="text-[11px] text-slate-400">menghitung…</span>
-                                    </div>
-                                    <p x-show="pajakGagal" style="display: none;" class="text-[11px] text-rose-600">Pratinjau gagal dimuat. Angka pastinya tetap dihitung saat disimpan.</p>
-                                    <template x-if="pajak && !pajak.adaNilaiKontrak">
-                                        <p class="text-[11px] text-slate-400">Nilai kontrak belum terisi, jadi potongannya belum bisa ditampilkan.</p>
-                                    </template>
-                                    <template x-if="pajak && pajak.adaNilaiKontrak">
-                                        <dl class="space-y-1 text-xs">
-                                            <div class="flex justify-between"><dt class="text-slate-500">Nilai kontrak</dt><dd class="font-semibold text-slate-700" x-text="pajak.nilaiKontrak"></dd></div>
-                                            <template x-for="b in pajak.baris" :key="b.jenis">
-                                                <div class="flex justify-between gap-3">
-                                                    <dt class="text-slate-500">
-                                                        <span x-text="b.label"></span>
-                                                        <span class="text-slate-400" x-text="'· dasar ' + b.nilaiDasar"></span>
-                                                    </dt>
-                                                    <dd class="text-slate-700 whitespace-nowrap" x-text="b.nominal"></dd>
-                                                </div>
-                                            </template>
-                                            <template x-if="pajak.baris.length === 0">
-                                                <div class="text-slate-400">Tidak ada pajak dipungut.</div>
-                                            </template>
-                                            <div class="flex justify-between pt-1 border-t border-slate-200"><dt class="font-bold text-slate-600">Diterima penyedia</dt><dd class="font-bold text-emerald-700" x-text="pajak.jumlahBayar"></dd></div>
-                                        </dl>
-                                    </template>
-                                </div>
-
-                                <p class="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
-                                    Pilihan di sini dikunci saat disimpan — beserta rupiahnya. Menyesuaikan
-                                    tarif, rekening, jenis pengadaan, bahkan nilai kontrak nanti tidak akan
-                                    mengubah dokumen yang sudah dicetak.
-                                </p>
                             </div>
                         </div>
                     </section>
@@ -800,9 +810,34 @@
                     @endif
                 </div>
                 <div class="divide-y divide-slate-100">
+                    @php
+                        // Kartu ini yang pertama dilihat, jadi pajaknya ikut disebut —
+                        // sebelumnya seluruh potongan hanya terlihat setelah menekan Ubah.
+                        $pajakTampil = \App\Services\Pajak\PajakPengadaan::hitung($procurementPackage);
+                    @endphp
                     <div class="px-4 py-3">
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nilai Tagihan (Sesuai Kontrak)</p>
-                        <p class="font-extrabold text-emerald-600 text-lg mt-0.5">Rp {{ number_format((float) $process->nilai_kontrak, 0, ',', '.') }}</p>
+                        <p class="font-extrabold text-slate-700 text-base mt-0.5">Rp {{ number_format((float) $pajakTampil['nilaiKontrak'], 0, ',', '.') }}</p>
+
+                        <div class="mt-2.5 space-y-1">
+                            @forelse($pajakTampil['baris'] as $b)
+                                <div class="flex items-baseline justify-between gap-2 text-[11px]">
+                                    <span class="text-slate-500">{{ $b['label'] }}</span>
+                                    <span class="text-slate-600 tabular-nums whitespace-nowrap">&minus; {{ number_format($b['nominal'], 0, ',', '.') }}</span>
+                                </div>
+                                <p class="text-[10px] text-slate-400 -mt-0.5">
+                                    {{ \App\Services\Pajak\PajakPengadaan::pilihanDasar()[$b['dasar']] ?? $b['dasar'] }}
+                                    &bull; dari Rp {{ number_format($b['nilaiDasar'], 0, ',', '.') }}
+                                </p>
+                            @empty
+                                <p class="text-[11px] text-slate-400">Tidak ada pajak dipungut.</p>
+                            @endforelse
+                        </div>
+
+                        <div class="mt-2 pt-2 border-t border-slate-100 flex items-baseline justify-between gap-2">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Diterima Penyedia</p>
+                            <p class="font-extrabold text-emerald-600 text-lg tabular-nums">Rp {{ number_format($pajakTampil['jumlahBayar'], 0, ',', '.') }}</p>
+                        </div>
                     </div>
                     <div class="px-4 py-2.5">
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">BAST</p>
