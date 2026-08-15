@@ -40,9 +40,20 @@ return new class extends Migration
      */
     private function backfill(): void
     {
+        // Angka yang dulu tertanam di cetakan BAP sebelum Master Pajak ada.
+        // Wajib ada: seeder tarif dijalankan terpisah dari migrasi, dan di
+        // produksi ia baru dijalankan SESUDAHNYA — tanpa cadangan ini seluruh
+        // persen PPh dibekukan sebagai nol, dan BAP berhenti memotong PPh.
+        $bawaan = [
+            'ppn' => 11.0,
+            'pajak_restoran' => 10.0,
+            'pph22_barang' => 1.5,
+            'pph23_jasa' => 2.0,
+        ];
+
         $tarif = DB::table('tarif_pajaks')->where('aktif', true)->get();
 
-        $persenTarif = function (string $jenis, ?string $kunci = null) use ($tarif) {
+        $persenTarif = function (string $jenis, ?string $kunci = null) use ($tarif, $bawaan) {
             foreach ($tarif as $t) {
                 if ($t->jenis !== $jenis) {
                     continue;
@@ -54,7 +65,7 @@ return new class extends Migration
                 return (float) $t->persen;
             }
 
-            return 0.0;
+            return $bawaan[$jenis] ?? 0.0;
         };
 
         $bayar = DB::table('procurement_payments as b')

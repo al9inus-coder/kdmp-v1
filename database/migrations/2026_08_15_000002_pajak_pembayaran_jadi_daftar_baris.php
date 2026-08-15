@@ -101,15 +101,27 @@ return new class extends Migration
         // sebagai "tidak dipungut" akan menghapus baris PPN dari BAP yang
         // selama ini tercetak. Yang benar: bekukan tarif yang berlaku, sebab
         // itulah angka yang selama ini dihitung hidup saat mencetak.
+        // Cadangan terakhir: angka yang dulu tertanam di cetakan BAP sebelum
+        // Master Pajak ada. Diperlukan karena tabel tarif bisa saja masih
+        // kosong saat migrasi ini jalan — seeder dijalankan terpisah, dan di
+        // produksi ia memang baru dijalankan sesudahnya. Tanpa cadangan ini
+        // baris PPN tidak pernah dibuat, dan BAP kehilangan potongannya.
+        $bawaan = [
+            'ppn' => 11.0,
+            'pajak_restoran' => 10.0,
+            'pph22_barang' => 1.5,
+            'pph23_jasa' => 2.0,
+        ];
+
         $tarifAktif = DB::table('tarif_pajaks')->where('aktif', true)->get();
-        $persenTarif = function (string $jenis) use ($tarifAktif) {
+        $persenTarif = function (string $jenis) use ($tarifAktif, $bawaan) {
             foreach ($tarifAktif as $t) {
                 if ($t->jenis === $jenis) {
                     return (float) $t->persen;
                 }
             }
 
-            return null;
+            return $bawaan[$jenis] ?? null;
         };
 
         $bayar = DB::table('procurement_payments as b')
