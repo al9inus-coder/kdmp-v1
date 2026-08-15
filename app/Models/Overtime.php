@@ -38,6 +38,9 @@ class Overtime extends Model
             $sbuRates = SbuLembur::all();
         }
 
+        // Tarif pajak dimuat sekali untuk seluruh baris, seperti tarif SBU.
+        $tarifPajak = TarifPajak::aktif()->get();
+
         $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $this->bulan, $this->tahun);
 
         $rows = [];
@@ -68,9 +71,16 @@ class Overtime extends Model
 
             // Tarif: snapshot per-detail menang; selain itu pemetaan golongan SBU
             // yang toleran format (tanpa fallback tarif lain).
-            $valLembur = !is_null($detail->rate_lembur_fix)
-                ? $detail->rate_lembur_fix
-                : (SbuLembur::pickRate($sbuRates, 'Uang Lembur', $golongan)?->besaran ?? 0);
+            $rateMissing = false;
+            if (!is_null($detail->rate_lembur_fix)) {
+                $valLembur = $detail->rate_lembur_fix;
+            } else {
+                $rateLembur = SbuLembur::pickRate($sbuRates, 'Uang Lembur', $golongan);
+                $valLembur = $rateLembur?->besaran ?? 0;
+                // Baris SBU golongan ini tidak ada — jangan tebak tarif lain,
+                // tandai supaya tampilan bisa memperingatkan operator.
+                $rateMissing = !$rateLembur;
+            }
             $valMakan = !is_null($detail->rate_makan_fix)
                 ? $detail->rate_makan_fix
                 : (SbuLembur::pickRate($sbuRates, 'Uang Makan Lembur', $golongan)?->besaran ?? 0);
@@ -78,10 +88,15 @@ class Overtime extends Model
             $uangLembur = $jam * $valLembur;
             $uangMakan = $detail->use_uang_makan ? ($hari * $valMakan) : 0;
 
-            // PPh 21 Final lembur: gol III 5%, gol IV 15%, selainnya 0.
-            $pphRate = 0;
-            if (str_contains(strtoupper($golongan), 'III')) $pphRate = 0.05;
-            elseif (str_contains(strtoupper($golongan), 'IV')) $pphRate = 0.15;
+            // PPh 21 Final lembur. Tarifnya data, bukan kode — lihat
+            // TarifPajak. Snapshot per-detail menang bila bulannya sudah
+            // dikunci, supaya mengubah tarif tidak menggeser angka bulan yang
+            // sudah ditutup.
+            $persenPajak = !is_null($detail->persen_pajak_fix)
+                ? (float) $detail->persen_pajak_fix
+                : (float) (TarifPajak::untukGolongan($tarifPajak, $golongan)?->persen ?? 0);
+
+            $pphRate = $persenPajak / 100;
 
             $pajak = $uangLembur * $pphRate;
             $diterima = ($uangLembur - $pajak) + $uangMakan;
@@ -95,9 +110,11 @@ class Overtime extends Model
                 'hari' => $hari,
                 'valLembur' => $valLembur,
                 'valMakan' => $valMakan,
+                'rateMissing' => $rateMissing,
                 'uangLembur' => $uangLembur,
                 'uangMakan' => $uangMakan,
                 'pajak' => $pajak,
+                'persenPajak' => $persenPajak,
                 'diterima' => $diterima,
             ];
 

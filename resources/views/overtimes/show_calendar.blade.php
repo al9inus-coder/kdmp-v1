@@ -7,7 +7,6 @@
         7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
     ];
     $monthName = $months[$month];
-    $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
     $firstDayOfMonth = sprintf('%04d-%02d-01', $year, $month);
     $money = fn ($v) => 'Rp ' . number_format((float) $v, 0, ',', '.');
     $userRole = auth()->user()->getRoleNames()->first() ?? '';
@@ -177,39 +176,18 @@
 
             {{-- Rekap --}}
             @php
-                $totalKeseluruhan = 0; $sumUpahLembur = 0; $sumUangMakan = 0; $sumPajak = 0;
-                $hasUangMakanBulanIni = false; $processedDetails = [];
-                foreach($overtime->details as $detail) {
-                    $emp = $detail->employee;
-                    $golongan = $detail->golongan_fix ?? $emp->golongan ?? 'P3K Paruh Waktu';
-                    $totalJam = 0; $daysWithOvertime = 0;
-                    for($d = 1; $d <= $daysInMonth; $d++) {
-                        $val = isset($detail->daily_hours[$d]) ? (int)$detail->daily_hours[$d] : 0;
-                        if($val >= 2) { $totalJam += $val; $daysWithOvertime++; }
-                    }
-                    if($totalJam == 0) continue;
-                    // Pemetaan golongan -> tarif SBU: terpusat & toleran format (SbuLembur::pickRate).
-                    $rateMissing = false;
-                    if (!is_null($detail->rate_lembur_fix)) $valLembur = $detail->rate_lembur_fix;
-                    else {
-                        $rateLembur = \App\Models\SbuLembur::pickRate($sbuRates, 'Uang Lembur', $golongan);
-                        $valLembur = $rateLembur?->besaran ?? 0;
-                        // Baris SBU golongan ini tidak ada — jangan tebak tarif lain, tandai agar terlihat.
-                        if (!$rateLembur) $rateMissing = true;
-                    }
-                    if (!is_null($detail->rate_makan_fix)) $valMakan = $detail->rate_makan_fix;
-                    else $valMakan = \App\Models\SbuLembur::pickRate($sbuRates, 'Uang Makan Lembur', $golongan)?->besaran ?? 0;
-                    $uangLembur = $totalJam * $valLembur;
-                    $uangMakan = $detail->use_uang_makan ? ($daysWithOvertime * $valMakan) : 0;
-                    if($uangMakan > 0) $hasUangMakanBulanIni = true;
-                    $pphRate = 0;
-                    if (str_contains(strtoupper($golongan), 'III')) $pphRate = 0.05;
-                    elseif (str_contains(strtoupper($golongan), 'IV')) $pphRate = 0.15;
-                    $pph = $uangLembur * $pphRate;
-                    $totalDiterima = ($uangLembur - $pph) + $uangMakan;
-                    $totalKeseluruhan += $totalDiterima; $sumUpahLembur += $uangLembur; $sumUangMakan += $uangMakan; $sumPajak += $pph;
-                    $processedDetails[] = compact('detail','emp','valLembur','valMakan','totalJam','uangLembur','uangMakan','pph','totalDiterima','rateMissing');
-                }
+                // Rekap dihitung Overtime::rekap() — satu-satunya sumber angka
+                // lembur, sama dengan yang dipakai halaman Kabid, kebersihan,
+                // dan realisasi anggaran. Sebelumnya berkas ini menghitung
+                // sendiri dengan tarif pajak yang ditulis di kode (5%/15%),
+                // jadi P3K tidak pernah terpotong dan Master Pajak tak berlaku.
+                $rekap = $overtime->rekap($sbuRates);
+                $processedDetails = $rekap['rows'];
+                $sumUpahLembur = $rekap['totalUpah'];
+                $sumUangMakan = $rekap['totalUangMakan'];
+                $sumPajak = $rekap['totalPajak'];
+                $totalKeseluruhan = $rekap['totalDiterima'];
+                $hasUangMakanBulanIni = $sumUangMakan > 0;
             @endphp
             <section id="rekapSection" class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                 <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
@@ -236,7 +214,7 @@
                             @forelse($processedDetails as $index => $row)
                                 <tr class="hover:bg-slate-50/50">
                                     <td class="px-4 py-3 text-center text-slate-400">{{ $index + 1 }}</td>
-                                    <td class="px-4 py-3 font-semibold text-slate-800">{{ $row['emp']->nama }}</td>
+                                    <td class="px-4 py-3 font-semibold text-slate-800">{{ $row['employee']->nama }}</td>
                                     <td class="px-4 py-3 text-right whitespace-nowrap">
                                         @if($row['rateMissing'] ?? false)
                                             <span class="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold rounded bg-rose-50 text-rose-600 border border-rose-200 align-middle"
@@ -247,7 +225,7 @@
                                         {{ $money($row['valLembur']) }}
                                         @if(!$overtime->is_locked)
                                             <button type="button" class="ml-1 text-indigo-500 hover:text-indigo-700 btn-edit-sbu align-middle"
-                                                data-detail-id="{{ $row['detail']->id }}" data-val-lembur="{{ $row['valLembur'] }}" data-val-makan="{{ $row['valMakan'] }}" data-emp-name="{{ $row['emp']->nama }}" onclick="editSbu(this)" title="Sesuaikan SBU">
+                                                data-detail-id="{{ $row['detail']->id }}" data-val-lembur="{{ $row['valLembur'] }}" data-val-makan="{{ $row['valMakan'] }}" data-persen-pajak="{{ $row['detail']->persen_pajak_fix }}" data-emp-name="{{ $row['employee']->nama }}" onclick="editSbu(this)" title="Sesuaikan SBU">
                                                 <i data-lucide="pencil" class="w-3.5 h-3.5 inline-block"></i>
                                             </button>
                                         @endif
@@ -255,8 +233,17 @@
                                     <td class="px-4 py-3 text-center whitespace-nowrap">{{ $row['totalJam'] }} jam</td>
                                     <td class="px-4 py-3 text-right whitespace-nowrap">{{ $money($row['uangLembur']) }}</td>
                                     @if($hasUangMakanBulanIni)<td class="px-4 py-3 text-right whitespace-nowrap">{{ $money($row['uangMakan']) }}</td>@endif
-                                    <td class="px-4 py-3 text-right whitespace-nowrap text-slate-500">{{ $row['pph'] > 0 ? $money($row['pph']) : '-' }}</td>
-                                    <td class="px-4 py-3 text-right whitespace-nowrap font-bold text-emerald-700">{{ $money($row['totalDiterima']) }}</td>
+                                    <td class="px-4 py-3 text-right whitespace-nowrap text-slate-500">
+                                        {{ $row['pajak'] > 0 ? $money($row['pajak']) : '-' }}
+                                        @if(!$overtime->is_locked)
+                                            <button type="button" class="ml-1 text-indigo-500 hover:text-indigo-700 align-middle"
+                                                data-detail-id="{{ $row['detail']->id }}" data-val-lembur="{{ $row['valLembur'] }}" data-val-makan="{{ $row['valMakan'] }}" data-persen-pajak="{{ $row['detail']->persen_pajak_fix }}" data-emp-name="{{ $row['employee']->nama }}" onclick="editSbu(this)"
+                                                title="Sesuaikan pajak — {{ rtrim(rtrim(number_format((float) $row['persenPajak'], 2, ',', '.'), '0'), ',') }}% saat ini">
+                                                <i data-lucide="pencil" class="w-3.5 h-3.5 inline-block"></i>
+                                            </button>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3 text-right whitespace-nowrap font-bold text-emerald-700">{{ $money($row['diterima']) }}</td>
                                 </tr>
                             @empty
                                 <tr><td colspan="{{ $hasUangMakanBulanIni ? 8 : 7 }}" class="px-4 py-10 text-center text-slate-400">Belum ada data lembur di bulan ini.</td></tr>
@@ -309,7 +296,7 @@
             <form id="formEditSbu" method="POST" action="">
                 @csrf
                 <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
-                    <h3 class="font-bold text-slate-800">Penyesuaian SBU</h3>
+                    <h3 class="font-bold text-slate-800">Penyesuaian Tarif</h3>
                     <button type="button" data-dismiss="modal" class="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
                 </div>
                 <div class="p-5 space-y-3">
@@ -322,7 +309,11 @@
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Tarif Uang Makan (Rp)</label>
                         <input type="number" name="rate_makan_fix" id="inputRateMakan" class="w-full rounded-lg border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
                     </div>
-                    <p class="text-[11px] text-slate-400">Kosongkan untuk memakai tarif bawaan master SBU.</p>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">PPh 21 (%)</label>
+                        <input type="number" name="persen_pajak_fix" id="inputPersenPajak" min="0" max="100" step="0.01" class="w-full rounded-lg border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    </div>
+                    <p class="text-[11px] text-slate-400">Kosongkan untuk memakai bawaan master — tarif dari Master SBU, persentase pajak dari Master Pajak menurut golongan.</p>
                 </div>
                 <div class="px-5 py-4 bg-slate-50/70 border-t border-slate-100 flex justify-end gap-2">
                     <button type="button" data-dismiss="modal" class="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg">Batal</button>
@@ -368,6 +359,7 @@
         $('#sbuEmployeeName').text($(btn).data('emp-name'));
         $('#inputRateLembur').val($(btn).data('val-lembur'));
         $('#inputRateMakan').val($(btn).data('val-makan'));
+        $('#inputPersenPajak').val($(btn).data('persen-pajak'));
         let formUrl = "{{ route('packages.overtimes.update_rates', ['package' => $package->id, 'overtime' => $overtime->id, 'detail' => ':detail']) }}";
         $('#formEditSbu').attr('action', formUrl.replace(':detail', detailId));
         $('#sbuModal').modal('show');

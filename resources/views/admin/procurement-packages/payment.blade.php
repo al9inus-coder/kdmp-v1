@@ -200,6 +200,31 @@
                             <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200">Tidak / PKP</span>
                         @endif
                     </div>
+                    {{-- Perlakuan pajak yang terkunci pada pembayaran ini. Ditampilkan
+                         di sini supaya halaman Admin tidak berbeda isi dengan halaman
+                         Kabid tempat pilihannya dibuat. --}}
+                    @php
+                        $pajakBeku = \App\Services\Pajak\PajakPengadaan::hitung($procurementPackage);
+                    @endphp
+                    <div class="px-4 py-2.5">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pajak Diterapkan</p>
+                        @forelse($pajakBeku['baris'] as $b)
+                            <div class="flex items-baseline justify-between gap-2 mt-0.5">
+                                <p class="text-xs font-semibold text-slate-700">{{ $b['label'] }}</p>
+                                <p class="text-xs text-slate-600 whitespace-nowrap">Rp {{ number_format($b['nominal'], 0, ',', '.') }}</p>
+                            </div>
+                            <p class="text-[10px] text-slate-400">
+                                Dasar pengenaan Rp {{ number_format($b['nilaiDasar'], 0, ',', '.') }}
+                                ({{ \App\Services\Pajak\PajakPengadaan::pilihanDasar()[$b['dasar']] ?? $b['dasar'] }})
+                            </p>
+                        @empty
+                            <p class="text-xs text-slate-500 mt-0.5">Tidak ada pajak yang dipungut</p>
+                        @endforelse
+                        <div class="mt-2 pt-2 border-t border-slate-100 flex items-baseline justify-between gap-2">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Diterima Penyedia</p>
+                            <p class="text-sm font-extrabold text-emerald-600 tabular-nums">Rp {{ number_format($pajakBeku['jumlahBayar'], 0, ',', '.') }}</p>
+                        </div>
+                    </div>
                     <div class="px-4 py-2.5">
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">PPTK</p>
                         <p class="text-xs font-semibold text-slate-700 mt-0.5">{{ $payment->nama_pptk ?? '-' }}</p>

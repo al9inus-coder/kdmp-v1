@@ -98,6 +98,10 @@ class ProcurementPaymentController extends Controller
             'tanggal_ringkasan_kontrak' => 'nullable|date',
             'is_non_pkp' => 'nullable|boolean',
             'tanggal_non_pkp' => 'required_if:is_non_pkp,1|nullable|date',
+            'skema_pajak' => 'nullable|string|in:' . implode(',', array_keys(\App\Services\Pajak\SkemaPajak::pilihan())),
+            'jenis_pph' => 'nullable|string|in:' . implode(',', array_keys(\App\Services\Pajak\PajakPengadaan::pilihanJenisPph())),
+            ...\App\Services\Pajak\PajakPengadaan::aturanValidasi(),
+            'kualifikasi_pajak' => 'nullable|string|max:255',
             'nama_pptk' => 'nullable|string|max:255',
             'nip_pptk' => 'nullable|string|max:255',
             'pangkat_golongan_pptk' => 'nullable|string|max:255',
@@ -111,14 +115,24 @@ class ProcurementPaymentController extends Controller
         $data['is_non_pkp'] = $request->boolean('is_non_pkp');
 
         // Tiga kolom penyedia tinggal di tabel proses; sisanya di pembayaran.
+        // Daftar pajak bukan kolom pembayaran — ia jadi baris tersendiri.
         $penyedia = array_intersect_key($data, array_flip(['npwp_penyedia', 'nama_bank', 'nomor_rekening']));
-        $penagihan = array_diff_key($data, $penyedia);
+        $penagihan = array_diff_key($data, $penyedia + ['pajak' => null]);
 
         $procurementPackage->procurementProcess?->update($penyedia);
 
-        $procurementPackage->payment()->updateOrCreate(
+        $pembayaran = $procurementPackage->payment()->updateOrCreate(
             ['procurement_package_id' => $procurementPackage->id],
             $penagihan
+        );
+
+        // Kunci seluruh keputusan pajaknya — alasannya di PajakPengadaan::bekukan().
+        // Daftar kosong berarti user memang tidak menerapkan pajak apa pun, jadi
+        // dibedakan dari "tidak dikirim sama sekali" yang jatuh ke usulan sistem.
+        $procurementPackage->refresh()->load('payment.pajaks', 'package.account', 'procurementProcess');
+        \App\Services\Pajak\PajakPengadaan::bekukan(
+            $procurementPackage,
+            $request->boolean('pajak_diisi') ? $request->input('pajak', []) : null
         );
 
         return redirect()

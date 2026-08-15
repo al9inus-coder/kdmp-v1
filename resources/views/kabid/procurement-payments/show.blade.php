@@ -6,6 +6,49 @@
     $kodeProgram = $package->program?->kode ?? '2.11.04';
     $completed = $procurementPackage->workflow_status === \App\Models\ProcurementPackage::WORKFLOW_COMPLETED;
 
+    // Skema bawaan dari rekening belanja, dipakai sebagai keterangan pada
+    // pilihan "Ikuti rekening belanja".
+    $skemaRekening = $package->account?->skema_pajak ?: \App\Services\Pajak\SkemaPajak::STANDAR;
+
+    // Kualifikasi diambil dari tarif PPh Final 4(2) yang terdaftar, bukan
+    // daftar tetap — supaya menambah kualifikasi cukup lewat /admin/pajak.
+    $kualifikasiKonstruksi = \App\Models\TarifPajak::aktif()
+        ->where('jenis', \App\Models\TarifPajak::PPH4_2_KONSTRUKSI)
+        ->orderBy('persen')
+        ->pluck('kunci')
+        ->filter()
+        ->values();
+
+    // Jenis PPh bawaan menurut jenis pengadaan paket. Dipakai dua hal:
+    // keterangan pada pilihan "Ikuti jenis pengadaan", dan penanda bila
+    // pembayaran ini memakai jenis yang berbeda dari paketnya.
+    $pilihanJenisPph = \App\Services\Pajak\PajakPengadaan::pilihanJenisPph();
+    $jenisPphTurunan = \App\Services\Pajak\PajakPengadaan::jenisPphTurunan($procurementPackage);
+    $jenisPphTersimpan = $payment->jenis_pph;
+    $jenisPphBeda = $jenisPphTersimpan
+        && isset($pilihanJenisPph[$jenisPphTersimpan])
+        && $jenisPphTersimpan !== $jenisPphTurunan;
+
+    $rutePratinjauPajak = route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.payment.pratinjau-pajak', $package);
+
+    // Daftar pajak yang berlaku: yang tersimpan bila sudah pernah disimpan,
+    // usulan sistem bila belum. Inilah yang diisikan ke form.
+    $pilihanJenisPajak = \App\Services\Pajak\PajakPengadaan::pilihanJenis();
+    $pilihanDasarPajak = \App\Services\Pajak\PajakPengadaan::pilihanDasar();
+    $barisPajakAwal = collect(old('pajak') ?: array_map(fn ($b) => [
+        'jenis' => $b['jenis'],
+        'kunci' => $b['kunci'],
+        'persen' => rtrim(rtrim(number_format((float) $b['persen'], 2, '.', ''), '0'), '.'),
+        'dasar' => $b['dasar'],
+    ], \App\Services\Pajak\PajakPengadaan::hitung($procurementPackage)['baris']))->values();
+
+    // Nilai kontrak yang dipakai dokumen bisa tertinggal dari yang berlaku
+    // sekarang bila ada adendum atau koreksi setelah pembayaran disimpan.
+    $nilaiKontrakKini = (float) ($procurementPackage->procurementProcess->nilai_kontrak ?? 0);
+    $nilaiKontrakBeku = $payment->nilai_kontrak_fix !== null ? (float) $payment->nilai_kontrak_fix : null;
+    $nilaiKontrakBergeser = $nilaiKontrakBeku !== null
+        && abs($nilaiKontrakBeku - $nilaiKontrakKini) >= 0.01;
+
     $docs = [
         'bap' => ['label' => 'BAP', 'icon' => 'file-check-2'],
         'kwitansi' => ['label' => 'Kwitansi', 'icon' => 'receipt'],
@@ -32,8 +75,122 @@
         docType: 'bap',
         previewLoading: true,
         nonPkp: {{ old('is_non_pkp', $payment->is_non_pkp) ? 'true' : 'false' }},
+        skemaPajak: @js(old('skema_pajak', $payment->skema_pajak ?? '')),
+        jenisPph: @js(old('jenis_pph', $jenisPphTersimpan ?? '')),
+        barisPajak: @js($barisPajakAwal),
+        pilihanJenisPajak: @js($pilihanJenisPajak),
+        tambahBaris() {
+            const terpakai = this.barisPajak.map(b => b.jenis);
+            const jenis = Object.keys(this.pilihanJenisPajak).find(j => !terpakai.includes(j));
+            if (!jenis) return;
+            this.barisPajak.push({ jenis: jenis, kunci: '', persen: '0', dasar: 'bruto' });
+            this.muatPajak();
+        },
+        hapusBaris(i) {
+            this.barisPajak.splice(i, 1);
+            this.muatPajak();
+        },
+        /** Acuan mengisi ulang daftarnya; sesudah itu operator bebas menimpa. */
+        pakaiUsulan() {
+            fetch(@js($rutePratinjauPajak), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ?? '',
+                },
+                body: JSON.stringify({
+                    skema_pajak: this.skemaPajak || null,
+                    jenis_pph: this.jenisPph || null,
+                    kualifikasi_pajak: this.$refs.kualifikasiPajak?.value || null,
+                }),
+            })
+            .then(r => r.ok ? r.json() : Promise.reject(r.status))
+            .then(d => {
+                this.barisPajak = d.usulan ?? [];
+                this.muatPajak();
+            })
+            .catch(() => { this.pajakGagal = true; });
+        },
+        /** Nominal hasil hitungan server untuk satu jenis pajak. Satu jenis
+            hanya boleh sekali per pembayaran, jadi jenis cukup jadi kuncinya. */
+        nominalBaris(jenis) {
+            return this.pajak?.baris?.find(x => x.jenis === jenis) ?? null;
+        },
+        pajak: null,
+        pajakMemuat: false,
+        pajakGagal: false,
+        pajakTimer: null,
+        /**
+         * Angkanya dihitung server lewat PajakPengadaan — sengaja tidak
+         * disalin ke sini. Rumus DPP terikat pada tarif yang sama dengan yang
+         * memotong; menyalinnya ke JS akan menghidupkan lagi jebakan dua angka
+         * lepas yang dulu bisa membuat BAP salah tanpa galat.
+         */
+        muatPajak() {
+            clearTimeout(this.pajakTimer);
+            this.pajakTimer = setTimeout(() => {
+                this.pajakMemuat = true;
+                this.pajakGagal = false;
+                fetch(@js($rutePratinjauPajak), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ?? '',
+                    },
+                    body: JSON.stringify({
+                        skema_pajak: this.skemaPajak || null,
+                        jenis_pph: this.jenisPph || null,
+                        kualifikasi_pajak: this.$refs.kualifikasiPajak?.value || null,
+                        pajak: this.barisPajak.map(b => ({
+                            jenis: b.jenis,
+                            kunci: b.kunci || null,
+                            persen: b.persen === '' ? 0 : b.persen,
+                            dasar: b.dasar,
+                        })),
+                    }),
+                })
+                .then(r => r.ok ? r.json() : Promise.reject(r.status))
+                .then(d => { this.pajak = d; })
+                .catch(() => { this.pajakGagal = true; this.pajak = null; })
+                .finally(() => { this.pajakMemuat = false; });
+            }, 300);
+        },
         bapNo: @js(old('nomor_bap', $payment->nomor_bap)),
         kwtNo: @js(old('nomor_kwitansi', $payment->nomor_kwitansi)),
+        tglInvoice: @js(old('tanggal_invoice', optional($payment->tanggal_invoice)->format('Y-m-d'))),
+        tglBap: @js(old('tanggal_bap', optional($payment->tanggal_bap)->format('Y-m-d'))),
+        tglKwitansi: @js(old('tanggal_kwitansi', optional($payment->tanggal_kwitansi)->format('Y-m-d'))),
+        /** Nomor dan tanggal kwitansi hampir selalu sama dengan BAP. */
+        get kwitansiBedaDariBap() {
+            return (this.bapNo || this.tglBap)
+                && (String(this.kwtNo ?? '') !== String(this.bapNo ?? '') || this.tglKwitansi !== this.tglBap);
+        },
+        samakanKwitansi() {
+            this.kwtNo = this.bapNo;
+            this.tglKwitansi = this.tglBap;
+        },
+        tglLokal(s) {
+            if (!s) return '';
+            const [y, m, d] = s.split('-');
+            return d + '/' + m + '/' + y;
+        },
+        /**
+         * Urutan wajarnya invoice -> BAP -> kwitansi. Hanya memberi tahu,
+         * tidak menahan simpan: bisa saja ada keadaan sah yang tidak terduga,
+         * mis. invoice susulan, dan memblokir atas dugaan lebih merugikan.
+         */
+        get tanggalTakBerurut() {
+            const p = [];
+            if (this.tglInvoice && this.tglBap && this.tglBap < this.tglInvoice) {
+                p.push('BAP (' + this.tglLokal(this.tglBap) + ') mendahului invoice (' + this.tglLokal(this.tglInvoice) + ')');
+            }
+            if (this.tglBap && this.tglKwitansi && this.tglKwitansi < this.tglBap) {
+                p.push('Kwitansi (' + this.tglLokal(this.tglKwitansi) + ') mendahului BAP (' + this.tglLokal(this.tglBap) + ')');
+            }
+            return p;
+        },
         printBase: @js($printBase),
         siapCetak: {{ $siapCetak ? 'true' : 'false' }},
         loadDoc(type) {
@@ -43,7 +200,7 @@
             this.$refs.docFrame.src = this.printBase + '?embed=1&type=' + type + '&t=' + Date.now();
         },
     }"
-    x-init="loadDoc('bap')">
+    x-init="loadDoc('bap'); muatPajak()">
     <x-ui.toast />
 
     {{-- Identitas Paket --}}
@@ -153,62 +310,275 @@
                             <span class="flex-1 h-px bg-slate-100"></span>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-5">
-                            {{-- Invoice --}}
-                            <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
-                                <p class="text-xs font-bold text-slate-700">Invoice Penyedia</p>
-                                <div>
-                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Nomor</label>
+                        {{-- Satu baris per dokumen, bukan tiga kartu sejajar. Ketiganya tidak
+                             setara: invoice diterbitkan penyedia dengan format nomornya sendiri,
+                             sedangkan BAP dan kwitansi nomornya kita yang buat dengan buntut
+                             tetap. Tanggalnya sekolom supaya urutannya terbaca sekaligus. --}}
+                        <div class="rounded-xl border border-slate-200 overflow-hidden">
+                            <div class="hidden sm:grid sm:grid-cols-12 gap-3 px-4 py-2 bg-slate-50 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                <div class="col-span-4">Dokumen</div>
+                                <div class="col-span-5">Nomor</div>
+                                <div class="col-span-3">Tanggal</div>
+                            </div>
+
+                            {{-- 1. Invoice — nomornya bebas, mengikuti berkas penyedia --}}
+                            <div class="px-4 py-3 border-b border-slate-100 grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3 sm:items-start">
+                                <div class="sm:col-span-4 flex items-start gap-2.5">
+                                    <span class="flex-none w-[19px] h-[19px] mt-0.5 rounded-full bg-slate-200 text-slate-600 text-[10px] font-black flex items-center justify-center">1</span>
+                                    <span>
+                                        <span class="block text-xs font-bold text-slate-700 leading-tight">Invoice</span>
+                                        <span class="block text-[10px] text-slate-400">diterbitkan penyedia</span>
+                                    </span>
+                                </div>
+                                <div class="sm:col-span-5">
+                                    <label class="sm:hidden block text-[10px] font-semibold text-slate-400 mb-1">Nomor</label>
                                     <input type="text" name="nomor_invoice" value="{{ old('nomor_invoice', $payment->nomor_invoice) }}"
-                                        placeholder="Nomor invoice"
+                                        placeholder="Nomor invoice penyedia"
                                         class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-sm">
                                 </div>
-                                <div>
-                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Tanggal</label>
-                                    <input type="date" name="tanggal_invoice" value="{{ old('tanggal_invoice', optional($payment->tanggal_invoice)->format('Y-m-d')) }}"
-                                        class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                                </div>
-                            </div>
-
-                            {{-- BAP --}}
-                            <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
-                                <p class="text-xs font-bold text-slate-700">Berita Acara Pembayaran</p>
-                                <div>
-                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Nomor urut</label>
-                                    <input type="number" name="nomor_bap" x-model="bapNo" placeholder="mis. 15"
-                                        class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                                    {{-- Nomor utuh tampil hidup di bawah kolom, bukan
-                                         sebagai imbuhan di samping yang menyempitkan input. --}}
-                                    <p class="text-[11px] text-slate-400 font-mono mt-1 break-all"
-                                       x-text="(bapNo || '…') + '/BAP/{{ $kodeProgram }}/PERKIMPLH-C'"></p>
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Tanggal</label>
-                                    <input type="date" name="tanggal_bap" value="{{ old('tanggal_bap', optional($payment->tanggal_bap)->format('Y-m-d')) }}"
+                                <div class="sm:col-span-3">
+                                    <label class="sm:hidden block text-[10px] font-semibold text-slate-400 mb-1">Tanggal</label>
+                                    <input type="date" name="tanggal_invoice" x-model="tglInvoice"
                                         class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-sm">
                                 </div>
                             </div>
 
-                            {{-- Kwitansi --}}
-                            <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
-                                <p class="text-xs font-bold text-slate-700">Kwitansi</p>
-                                <div>
-                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Nomor urut</label>
-                                    <input type="number" name="nomor_kwitansi" x-model="kwtNo" placeholder="mis. 15"
-                                        class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                                    <p class="text-[11px] text-slate-400 font-mono mt-1 break-all"
-                                       x-text="(kwtNo || '…') + '/KWT/{{ $kodeProgram }}/PERKIMPLH-C'"></p>
+                            {{-- 2. BAP — nomor urut menyatu dengan buntutnya, terbaca kiri ke
+                                 kanan persis seperti yang tercetak di dokumen. --}}
+                            <div class="px-4 py-3 border-b border-slate-100 grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3 sm:items-start">
+                                <div class="sm:col-span-4 flex items-start gap-2.5">
+                                    <span class="flex-none w-[19px] h-[19px] mt-0.5 rounded-full bg-slate-200 text-slate-600 text-[10px] font-black flex items-center justify-center">2</span>
+                                    <span>
+                                        <span class="block text-xs font-bold text-slate-700 leading-tight">Berita Acara Pembayaran</span>
+                                        <span class="block text-[10px] text-slate-400">penomoran internal</span>
+                                    </span>
                                 </div>
-                                <div>
-                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Tanggal</label>
-                                    <input type="date" name="tanggal_kwitansi" value="{{ old('tanggal_kwitansi', optional($payment->tanggal_kwitansi)->format('Y-m-d')) }}"
+                                <div class="sm:col-span-5">
+                                    <label class="sm:hidden block text-[10px] font-semibold text-slate-400 mb-1">Nomor</label>
+                                    <div class="flex min-w-0">
+                                        <input type="number" name="nomor_bap" x-model="bapNo" placeholder="15"
+                                            class="relative w-16 flex-none rounded-l-lg rounded-r-none border-r-0 border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 focus:z-10 text-sm text-right">
+                                        <span class="min-w-0 flex items-center px-2.5 rounded-r-lg border border-l-0 border-slate-300 bg-slate-50 text-[11px] text-slate-500 font-mono truncate">/BAP/{{ $kodeProgram }}/PERKIMPLH-C</span>
+                                    </div>
+                                </div>
+                                <div class="sm:col-span-3">
+                                    <label class="sm:hidden block text-[10px] font-semibold text-slate-400 mb-1">Tanggal</label>
+                                    <input type="date" name="tanggal_bap" x-model="tglBap"
                                         class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-sm">
                                 </div>
                             </div>
+
+                            {{-- 3. Kwitansi — nomor dan tanggalnya hampir selalu sama dengan BAP --}}
+                            <div class="px-4 py-3 grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3 sm:items-start">
+                                <div class="sm:col-span-4 flex items-start gap-2.5">
+                                    <span class="flex-none w-[19px] h-[19px] mt-0.5 rounded-full bg-slate-200 text-slate-600 text-[10px] font-black flex items-center justify-center">3</span>
+                                    <span>
+                                        <span class="block text-xs font-bold text-slate-700 leading-tight">Kwitansi</span>
+                                        <span class="block text-[10px] text-slate-400">penomoran internal</span>
+                                    </span>
+                                </div>
+                                <div class="sm:col-span-5">
+                                    <label class="sm:hidden block text-[10px] font-semibold text-slate-400 mb-1">Nomor</label>
+                                    <div class="flex min-w-0">
+                                        <input type="number" name="nomor_kwitansi" x-model="kwtNo" placeholder="15"
+                                            class="relative w-16 flex-none rounded-l-lg rounded-r-none border-r-0 border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 focus:z-10 text-sm text-right">
+                                        <span class="min-w-0 flex items-center px-2.5 rounded-r-lg border border-l-0 border-slate-300 bg-slate-50 text-[11px] text-slate-500 font-mono truncate">/KWT/{{ $kodeProgram }}/PERKIMPLH-C</span>
+                                    </div>
+                                    <button type="button" x-show="kwitansiBedaDariBap" @click="samakanKwitansi()"
+                                        style="display: none;"
+                                        class="mt-1 text-[10px] font-bold text-emerald-700 hover:text-emerald-800 underline">Samakan dengan BAP</button>
+                                </div>
+                                <div class="sm:col-span-3">
+                                    <label class="sm:hidden block text-[10px] font-semibold text-slate-400 mb-1">Tanggal</label>
+                                    <input type="date" name="tanggal_kwitansi" x-model="tglKwitansi"
+                                        class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                                </div>
+                            </div>
+
+                            {{-- Memberi tahu, tidak menahan simpan — lihat alasannya di
+                                 getter tanggalTakBerurut. --}}
+                            <template x-if="tanggalTakBerurut.length">
+                                <div class="px-4 py-2.5 bg-amber-50 border-t border-amber-200 text-[11px] text-amber-800 leading-relaxed">
+                                    <template x-for="pesan in tanggalTakBerurut" :key="pesan">
+                                        <p><span class="font-bold" x-text="pesan"></span> &mdash; urutan lazimnya invoice, BAP, kemudian kwitansi. Mohon diperiksa kembali.</p>
+                                    </template>
+                                </div>
+                            </template>
                         </div>
                     </section>
 
-                    {{-- 2. Setoran penyedia — pindahan dari tahap Pemilihan Penyedia --}}
+                    {{-- 2. Pajak & potongan.
+                         Seksi tersendiri, bukan menumpang di Dokumen Tambahan: ini
+                         satu-satunya bagian form yang menentukan berapa uang yang
+                         benar-benar diterima penyedia. --}}
+                    <section>
+                        <div class="flex items-center gap-3 mb-3">
+                            <p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Pajak &amp; Potongan</p>
+                            <span class="flex-1 h-px bg-slate-100"></span>
+                            <span class="text-[11px] text-slate-400 whitespace-nowrap hidden sm:inline">menentukan nilai yang dibayarkan kepada penyedia</span>
+                        </div>
+
+                        <div class="rounded-xl border border-slate-200 overflow-hidden">
+                            {{-- Acuan hanya mengisikan usulan lalu berhenti berperan,
+                                 jadi ia bilah tipis — bukan tiga kotak sejajar yang
+                                 terlihat seperti isian utama. --}}
+                            <div class="px-3.5 py-2 bg-slate-50 border-b border-slate-200 flex items-center gap-2 flex-wrap">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Acuan</span>
+                                <select name="skema_pajak" x-model="skemaPajak" @change="pakaiUsulan()"
+                                    class="rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-[11px] py-1 pl-2 pr-7">
+                                    <option value="">Mengikuti Rekening Belanja ({{ \App\Services\Pajak\SkemaPajak::pilihan()[$skemaRekening] ?? 'Standar' }})</option>
+                                    @foreach(\App\Services\Pajak\SkemaPajak::pilihan() as $kode => $label)
+                                        <option value="{{ $kode }}">{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                <select name="jenis_pph" x-model="jenisPph" @change="pakaiUsulan()"
+                                    x-show="skemaPajak !== 'konstruksi'"
+                                    class="rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-[11px] py-1 pl-2 pr-7">
+                                    <option value="">Mengikuti Jenis Pengadaan ({{ $pilihanJenisPph[$jenisPphTurunan] ?? 'PPh 23 — Jasa' }})</option>
+                                    @foreach($pilihanJenisPph as $kode => $label)
+                                        <option value="{{ $kode }}">{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                <select name="kualifikasi_pajak" x-ref="kualifikasiPajak" @change="pakaiUsulan()"
+                                    x-show="skemaPajak === 'konstruksi'" style="display: none;"
+                                    class="rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-[11px] py-1 pl-2 pr-7">
+                                    <option value="">Pilih Kualifikasi Penyedia</option>
+                                    @foreach($kualifikasiKonstruksi as $k)
+                                        <option value="{{ $k }}" @selected(old('kualifikasi_pajak', $payment->kualifikasi_pajak) === $k)>{{ $k }}</option>
+                                    @endforeach
+                                </select>
+                                <button type="button" @click="pakaiUsulan()"
+                                    class="ml-auto text-[11px] font-bold text-slate-500 hover:text-slate-700 underline">Terapkan Usulan</button>
+                            </div>
+
+                            {{-- Penanda bahwa daftar pajak ikut dikirim. Isian pajak[] hanya
+                                 ada di dalam x-for, jadi menghapus semua baris membuat
+                                 formulir tidak mengirim apa pun — dan tanpa penanda ini
+                                 server tidak bisa membedakannya dari "tidak ada data
+                                 pajak di permintaan ini", lalu memungut usulan lagi. --}}
+                            <input type="hidden" name="pajak_diisi" value="1">
+
+                            <div class="hidden sm:grid sm:grid-cols-12 gap-3 px-4 py-2 bg-slate-50/60 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                <div class="col-span-4">Pajak</div>
+                                <div class="col-span-2">Tarif</div>
+                                <div class="col-span-3">Dasar pengenaan</div>
+                                <div class="col-span-3 text-right">Potongan</div>
+                            </div>
+
+                            <template x-if="barisPajak.length === 0">
+                                <p class="px-4 py-4 text-[11.5px] text-slate-400 text-center leading-relaxed">
+                                    Tidak ada pajak yang dipungut untuk pembayaran ini.<br>
+                                    <span class="text-[10.5px]">Baris potongan tidak akan muncul di BAP.</span>
+                                </p>
+                            </template>
+
+                            <template x-for="(b, i) in barisPajak" :key="i">
+                                <div class="px-4 py-2.5 border-b border-slate-100 grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3 sm:items-center">
+                                    <div class="sm:col-span-4">
+                                        <label class="sm:hidden block text-[10px] font-semibold text-slate-400 mb-1">Pajak</label>
+                                        <select :name="'pajak[' + i + '][jenis]'" x-model="b.jenis" @change="muatPajak()"
+                                            class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-xs">
+                                            @foreach($pilihanJenisPajak as $kode => $label)
+                                                <option value="{{ $kode }}">{{ $label }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                    <div class="sm:col-span-2">
+                                        <label class="sm:hidden block text-[10px] font-semibold text-slate-400 mb-1">Tarif</label>
+                                        <div class="relative">
+                                            <input type="number" step="0.01" min="0" max="100"
+                                                :name="'pajak[' + i + '][persen]'" x-model="b.persen" @input="muatPajak()"
+                                                class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-xs pr-6 text-right">
+                                            <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400">%</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="sm:col-span-3">
+                                        <label class="sm:hidden block text-[10px] font-semibold text-slate-400 mb-1">Dasar pengenaan</label>
+                                        <select :name="'pajak[' + i + '][dasar]'" x-model="b.dasar" @change="muatPajak()"
+                                            class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-xs">
+                                            @foreach($pilihanDasarPajak as $kode => $label)
+                                                <option value="{{ $kode }}">{{ $label }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                    {{-- Nominalnya di baris yang sedang diubah, bukan di panel
+                                         terpisah — supaya angka yang sama tidak tampil dua kali
+                                         dan akibat tiap perubahan langsung terlihat. --}}
+                                    <div class="sm:col-span-3 flex items-center justify-between sm:justify-end gap-2">
+                                        <span class="sm:hidden text-[10px] font-semibold text-slate-400">Potongan</span>
+                                        <span class="text-right leading-tight">
+                                            <span class="block text-xs font-bold text-slate-800 tabular-nums"
+                                                x-text="nominalBaris(b.jenis)?.nominal ?? '—'"></span>
+                                            <span class="block text-[10px] text-slate-400 tabular-nums"
+                                                x-text="nominalBaris(b.jenis) ? 'dari ' + nominalBaris(b.jenis).nilaiDasar : ''"></span>
+                                        </span>
+                                        <button type="button" @click="hapusBaris(i)" title="Hapus pajak ini"
+                                            class="text-slate-300 hover:text-rose-600 shrink-0">
+                                            <i data-lucide="x" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+
+                                    <input type="hidden" :name="'pajak[' + i + '][kunci]'" :value="b.kunci || ''">
+                                </div>
+                            </template>
+
+                            <div class="px-4 py-2 border-b border-slate-100">
+                                <button type="button" @click="tambahBaris()"
+                                    class="text-[11.5px] font-black text-emerald-700 hover:text-emerald-800">Tambah Pajak</button>
+                            </div>
+
+                            {{-- Kaki menggantikan panel ringkasan yang dulu berdiri sendiri. --}}
+                            <div class="px-4 py-3 bg-slate-50 space-y-1 text-xs">
+                                <div class="flex justify-between text-slate-500">
+                                    <span>Nilai Kontrak</span>
+                                    <span class="tabular-nums" x-text="pajak?.nilaiKontrak ?? '—'"></span>
+                                </div>
+                                <div class="flex justify-between text-slate-500">
+                                    <span>Total Potongan</span>
+                                    <span class="tabular-nums" x-text="pajak?.totalPotongan ?? '—'"></span>
+                                </div>
+                                <div class="flex justify-between pt-1.5 border-t border-slate-200 font-black">
+                                    <span class="text-slate-600">Diterima Penyedia</span>
+                                    <span class="text-emerald-700 text-sm tabular-nums" x-text="pajak?.jumlahBayar ?? '—'"></span>
+                                </div>
+                                <p x-show="pajakMemuat" class="text-[10.5px] text-slate-400 pt-0.5">Menghitung&hellip;</p>
+                                <p x-show="pajakGagal" style="display: none;" class="text-[10.5px] text-rose-600 pt-0.5">
+                                    Pratinjau gagal dimuat. Angka pastinya tetap dihitung saat disimpan.
+                                </p>
+                            </div>
+                        </div>
+
+                        @if($jenisPphBeda)
+                            <p class="mt-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-800 leading-relaxed">
+                                Jenis pengadaan paket ini <b>{{ $package->jenis_pengadaan }}</b>
+                                (bawaannya {{ $pilihanJenisPph[$jenisPphTurunan] ?? '—' }}), tetapi pembayaran
+                                ini memakai <b>{{ $pilihanJenisPph[$jenisPphTersimpan] }}</b>. Perbedaannya
+                                dipertahankan — ubah di sini bila tidak sengaja.
+                            </p>
+                        @endif
+
+                        @if($nilaiKontrakBergeser)
+                            <p class="mt-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-800 leading-relaxed">
+                                Dokumen pembayaran ini memakai nilai kontrak
+                                <b>Rp {{ number_format($nilaiKontrakBeku, 0, ',', '.') }}</b>,
+                                sedangkan nilai kontrak yang berlaku sekarang
+                                <b>Rp {{ number_format($nilaiKontrakKini, 0, ',', '.') }}</b>.
+                                BAP yang sudah dicetak tidak ikut berubah — simpan ulang data
+                                pembayaran bila memang ingin memakai nilai yang baru.
+                            </p>
+                        @endif
+
+                        <p class="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
+                            Pilihan di sini dikunci saat disimpan — beserta rupiahnya. Menyesuaikan
+                            tarif, rekening, jenis pengadaan, bahkan nilai kontrak nanti tidak akan
+                            mengubah dokumen yang sudah dicetak.
+                        </p>
+                    </section>
+
+                    {{-- 3. Setoran penyedia — pindahan dari tahap Pemilihan Penyedia --}}
                     <section>
                         <div class="flex items-center gap-3 mb-3">
                             <p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Setoran Penyedia</p>
@@ -241,7 +611,7 @@
                         </div>
                     </section>
 
-                    {{-- 3. PPTK --}}
+                    {{-- 4. PPTK --}}
                     <section>
                         <div class="flex items-center gap-3 mb-3">
                             <p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Data PPTK</p>
@@ -268,7 +638,7 @@
                         </div>
                     </section>
 
-                    {{-- 4. Dokumen tambahan --}}
+                    {{-- 5. Dokumen tambahan --}}
                     <section>
                         <div class="flex items-center gap-3 mb-3">
                             <p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Dokumen Tambahan</p>
@@ -440,9 +810,34 @@
                     @endif
                 </div>
                 <div class="divide-y divide-slate-100">
+                    @php
+                        // Kartu ini yang pertama dilihat, jadi pajaknya ikut disebut —
+                        // sebelumnya seluruh potongan hanya terlihat setelah menekan Ubah.
+                        $pajakTampil = \App\Services\Pajak\PajakPengadaan::hitung($procurementPackage);
+                    @endphp
                     <div class="px-4 py-3">
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nilai Tagihan (Sesuai Kontrak)</p>
-                        <p class="font-extrabold text-emerald-600 text-lg mt-0.5">Rp {{ number_format((float) $process->nilai_kontrak, 0, ',', '.') }}</p>
+                        <p class="font-extrabold text-slate-700 text-base mt-0.5">Rp {{ number_format((float) $pajakTampil['nilaiKontrak'], 0, ',', '.') }}</p>
+
+                        <div class="mt-2.5 space-y-1">
+                            @forelse($pajakTampil['baris'] as $b)
+                                <div class="flex items-baseline justify-between gap-2 text-[11px]">
+                                    <span class="text-slate-500">{{ $b['label'] }}</span>
+                                    <span class="text-slate-600 tabular-nums whitespace-nowrap">&minus; {{ number_format($b['nominal'], 0, ',', '.') }}</span>
+                                </div>
+                                <p class="text-[10px] text-slate-400 -mt-0.5">
+                                    Dasar pengenaan Rp {{ number_format($b['nilaiDasar'], 0, ',', '.') }}
+                                    ({{ \App\Services\Pajak\PajakPengadaan::pilihanDasar()[$b['dasar']] ?? $b['dasar'] }})
+                                </p>
+                            @empty
+                                <p class="text-[11px] text-slate-400">Tidak ada pajak yang dipungut.</p>
+                            @endforelse
+                        </div>
+
+                        <div class="mt-2 pt-2 border-t border-slate-100 flex items-baseline justify-between gap-2">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Diterima Penyedia</p>
+                            <p class="font-extrabold text-emerald-600 text-lg tabular-nums">Rp {{ number_format($pajakTampil['jumlahBayar'], 0, ',', '.') }}</p>
+                        </div>
                     </div>
                     <div class="px-4 py-2.5">
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">BAST</p>

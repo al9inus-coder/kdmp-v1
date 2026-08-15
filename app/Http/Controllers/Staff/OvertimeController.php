@@ -66,6 +66,9 @@ class OvertimeController extends BaseOvertimeController
     {
         Gate::authorize('view', $package);
 
+        // Lihat catatan sama di Kabid\OvertimeController::show().
+        abort_unless(is_numeric($month) && (int) $month >= 1 && (int) $month <= 12, 404);
+
         $year = $package->created_at ? $package->created_at->format('Y') : date('Y');
 
         $overtime = Overtime::firstOrCreate([

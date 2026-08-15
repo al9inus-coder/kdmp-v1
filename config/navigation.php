@@ -254,6 +254,15 @@ return [
                 'roles' => ['Admin'],
             ],
             [
+                // Berdiri sendiri, bukan di dalam Data SBU: pajak bukan Standar
+                // Biaya Umum, dan cakupannya lebih luas — PPh 21, PPN, PPh 22/23,
+                // pajak restoran, dan PPh Final Pasal 4(2).
+                'title' => 'Pajak',
+                'route' => 'admin.pajak.index',
+                'icon'  => 'percent',
+                'roles' => ['Admin'],
+            ],
+            [
                 'title' => 'Data SBU',
                 'icon'  => 'database',
                 'roles' => ['Admin'],

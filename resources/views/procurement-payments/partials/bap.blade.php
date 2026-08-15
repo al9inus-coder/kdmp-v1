@@ -207,33 +207,51 @@
             <td>Rp. <span style="float: right;">{{ number_format($process->nilai_kontrak, 0, ',', '.') }}</span></td>
         </tr>
         @php
-            // Hitung DPP
-            $dpp = $process->nilai_kontrak / 1.11;
-            // PPN
-            $ppn = $dpp * 0.11;
-            // PPh (Barang = 1.5%, selain Barang = 2%)
-            $jenisPengadaan = strtolower($procurementPackage->package->jenis_pengadaan);
-            $isBarang = str_contains($jenisPengadaan, 'barang');
-            $tarifPph = $isBarang ? 0.015 : 0.02;
-            $teksPph = $isBarang ? 'PPh 22 1,5%' : 'PPh 23 2%';
-            $pph = $dpp * $tarifPph;
-            
-            $totalPotongan = $pph + $ppn;
-            $jumlahBayar = $process->nilai_kontrak - $totalPotongan;
+            // Seluruh perhitungan pajak berasal dari satu tempat. Pembagi DPP
+            // diturunkan dari tarif yang sama dengan yang memotong, jadi
+            // mengubah tarif lewat /admin/pajak tidak membuat keduanya
+            // berselisih.
+            $pajak = \App\Services\Pajak\PajakPengadaan::hitung($procurementPackage);
+
+            $dpp = $pajak['dpp'];
+            $totalPotongan = $pajak['totalPotongan'];
+            $jumlahBayar = $pajak['jumlahBayar'];
+
+            // Barisnya mengikuti pajak yang benar-benar diterapkan. Pajak yang
+            // tidak dipungut tidak punya baris, jadi tidak tercetak "PPN 0%".
+            //
+            // Urutannya sengaja PPh dulu baru pajak konsumsi — mengikuti BAP
+            // yang sudah beredar, bukan urutan form. Dokumen yang sudah
+            // ditandatangani tidak boleh berubah susunannya.
+            $konsumsi = [\App\Models\TarifPajak::PPN, \App\Models\TarifPajak::PAJAK_RESTORAN];
+            $barisPajak = collect($pajak['baris'])
+                ->sortBy(fn ($b) => in_array($b['jenis'], $konsumsi, true) ? 1 : 0)
+                ->values()
+                ->all();
         @endphp
         <tr>
             <td style="text-align: center; vertical-align: top;">2.</td>
-            <td>Potongan-potongan<br>a. Pajak-Pajak<br>&nbsp;&nbsp;&nbsp;{{ $teksPph }}<br>&nbsp;&nbsp;&nbsp;PPN 11%<br>&nbsp;&nbsp;&nbsp;Retensi</td>
+            <td>
+                Potongan-potongan<br>a. Pajak-Pajak<br>
+                @forelse($barisPajak as $b)
+                    &nbsp;&nbsp;&nbsp;{{ $b['label'] }}<br>
+                @empty
+                    &nbsp;&nbsp;&nbsp;<em>Tidak ada pajak dipungut</em><br>
+                @endforelse
+                &nbsp;&nbsp;&nbsp;Retensi
+            </td>
             <td></td>
             <td>
                 <br>
-                Rp. <span style="float: right;">{{ number_format($pph, 0, ',', '.') }}</span><br>
-                Rp. <span style="float: right;">{{ number_format($ppn, 0, ',', '.') }}</span><br>
+                @foreach($barisPajak as $b)
+                    Rp. <span style="float: right;">{{ number_format($b['nominal'], 0, ',', '.') }}</span><br>
+                @endforeach
             </td>
             <td>
                 <br>
-                Rp. <span style="float: right;">{{ number_format($pph, 0, ',', '.') }}</span><br>
-                Rp. <span style="float: right;">{{ number_format($ppn, 0, ',', '.') }}</span><br>
+                @foreach($barisPajak as $b)
+                    Rp. <span style="float: right;">{{ number_format($b['nominal'], 0, ',', '.') }}</span><br>
+                @endforeach
             </td>
         </tr>
         <tr>
