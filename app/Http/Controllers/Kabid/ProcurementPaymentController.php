@@ -132,7 +132,7 @@ class ProcurementPaymentController extends Controller
         $procurementPackage->refresh()->load('payment.pajaks', 'package.account', 'procurementProcess');
         \App\Services\Pajak\PajakPengadaan::bekukan(
             $procurementPackage,
-            $request->has('pajak') ? $request->input('pajak', []) : null
+            $request->boolean('pajak_diisi') ? $request->input('pajak', []) : null
         );
 
         return redirect()

@@ -76,15 +76,18 @@ class PajakPengadaan
         $bayar = $pp->payment;
         $tersimpan = $bayar?->pajaks;
 
-        // Pembayaran yang sudah disimpan memakai nilai kontrak miliknya sendiri.
-        // Tanpa ini, adendum atau koreksi ketik akan menggeser BAP lama.
-        $beku = $tersimpan && $tersimpan->isNotEmpty();
-        $nilai = $beku && !is_null($bayar->nilai_kontrak_fix)
+        // Penandanya nilai_kontrak_fix, BUKAN "ada barisnya" — sebab daftar
+        // pajak yang kosong adalah keputusan yang sah: user memang tidak
+        // memungut apa pun. Memakai jumlah baris sebagai penanda membuat
+        // pembayaran yang pajaknya dihapus kembali memungut usulan sistem.
+        $beku = !is_null($bayar?->nilai_kontrak_fix);
+
+        $nilai = $beku
             ? (float) $bayar->nilai_kontrak_fix
             : (float) ($pp->procurementProcess->nilai_kontrak ?? 0);
 
         $baris = $beku
-            ? $tersimpan->map(fn ($p) => [
+            ? collect($tersimpan ?? [])->map(fn ($p) => [
                 'jenis' => $p->jenis,
                 'kunci' => $p->kunci,
                 'persen' => (float) $p->persen,
