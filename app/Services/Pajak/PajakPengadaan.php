@@ -152,6 +152,15 @@ class PajakPengadaan
             $usul[] = self::dariTarif($b, null);
         }
 
+        // Dasar bawaan di Master Pajak ditulis "setelah_ppn" karena skema
+        // standar yang paling umum. Pada skema restoran tidak ada baris PPN,
+        // sehingga dasar itu menggantung dan diam-diam jatuh ke nilai kontrak
+        // penuh — PPh 23 jadi dihitung dari bruto tanpa ada yang meminta.
+        $samakanDasar = fn (string $dasar) => $jenisKonsumsi === TarifPajak::PAJAK_RESTORAN
+            && $dasar === self::DASAR_SETELAH_PPN
+                ? self::DASAR_SETELAH_PBJT
+                : $dasar;
+
         $jenisPph = self::jenisPphTersimpan($bayar?->jenis_pph)
             ?? self::jenisPphTurunan($pp, $skema);
 
@@ -160,7 +169,9 @@ class PajakPengadaan
             : TarifPajak::untukJenis($tarif, $jenisPph);
 
         if ($barisPph) {
-            $usul[] = self::dariTarif($barisPph, $barisPph->kunci);
+            $b = self::dariTarif($barisPph, $barisPph->kunci);
+            $b['dasar'] = $samakanDasar($b['dasar']);
+            $usul[] = $b;
         }
 
         return $usul;
