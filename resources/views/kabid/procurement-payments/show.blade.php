@@ -154,6 +154,38 @@
         },
         bapNo: @js(old('nomor_bap', $payment->nomor_bap)),
         kwtNo: @js(old('nomor_kwitansi', $payment->nomor_kwitansi)),
+        tglInvoice: @js(old('tanggal_invoice', optional($payment->tanggal_invoice)->format('Y-m-d'))),
+        tglBap: @js(old('tanggal_bap', optional($payment->tanggal_bap)->format('Y-m-d'))),
+        tglKwitansi: @js(old('tanggal_kwitansi', optional($payment->tanggal_kwitansi)->format('Y-m-d'))),
+        /** Nomor dan tanggal kwitansi hampir selalu sama dengan BAP. */
+        get kwitansiBedaDariBap() {
+            return (this.bapNo || this.tglBap)
+                && (String(this.kwtNo ?? '') !== String(this.bapNo ?? '') || this.tglKwitansi !== this.tglBap);
+        },
+        samakanKwitansi() {
+            this.kwtNo = this.bapNo;
+            this.tglKwitansi = this.tglBap;
+        },
+        tglLokal(s) {
+            if (!s) return '';
+            const [y, m, d] = s.split('-');
+            return d + '/' + m + '/' + y;
+        },
+        /**
+         * Urutan wajarnya invoice -> BAP -> kwitansi. Hanya memberi tahu,
+         * tidak menahan simpan: bisa saja ada keadaan sah yang tidak terduga,
+         * mis. invoice susulan, dan memblokir atas dugaan lebih merugikan.
+         */
+        get tanggalTakBerurut() {
+            const p = [];
+            if (this.tglInvoice && this.tglBap && this.tglBap < this.tglInvoice) {
+                p.push('BAP (' + this.tglLokal(this.tglBap) + ') mendahului invoice (' + this.tglLokal(this.tglInvoice) + ')');
+            }
+            if (this.tglBap && this.tglKwitansi && this.tglKwitansi < this.tglBap) {
+                p.push('Kwitansi (' + this.tglLokal(this.tglKwitansi) + ') mendahului BAP (' + this.tglLokal(this.tglBap) + ')');
+            }
+            return p;
+        },
         printBase: @js($printBase),
         siapCetak: {{ $siapCetak ? 'true' : 'false' }},
         loadDoc(type) {
@@ -273,58 +305,100 @@
                             <span class="flex-1 h-px bg-slate-100"></span>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-5">
-                            {{-- Invoice --}}
-                            <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
-                                <p class="text-xs font-bold text-slate-700">Invoice Penyedia</p>
-                                <div>
-                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Nomor</label>
+                        {{-- Satu baris per dokumen, bukan tiga kartu sejajar. Ketiganya tidak
+                             setara: invoice datang dari penyedia dengan format nomornya sendiri,
+                             sedangkan BAP dan kwitansi nomornya kita yang buat dengan buntut
+                             tetap. Tanggalnya sekolom supaya urutannya terbaca sekaligus. --}}
+                        <div class="rounded-xl border border-slate-200 overflow-hidden">
+                            <div class="hidden sm:grid sm:grid-cols-12 gap-3 px-4 py-2 bg-slate-50 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                <div class="col-span-4">Dokumen</div>
+                                <div class="col-span-5">Nomor</div>
+                                <div class="col-span-3">Tanggal</div>
+                            </div>
+
+                            {{-- 1. Invoice — nomornya bebas, mengikuti berkas penyedia --}}
+                            <div class="px-4 py-3 border-b border-slate-100 grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3 sm:items-start">
+                                <div class="sm:col-span-4 flex items-start gap-2.5">
+                                    <span class="flex-none w-[19px] h-[19px] mt-0.5 rounded-full bg-slate-200 text-slate-600 text-[10px] font-black flex items-center justify-center">1</span>
+                                    <span>
+                                        <span class="block text-xs font-bold text-slate-700 leading-tight">Invoice</span>
+                                        <span class="block text-[10px] text-slate-400">dari penyedia</span>
+                                    </span>
+                                </div>
+                                <div class="sm:col-span-5">
+                                    <label class="sm:hidden block text-[10px] font-semibold text-slate-400 mb-1">Nomor</label>
                                     <input type="text" name="nomor_invoice" value="{{ old('nomor_invoice', $payment->nomor_invoice) }}"
-                                        placeholder="Nomor invoice"
+                                        placeholder="Nomor invoice penyedia"
                                         class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-sm">
                                 </div>
-                                <div>
-                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Tanggal</label>
-                                    <input type="date" name="tanggal_invoice" value="{{ old('tanggal_invoice', optional($payment->tanggal_invoice)->format('Y-m-d')) }}"
-                                        class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                                </div>
-                            </div>
-
-                            {{-- BAP --}}
-                            <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
-                                <p class="text-xs font-bold text-slate-700">Berita Acara Pembayaran</p>
-                                <div>
-                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Nomor urut</label>
-                                    <input type="number" name="nomor_bap" x-model="bapNo" placeholder="mis. 15"
-                                        class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                                    {{-- Nomor utuh tampil hidup di bawah kolom, bukan
-                                         sebagai imbuhan di samping yang menyempitkan input. --}}
-                                    <p class="text-[11px] text-slate-400 font-mono mt-1 break-all"
-                                       x-text="(bapNo || '…') + '/BAP/{{ $kodeProgram }}/PERKIMPLH-C'"></p>
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Tanggal</label>
-                                    <input type="date" name="tanggal_bap" value="{{ old('tanggal_bap', optional($payment->tanggal_bap)->format('Y-m-d')) }}"
+                                <div class="sm:col-span-3">
+                                    <label class="sm:hidden block text-[10px] font-semibold text-slate-400 mb-1">Tanggal</label>
+                                    <input type="date" name="tanggal_invoice" x-model="tglInvoice"
                                         class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-sm">
                                 </div>
                             </div>
 
-                            {{-- Kwitansi --}}
-                            <div class="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
-                                <p class="text-xs font-bold text-slate-700">Kwitansi</p>
-                                <div>
-                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Nomor urut</label>
-                                    <input type="number" name="nomor_kwitansi" x-model="kwtNo" placeholder="mis. 15"
-                                        class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-sm">
-                                    <p class="text-[11px] text-slate-400 font-mono mt-1 break-all"
-                                       x-text="(kwtNo || '…') + '/KWT/{{ $kodeProgram }}/PERKIMPLH-C'"></p>
+                            {{-- 2. BAP — nomor urut menyatu dengan buntutnya, terbaca kiri ke
+                                 kanan persis seperti yang tercetak di dokumen. --}}
+                            <div class="px-4 py-3 border-b border-slate-100 grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3 sm:items-start">
+                                <div class="sm:col-span-4 flex items-start gap-2.5">
+                                    <span class="flex-none w-[19px] h-[19px] mt-0.5 rounded-full bg-slate-200 text-slate-600 text-[10px] font-black flex items-center justify-center">2</span>
+                                    <span>
+                                        <span class="block text-xs font-bold text-slate-700 leading-tight">Berita Acara Pembayaran</span>
+                                        <span class="block text-[10px] text-slate-400">nomor kita</span>
+                                    </span>
                                 </div>
-                                <div>
-                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Tanggal</label>
-                                    <input type="date" name="tanggal_kwitansi" value="{{ old('tanggal_kwitansi', optional($payment->tanggal_kwitansi)->format('Y-m-d')) }}"
+                                <div class="sm:col-span-5">
+                                    <label class="sm:hidden block text-[10px] font-semibold text-slate-400 mb-1">Nomor</label>
+                                    <div class="flex min-w-0">
+                                        <input type="number" name="nomor_bap" x-model="bapNo" placeholder="15"
+                                            class="relative w-16 flex-none rounded-l-lg rounded-r-none border-r-0 border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 focus:z-10 text-sm text-right">
+                                        <span class="min-w-0 flex items-center px-2.5 rounded-r-lg border border-l-0 border-slate-300 bg-slate-50 text-[11px] text-slate-500 font-mono truncate">/BAP/{{ $kodeProgram }}/PERKIMPLH-C</span>
+                                    </div>
+                                </div>
+                                <div class="sm:col-span-3">
+                                    <label class="sm:hidden block text-[10px] font-semibold text-slate-400 mb-1">Tanggal</label>
+                                    <input type="date" name="tanggal_bap" x-model="tglBap"
                                         class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-sm">
                                 </div>
                             </div>
+
+                            {{-- 3. Kwitansi — nomor dan tanggalnya hampir selalu sama dengan BAP --}}
+                            <div class="px-4 py-3 grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3 sm:items-start">
+                                <div class="sm:col-span-4 flex items-start gap-2.5">
+                                    <span class="flex-none w-[19px] h-[19px] mt-0.5 rounded-full bg-slate-200 text-slate-600 text-[10px] font-black flex items-center justify-center">3</span>
+                                    <span>
+                                        <span class="block text-xs font-bold text-slate-700 leading-tight">Kwitansi</span>
+                                        <span class="block text-[10px] text-slate-400">nomor kita</span>
+                                    </span>
+                                </div>
+                                <div class="sm:col-span-5">
+                                    <label class="sm:hidden block text-[10px] font-semibold text-slate-400 mb-1">Nomor</label>
+                                    <div class="flex min-w-0">
+                                        <input type="number" name="nomor_kwitansi" x-model="kwtNo" placeholder="15"
+                                            class="relative w-16 flex-none rounded-l-lg rounded-r-none border-r-0 border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 focus:z-10 text-sm text-right">
+                                        <span class="min-w-0 flex items-center px-2.5 rounded-r-lg border border-l-0 border-slate-300 bg-slate-50 text-[11px] text-slate-500 font-mono truncate">/KWT/{{ $kodeProgram }}/PERKIMPLH-C</span>
+                                    </div>
+                                    <button type="button" x-show="kwitansiBedaDariBap" @click="samakanKwitansi()"
+                                        style="display: none;"
+                                        class="mt-1 text-[10px] font-bold text-emerald-700 hover:text-emerald-800 underline">samakan dengan BAP</button>
+                                </div>
+                                <div class="sm:col-span-3">
+                                    <label class="sm:hidden block text-[10px] font-semibold text-slate-400 mb-1">Tanggal</label>
+                                    <input type="date" name="tanggal_kwitansi" x-model="tglKwitansi"
+                                        class="w-full rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                                </div>
+                            </div>
+
+                            {{-- Memberi tahu, tidak menahan simpan — lihat alasannya di
+                                 getter tanggalTakBerurut. --}}
+                            <template x-if="tanggalTakBerurut.length">
+                                <div class="px-4 py-2.5 bg-amber-50 border-t border-amber-200 text-[11px] text-amber-800 leading-relaxed">
+                                    <template x-for="pesan in tanggalTakBerurut" :key="pesan">
+                                        <p><span class="font-bold" x-text="pesan"></span> — biasanya urutannya invoice, BAP, lalu kwitansi. Periksa kembali bila tidak disengaja.</p>
+                                    </template>
+                                </div>
+                            </template>
                         </div>
                     </section>
 
