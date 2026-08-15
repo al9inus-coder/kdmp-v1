@@ -1,10 +1,8 @@
 <?php
 
-use App\Models\ProcurementPackage;
-use App\Models\TarifPajak;
-use App\Services\Pajak\PajakPengadaan;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -14,14 +12,23 @@ use Illuminate\Support\Facades\Schema;
  * packages.jenis_pengadaan. Begitu jenis pengadaan diubah setelah pembayaran
  * disimpan, keduanya berpisah dan BAP mencetak kombinasi yang tidak ada —
  * "PPh 23 1,5%" pada paket 66638513.
+ *
+ * SENGAJA TIDAK MEMANGGIL KODE APLIKASI. Migrasi harus tetap berarti sama
+ * bertahun-tahun kemudian, sedangkan model dan service terus berubah. Versi
+ * pertama migrasi ini memakai PajakPengadaan, lalu gagal di server bersih
+ * begitu service itu mulai membaca tabel yang baru dibuat migrasi sesudahnya.
  */
 return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('procurement_payments', function (Blueprint $table) {
-            $table->string('jenis_pph')->nullable()->after('skema_pajak');
-        });
+        // Idempoten: migrasi ini pernah gagal setelah kolomnya terlanjur
+        // ditambah, jadi ia harus bisa dijalankan ulang di atas keadaan itu.
+        if (!Schema::hasColumn('procurement_payments', 'jenis_pph')) {
+            Schema::table('procurement_payments', function (Blueprint $table) {
+                $table->string('jenis_pph')->nullable()->after('skema_pajak');
+            });
+        }
 
         $this->backfill();
     }
@@ -33,45 +40,94 @@ return new class extends Migration
      */
     private function backfill(): void
     {
-        $tarif = TarifPajak::aktif()->get();
+        $tarif = DB::table('tarif_pajaks')->where('aktif', true)->get();
+
+        $persenTarif = function (string $jenis, ?string $kunci = null) use ($tarif) {
+            foreach ($tarif as $t) {
+                if ($t->jenis !== $jenis) {
+                    continue;
+                }
+                if ($jenis === 'pph4_2_konstruksi' && $t->kunci !== $kunci) {
+                    continue;
+                }
+
+                return (float) $t->persen;
+            }
+
+            return 0.0;
+        };
+
+        $bayar = DB::table('procurement_payments as b')
+            ->join('procurement_packages as pp', 'pp.id', '=', 'b.procurement_package_id')
+            ->join('packages as p', 'p.id', '=', 'pp.package_id')
+            ->leftJoin('accounts as a', 'a.id', '=', 'p.account_id')
+            ->leftJoin('procurement_processes as pr', 'pr.procurement_package_id', '=', 'pp.id')
+            ->select(
+                'b.id', 'b.skema_pajak', 'b.kualifikasi_pajak',
+                'b.persen_ppn_fix', 'b.persen_restoran_fix', 'b.persen_pph_fix',
+                'p.id_rup', 'p.jenis_pengadaan',
+                'a.skema_pajak as skema_rekening',
+                'pr.nilai_kontrak'
+            )
+            ->get();
+
         $berubah = [];
 
-        $semua = ProcurementPackage::with(['package.account', 'procurementProcess', 'payment'])->get();
+        foreach ($bayar as $r) {
+            // Skema tiga lapis, sama seperti yang berlaku saat itu.
+            $skema = in_array($r->skema_pajak, ['standar', 'restoran', 'konstruksi'], true)
+                ? $r->skema_pajak
+                : (in_array($r->skema_rekening, ['standar', 'restoran', 'konstruksi'], true)
+                    ? $r->skema_rekening
+                    : 'standar');
 
-        foreach ($semua as $pp) {
-            if (!$pp->payment) {
-                continue;
+            $jenis = $skema === 'konstruksi'
+                ? 'pph4_2_konstruksi'
+                : (str_contains(strtolower((string) $r->jenis_pengadaan), 'barang')
+                    ? 'pph22_barang'
+                    : 'pph23_jasa');
+
+            $persenBaru = $persenTarif($jenis, $r->kualifikasi_pajak);
+
+            // Potongan menurut aturan yang berlaku SEBELUM migrasi ini: DPP
+            // diturunkan dari pajak konsumsi, PPh dihitung dari DPP itu.
+            //
+            // Kolom _fix yang kosong berarti belum pernah dibekukan, bukan
+            // "nol" — saat mencetak, angkanya diambil dari tarif yang berlaku.
+            // Memperlakukannya nol membuat laporan ini menyebut seluruh baris
+            // bergeser padahal potongannya tetap.
+            $nilai = (float) ($r->nilai_kontrak ?? 0);
+            $restoran = $skema === 'restoran';
+            $persenKonsumsi = $restoran ? $r->persen_restoran_fix : $r->persen_ppn_fix;
+            $persenKonsumsi = is_null($persenKonsumsi)
+                ? $persenTarif($restoran ? 'pajak_restoran' : 'ppn')
+                : (float) $persenKonsumsi;
+            $dpp = $persenKonsumsi > 0 ? $nilai / (1 + $persenKonsumsi / 100) : $nilai;
+
+            $persenPphLama = is_null($r->persen_pph_fix)
+                ? $persenTarif($jenis, $r->kualifikasi_pajak)
+                : (float) $r->persen_pph_fix;
+            $pphLama = $dpp * $persenPphLama / 100;
+            $pphBaru = $dpp * $persenBaru / 100;
+
+            if (abs($pphBaru - $pphLama) >= 0.005) {
+                $berubah[] = sprintf('%s: PPh Rp %s -> Rp %s',
+                    $r->id_rup ?? $r->id,
+                    number_format($pphLama, 0, ',', '.'),
+                    number_format($pphBaru, 0, ',', '.'));
             }
 
-            // Yang dibandingkan potongan yang benar-benar dihitung, bukan isi
-            // kolom bekunya. Kolom beku yang kosong berarti "ikut tarif hidup",
-            // bukan "dipotong nol" — memperlakukannya sebagai nol akan
-            // melaporkan seluruh baris bergeser padahal angkanya tetap.
-            $sebelum = PajakPengadaan::hitung($pp, $tarif);
-
-            // Lewat bekukan() supaya backfill mengunci hal yang persis sama
-            // dengan yang dikunci saat operator menyimpan — termasuk pajak
-            // konsumsinya. Menuliskannya sendiri di sini sempat hanya mengunci
-            // PPh, sehingga pembayaran lama masih ikut bergeser saat PPN
-            // disesuaikan lewat /admin/pajak.
-            PajakPengadaan::bekukan($pp);
-
-            $sesudah = PajakPengadaan::hitung(
-                $pp->fresh(['package.account', 'procurementProcess', 'payment']), $tarif);
-
-            if (abs($sesudah['totalPotongan'] - $sebelum['totalPotongan']) >= 0.005) {
-                $berubah[] = sprintf('%s: %s -> %s, potongan Rp %s -> Rp %s',
-                    $pp->package?->id_rup ?? $pp->id,
-                    $sebelum['labelPph'], $sesudah['labelPph'],
-                    number_format($sebelum['totalPotongan'], 0, ',', '.'),
-                    number_format($sesudah['totalPotongan'], 0, ',', '.'));
-            }
+            DB::table('procurement_payments')->where('id', $r->id)->update([
+                'skema_pajak' => $skema,
+                'jenis_pph' => $jenis,
+                'persen_pph_fix' => $persenBaru,
+            ]);
         }
 
         foreach ($berubah as $baris) {
             echo "  potongan bergeser -> {$baris}\n";
         }
-        echo '  ' . $semua->count() . " paket ditinjau, " . count($berubah) . " pembayaran bergeser\n";
+        echo '  ' . $bayar->count() . ' pembayaran ditinjau, ' . count($berubah) . " bergeser\n";
     }
 
     public function down(): void
