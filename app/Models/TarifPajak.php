@@ -20,8 +20,11 @@ class TarifPajak extends Model
     public const PAJAK_RESTORAN = 'pajak_restoran';
     public const PPH4_2_KONSTRUKSI = 'pph4_2_konstruksi';
 
-    public const DASAR_DPP = 'dpp';
-    public const DASAR_BRUTO = 'bruto';
+    // Kosakata dasar pengenaan tinggal di App\Services\Pajak\PajakPengadaan
+    // (pilihanDasar()), sebab di sanalah ia menggerakkan perhitungan. Menyimpan
+    // salinannya di sini pernah membuat keduanya berselisih: tabel memakai
+    // 'dpp' sementara perhitungan hanya mengenali 'setelah_ppn'/'setelah_pbjt',
+    // sehingga setiap usulan diam-diam jatuh ke bruto.
 
     protected $fillable = [
         'jenis',

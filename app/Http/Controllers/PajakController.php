@@ -47,7 +47,7 @@ class PajakController extends Controller
             // Dibatasi 0–100 supaya salah ketik seperti 500 tidak lolos dan
             // memotong jauh melebihi nominalnya.
             'persen' => 'required|numeric|min:0|max:100',
-            'dasar' => 'required|string|in:' . TarifPajak::DASAR_DPP . ',' . TarifPajak::DASAR_BRUTO,
+            'dasar' => 'required|string|in:' . implode(',', array_keys(\App\Services\Pajak\PajakPengadaan::pilihanDasar())),
             'keterangan' => 'nullable|string|max:255',
             'aktif' => 'nullable|boolean',
         ], [

@@ -84,8 +84,13 @@
                                         {{ $persen($item->persen) }}
                                     </td>
                                     <td class="px-5 py-3 text-center">
-                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full {{ $item->dasar === \App\Models\TarifPajak::DASAR_DPP ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500' }}">
-                                            {{ $item->dasar === \App\Models\TarifPajak::DASAR_DPP ? 'DPP' : 'Bruto' }}
+                                        @php $dasarDikenali = \App\Services\Pajak\PajakPengadaan::pilihanDasar(); @endphp
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap
+                                            {{ isset($dasarDikenali[$item->dasar])
+                                                ? ($item->dasar === \App\Services\Pajak\PajakPengadaan::DASAR_BRUTO ? 'bg-slate-100 text-slate-500' : 'bg-blue-50 text-blue-600')
+                                                : 'bg-rose-50 text-rose-600 border border-rose-200' }}"
+                                            @unless(isset($dasarDikenali[$item->dasar])) title="Nilai '{{ $item->dasar }}' tidak dikenali perhitungan — usulan untuk tarif ini akan jatuh ke bruto." @endunless>
+                                            {{ $dasarDikenali[$item->dasar] ?? $item->dasar . ' ?' }}
                                         </span>
                                     </td>
                                     <td class="px-5 py-3 text-slate-500 text-xs">
@@ -181,9 +186,15 @@
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 mb-1.5">Dasar</label>
+                            {{-- Pilihannya diambil dari PajakPengadaan, bukan ditulis di
+                                 sini. Daftar yang ditulis terpisah pernah tertinggal saat
+                                 kosakatanya berubah, dan akibatnya senyap: menyimpan tarif
+                                 dari halaman ini menuliskan nilai yang tidak dikenali
+                                 perhitungan, lalu seluruh usulan jatuh ke bruto. --}}
                             <x-ui.select name="dasar" x-model="form.dasar" required>
-                                <option value="dpp">DPP</option>
-                                <option value="bruto">Bruto</option>
+                                @foreach(\App\Services\Pajak\PajakPengadaan::pilihanDasar() as $kode => $label)
+                                    <option value="{{ $kode }}">{{ $label }}</option>
+                                @endforeach
                             </x-ui.select>
                         </div>
                     </div>
