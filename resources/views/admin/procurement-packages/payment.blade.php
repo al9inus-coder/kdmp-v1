@@ -207,11 +207,19 @@
                         $pajakBeku = \App\Services\Pajak\PajakPengadaan::hitung($procurementPackage);
                     @endphp
                     <div class="px-4 py-2.5">
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Perlakuan Pajak</p>
-                        <p class="text-xs font-semibold text-slate-700 mt-0.5">
-                            {{ \App\Services\Pajak\SkemaPajak::pilihan()[$pajakBeku['skema']] ?? $pajakBeku['skema'] }}
-                        </p>
-                        <p class="text-[11px] text-slate-400">{{ $pajakBeku['labelKonsumsi'] }} &bull; {{ $pajakBeku['labelPph'] }}</p>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pajak Diterapkan</p>
+                        @forelse($pajakBeku['baris'] as $b)
+                            <div class="flex items-baseline justify-between gap-2 mt-0.5">
+                                <p class="text-xs font-semibold text-slate-700">{{ $b['label'] }}</p>
+                                <p class="text-xs text-slate-600 whitespace-nowrap">Rp {{ number_format($b['nominal'], 0, ',', '.') }}</p>
+                            </div>
+                            <p class="text-[10px] text-slate-400">
+                                {{ \App\Services\Pajak\PajakPengadaan::pilihanDasar()[$b['dasar']] ?? $b['dasar'] }}
+                                &bull; dasar Rp {{ number_format($b['nilaiDasar'], 0, ',', '.') }}
+                            </p>
+                        @empty
+                            <p class="text-xs text-slate-500 mt-0.5">Tidak ada pajak dipungut</p>
+                        @endforelse
                     </div>
                     <div class="px-4 py-2.5">
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">PPTK</p>

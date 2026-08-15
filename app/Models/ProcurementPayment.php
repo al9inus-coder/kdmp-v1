@@ -25,12 +25,11 @@ class ProcurementPayment extends Model
         'skema_pajak',
         'jenis_pph',
         'kualifikasi_pajak',
-        'persen_ppn_fix',
-        'persen_pph_fix',
-        'persen_restoran_fix',
+        'nilai_kontrak_fix',
     ];
 
     protected $casts = [
+        'nilai_kontrak_fix' => 'decimal:2',
         'tanggal_bast' => 'date',
         'tanggal_invoice' => 'date',
         'tanggal_bap' => 'date',
@@ -39,6 +38,15 @@ class ProcurementPayment extends Model
         'tanggal_ringkasan_kontrak' => 'date',
         'is_non_pkp' => 'boolean',
     ];
+
+    /**
+     * Pajak yang diterapkan pada pembayaran ini. Kosong berarti tidak ada
+     * pajak yang dipungut — keadaan yang sah, bukan data yang hilang.
+     */
+    public function pajaks()
+    {
+        return $this->hasMany(ProcurementPaymentPajak::class)->orderBy('urutan');
+    }
 
     public function procurementPackage()
     {

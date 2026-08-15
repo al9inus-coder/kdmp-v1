@@ -8,51 +8,147 @@ use App\Models\TarifPajak;
 /**
  * SATU-SATUNYA sumber perhitungan pajak pengadaan.
  *
- * Sebelumnya rumusnya tertanam di cetakan BAP sebagai angka lepas: pembagi
- * 1.11 dan pengali 0.11 ditulis terpisah. Begitu tarif bisa diubah operator,
- * keduanya bisa berselisih — ubah PPN jadi 12% sementara pembaginya tetap
- * 1,11, dan seluruh angka BAP salah tanpa satu pun galat muncul.
+ * Pembagian perannya:
  *
- * Di sini pembagi DITURUNKAN dari tarif yang sama dengan yang memotong:
- * DPP = nilai / (1 + persen/100). Satu angka, dua kegunaan.
+ *   usulan()  — sistem menebak, dari rekening belanja dan jenis pengadaan.
+ *               Hanya dipakai selama pembayaran belum pernah disimpan.
+ *   hitung()  — menyajikan yang tersimpan. Untuk pembayaran yang sudah punya
+ *               baris pajak, angkanya dibaca apa adanya, bukan dihitung ulang.
+ *   bekukan() — menulis keputusan user jadi baris pajak beserta rupiahnya.
+ *
+ * Yang dibekukan bukan hanya persennya, tapi rupiahnya. BAP mencatat apa yang
+ * terjadi pada tanggalnya; mengubah tarif lewat /admin/pajak MAUPUN mengubah
+ * nilai kontrak tidak boleh menulis ulang dokumen yang sudah ditandatangani.
  */
 class PajakPengadaan
 {
+    public const DASAR_BRUTO = 'bruto';
+    public const DASAR_SETELAH_PPN = 'setelah_ppn';
+    public const DASAR_SETELAH_PBJT = 'setelah_pbjt';
+
+    /**
+     * Pajak yang boleh dipilih user, beserta urutan tampilnya di dokumen.
+     */
+    public static function pilihanJenis(): array
+    {
+        return [
+            TarifPajak::PPN => 'PPN',
+            TarifPajak::PAJAK_RESTORAN => 'PBJT / Pajak Restoran',
+            TarifPajak::PPH22_BARANG => 'PPh 22 — Barang',
+            TarifPajak::PPH23_JASA => 'PPh 23 — Jasa',
+            TarifPajak::PPH4_2_KONSTRUKSI => 'PPh Final Pasal 4(2) — Konstruksi',
+        ];
+    }
+
+    public static function pilihanDasar(): array
+    {
+        return [
+            self::DASAR_BRUTO => 'Bruto (nilai kontrak penuh)',
+            self::DASAR_SETELAH_PPN => 'Setelah dikurangi PPN',
+            self::DASAR_SETELAH_PBJT => 'Setelah dikurangi PBJT',
+        ];
+    }
+
+    /**
+     * Aturan validasi daftar pajak — dipakai kedua controller pembayaran dan
+     * endpoint pratinjau, supaya ketiganya tidak bisa berselisih.
+     */
+    public static function aturanValidasi(): array
+    {
+        return [
+            'pajak' => 'nullable|array|max:5',
+            'pajak.*.jenis' => 'required|string|in:' . implode(',', array_keys(self::pilihanJenis())),
+            'pajak.*.persen' => 'required|numeric|min:0|max:100',
+            'pajak.*.dasar' => 'required|string|in:' . implode(',', array_keys(self::pilihanDasar())),
+            'pajak.*.kunci' => 'nullable|string|max:255',
+        ];
+    }
+
     /**
      * @return array{
-     *   skema: string, dpp: float, konsumsi: float, labelKonsumsi: string,
-     *   persenKonsumsi: float, pph: float, labelPph: string, persenPph: float,
-     *   totalPotongan: float, jumlahBayar: float, nilaiKontrak: float
+     *   nilaiKontrak: float, beku: bool, baris: array, totalPotongan: float,
+     *   jumlahBayar: float, dpp: float, konsumsi: float, pph: float,
+     *   labelKonsumsi: string, labelPph: string, persenPph: float, skema: string
      * }
      */
     public static function hitung(ProcurementPackage $pp, $tarif = null): array
     {
-        $tarif ??= TarifPajak::aktif()->get();
-
-        $nilai = (float) ($pp->procurementProcess->nilai_kontrak ?? 0);
         $bayar = $pp->payment;
-        $skema = self::skema($pp);
+        $tersimpan = $bayar?->pajaks;
 
-        // ── Pajak konsumsi (PPN atau pajak restoran) ──────────────────
+        // Pembayaran yang sudah disimpan memakai nilai kontrak miliknya sendiri.
+        // Tanpa ini, adendum atau koreksi ketik akan menggeser BAP lama.
+        $beku = $tersimpan && $tersimpan->isNotEmpty();
+        $nilai = $beku && !is_null($bayar->nilai_kontrak_fix)
+            ? (float) $bayar->nilai_kontrak_fix
+            : (float) ($pp->procurementProcess->nilai_kontrak ?? 0);
+
+        $baris = $beku
+            ? $tersimpan->map(fn ($p) => [
+                'jenis' => $p->jenis,
+                'kunci' => $p->kunci,
+                'persen' => (float) $p->persen,
+                'dasar' => $p->dasar,
+                'nilaiDasar' => (float) $p->nilai_dasar,
+                'nominal' => (float) $p->nominal,
+            ])->all()
+            : self::nilaiBaris(self::usulan($pp, $tarif), $nilai);
+
+        foreach ($baris as $i => $b) {
+            $baris[$i]['label'] = self::label($b['jenis'], $b['persen'], $b['kunci']);
+        }
+
+        $totalPotongan = array_sum(array_column($baris, 'nominal'));
+
+        return array_merge([
+            'skema' => $bayar?->skema_pajak ?: self::skema($pp),
+            'nilaiKontrak' => $nilai,
+            'beku' => (bool) $beku,
+            'baris' => $baris,
+            'totalPotongan' => $totalPotongan,
+            'jumlahBayar' => $nilai - $totalPotongan,
+        ], self::turunanLama($baris, $nilai));
+    }
+
+    /**
+     * Kunci lama dipertahankan supaya cetakan dan layar yang belum diubah tetap
+     * jalan. "Konsumsi" = PPN atau PBJT, "pph" = sisanya.
+     */
+    private static function turunanLama(array $baris, float $nilai): array
+    {
+        $konsumsi = array_values(array_filter($baris, fn ($b) => in_array(
+            $b['jenis'], [TarifPajak::PPN, TarifPajak::PAJAK_RESTORAN], true)));
+        $pph = array_values(array_filter($baris, fn ($b) => !in_array(
+            $b['jenis'], [TarifPajak::PPN, TarifPajak::PAJAK_RESTORAN], true)));
+
+        return [
+            'dpp' => $konsumsi[0]['nilaiDasar'] ?? ($pph[0]['nilaiDasar'] ?? $nilai),
+            'konsumsi' => array_sum(array_column($konsumsi, 'nominal')),
+            'persenKonsumsi' => (float) ($konsumsi[0]['persen'] ?? 0),
+            'labelKonsumsi' => $konsumsi[0]['label'] ?? 'Tanpa pajak konsumsi',
+            'pph' => array_sum(array_column($pph, 'nominal')),
+            'persenPph' => (float) ($pph[0]['persen'] ?? 0),
+            'labelPph' => $pph[0]['label'] ?? 'Tanpa PPh',
+        ];
+    }
+
+    /**
+     * Usulan sistem: dari skema (rekening belanja) dan jenis pengadaan, dengan
+     * tarif dan dasar bawaan dari Master Pajak. User bebas menimpanya.
+     */
+    public static function usulan(ProcurementPackage $pp, $tarif = null): array
+    {
+        $tarif ??= TarifPajak::aktif()->get();
+        $bayar = $pp->payment;
+        $skema = $bayar?->skema_pajak ?: self::skema($pp);
+
+        $usul = [];
+
         $jenisKonsumsi = SkemaPajak::jenisPajakKonsumsi($skema);
-        $bekuKonsumsi = $skema === SkemaPajak::RESTORAN
-            ? $bayar?->persen_restoran_fix
-            : $bayar?->persen_ppn_fix;
+        if ($b = TarifPajak::untukJenis($tarif, $jenisKonsumsi)) {
+            $usul[] = self::dariTarif($b, null);
+        }
 
-        $persenKonsumsi = !is_null($bekuKonsumsi)
-            ? (float) $bekuKonsumsi
-            : (float) (TarifPajak::untukJenis($tarif, $jenisKonsumsi)?->persen ?? 0);
-
-        // Nilai kontrak sudah termasuk pajak konsumsinya, jadi DPP diperoleh
-        // dengan membaginya — memakai persen yang sama, bukan angka terpisah.
-        $dpp = $persenKonsumsi > 0 ? $nilai / (1 + $persenKonsumsi / 100) : $nilai;
-        $konsumsi = $dpp * $persenKonsumsi / 100;
-
-        // ── Pajak penghasilan (PPh 22/23 atau PPh Final 4(2)) ─────────
-        // Jenis yang tersimpan pada pembayaran menang. Dulu jenisnya selalu
-        // dihitung ulang dari jenis_pengadaan sementara persennya dibekukan,
-        // jadi mengubah jenis pengadaan setelah pembayaran disimpan membuat
-        // label dan tarif berpisah — BAP sempat mencetak "PPh 23 1,5%".
         $jenisPph = self::jenisPphTersimpan($bayar?->jenis_pph)
             ?? self::jenisPphTurunan($pp, $skema);
 
@@ -60,86 +156,141 @@ class PajakPengadaan
             ? TarifPajak::untukKunci($tarif, $jenisPph, $bayar?->kualifikasi_pajak)
             : TarifPajak::untukJenis($tarif, $jenisPph);
 
-        $persenPph = !is_null($bayar?->persen_pph_fix)
-            ? (float) $bayar->persen_pph_fix
-            : (float) ($barisPph?->persen ?? 0);
+        if ($barisPph) {
+            $usul[] = self::dariTarif($barisPph, $barisPph->kunci);
+        }
 
-        $pph = $dpp * $persenPph / 100;
+        return $usul;
+    }
 
-        $totalPotongan = $konsumsi + $pph;
-
+    private static function dariTarif(TarifPajak $t, ?string $kunci): array
+    {
         return [
-            'skema' => $skema,
-            'nilaiKontrak' => $nilai,
-            'dpp' => $dpp,
-            'konsumsi' => $konsumsi,
-            'persenKonsumsi' => $persenKonsumsi,
-            'labelKonsumsi' => self::label($jenisKonsumsi, $persenKonsumsi),
-            'pph' => $pph,
-            'persenPph' => $persenPph,
-            'labelPph' => self::label($jenisPph, $persenPph, $barisPph?->kunci),
-            'totalPotongan' => $totalPotongan,
-            'jumlahBayar' => $nilai - $totalPotongan,
+            'jenis' => $t->jenis,
+            'kunci' => $kunci,
+            'persen' => (float) $t->persen,
+            'dasar' => self::dasarValid($t->dasar) ?? self::DASAR_BRUTO,
         ];
     }
 
     /**
-     * Kunci seluruh keputusan pajak ke baris pembayaran: skema, jenis PPh,
-     * dan persennya sekaligus.
-     *
-     * Nominal BAP tidak pernah disimpan — dihitung hidup dari nilai kontrak —
-     * jadi tanpa ini, menyesuaikan tarif lewat /admin/pajak atau mengubah
-     * rekening/jenis pengadaan akan menulis ulang BAP yang sudah dicetak.
-     *
-     * Sebelumnya blok ini disalin di dua controller pembayaran, dan hanya
-     * membekukan persennya — skema dan jenis PPh tetap dihitung ulang dari
-     * hulu yang bisa berubah kapan saja.
+     * Rupiah tiap baris. Dasar sebuah baris menyebut pajak mana yang
+     * dikeluarkan lebih dulu; bila baris itu tidak ada, dasarnya jatuh ke nilai
+     * kontrak — menghapus PPN tidak membuat baris lain menggantung.
      */
-    public static function bekukan(ProcurementPackage $pp): void
+    public static function nilaiBaris(array $baris, float $nilai): array
+    {
+        $persenDari = function (string $jenis) use ($baris) {
+            foreach ($baris as $b) {
+                if ($b['jenis'] === $jenis) {
+                    return (float) $b['persen'];
+                }
+            }
+            return 0.0;
+        };
+
+        foreach ($baris as $i => $b) {
+            $pembagi = match ($b['dasar']) {
+                self::DASAR_SETELAH_PPN => $persenDari(TarifPajak::PPN),
+                self::DASAR_SETELAH_PBJT => $persenDari(TarifPajak::PAJAK_RESTORAN),
+                default => 0.0,
+            };
+
+            $dasar = $pembagi > 0 ? $nilai / (1 + $pembagi / 100) : $nilai;
+
+            $baris[$i]['nilaiDasar'] = $dasar;
+            $baris[$i]['nominal'] = $dasar * (float) $b['persen'] / 100;
+        }
+
+        return $baris;
+    }
+
+    /**
+     * Kunci keputusan user jadi baris pajak beserta rupiahnya.
+     *
+     * @param  array|null  $pilihan  larik {jenis, kunci, persen, dasar}; null =
+     *                               pakai usulan sistem
+     */
+    public static function bekukan(ProcurementPackage $pp, ?array $pilihan = null): void
     {
         $bayar = $pp->payment;
         if (!$bayar) {
             return;
         }
 
-        $skema = self::skema($pp);
+        $nilai = (float) ($pp->procurementProcess->nilai_kontrak ?? 0);
+        $baris = self::nilaiBaris(self::rapikan($pilihan ?? self::usulan($pp)), $nilai);
 
-        // Skema disimpan konkret: "ikuti rekening" hanya bawaan sebelum
-        // tersimpan, sebab rekening bisa diubah setelah dokumen dicetak.
-        $bayar->skema_pajak = $skema;
+        $bayar->nilai_kontrak_fix = $nilai;
+        $bayar->skema_pajak = $bayar->skema_pajak ?: self::skema($pp);
 
-        // Jenis PPh harus sejalan dengan skemanya: konstruksi selalu PPh Final
-        // 4(2), dan sebaliknya PPh Final tidak boleh tertinggal saat skemanya
-        // dipindah ke standar/restoran.
-        $pilihan = self::jenisPphTersimpan($bayar->jenis_pph);
-        $bayar->jenis_pph = match (true) {
-            $skema === SkemaPajak::KONSTRUKSI => TarifPajak::PPH4_2_KONSTRUKSI,
-            $pilihan === TarifPajak::PPH4_2_KONSTRUKSI => self::jenisPphTurunan($pp, $skema),
-            default => $pilihan ?? self::jenisPphTurunan($pp, $skema),
-        };
+        // jenis_pph tinggal catatan prasetel; yang menghitung adalah baris.
+        $pphPertama = collect($baris)->first(fn ($b) => !in_array(
+            $b['jenis'], [TarifPajak::PPN, TarifPajak::PAJAK_RESTORAN], true));
+        $bayar->jenis_pph = $pphPertama['jenis'] ?? null;
+        $bayar->kualifikasi_pajak = $pphPertama['kunci'] ?? null;
+        $bayar->save();
 
-        // Kualifikasi hanya berarti pada skema konstruksi.
-        if ($skema !== SkemaPajak::KONSTRUKSI) {
-            $bayar->kualifikasi_pajak = null;
+        $bayar->pajaks()->delete();
+        foreach ($baris as $urutan => $b) {
+            $bayar->pajaks()->create([
+                'jenis' => $b['jenis'],
+                'kunci' => $b['kunci'],
+                'persen' => $b['persen'],
+                'dasar' => $b['dasar'],
+                'nilai_dasar' => $b['nilaiDasar'],
+                'nominal' => $b['nominal'],
+                'urutan' => $urutan,
+            ]);
         }
 
-        // Persennya diambil dari perhitungan yang sama dengan yang dipakai
-        // mencetak, bukan dibaca ulang sendiri — supaya tidak bisa berselisih.
-        $bayar->persen_ppn_fix = null;
-        $bayar->persen_restoran_fix = null;
-        $bayar->persen_pph_fix = null;
-        $pajak = self::hitung($pp->setRelation('payment', $bayar));
-
-        $bayar->persen_ppn_fix = $skema === SkemaPajak::RESTORAN ? null : $pajak['persenKonsumsi'];
-        $bayar->persen_restoran_fix = $skema === SkemaPajak::RESTORAN ? $pajak['persenKonsumsi'] : null;
-        $bayar->persen_pph_fix = $pajak['persenPph'];
-
-        $bayar->save();
+        $bayar->load('pajaks');
     }
 
     /**
-     * Jenis PPh yang seharusnya berlaku bila tidak ditentukan manual —
-     * dipakai form untuk menampilkan bawaannya, dan migrasi untuk backfill.
+     * Buang baris yang jenisnya tidak dikenali dan jenis yang muncul dua kali —
+     * satu pajak hanya boleh sekali per pembayaran.
+     */
+    public static function labelBaris(array $baris): string
+    {
+        return self::label($baris['jenis'], (float) $baris['persen'], $baris['kunci'] ?? null);
+    }
+
+    public static function rapikan(array $pilihan): array
+    {
+        $dikenali = array_keys(self::pilihanJenis());
+        $bersih = [];
+        $sudah = [];
+
+        foreach ($pilihan as $b) {
+            $jenis = $b['jenis'] ?? null;
+            if (!in_array($jenis, $dikenali, true) || in_array($jenis, $sudah, true)) {
+                continue;
+            }
+            $sudah[] = $jenis;
+
+            $bersih[] = [
+                'jenis' => $jenis,
+                'kunci' => ($b['kunci'] ?? null) ?: null,
+                'persen' => max(0, min(100, (float) ($b['persen'] ?? 0))),
+                'dasar' => self::dasarValid($b['dasar'] ?? null) ?? self::DASAR_BRUTO,
+            ];
+        }
+
+        // Urutan dokumen mengikuti urutan pilihanJenis(), bukan urutan kirim.
+        usort($bersih, fn ($a, $b) => array_search($a['jenis'], $dikenali, true)
+            <=> array_search($b['jenis'], $dikenali, true));
+
+        return $bersih;
+    }
+
+    private static function dasarValid(?string $dasar): ?string
+    {
+        return array_key_exists((string) $dasar, self::pilihanDasar()) ? $dasar : null;
+    }
+
+    /**
+     * Jenis PPh yang seharusnya berlaku bila tidak ditentukan manual.
      */
     public static function jenisPphTurunan(ProcurementPackage $pp, ?string $skema = null): string
     {
@@ -149,10 +300,6 @@ class PajakPengadaan
         );
     }
 
-    /**
-     * Daftar jenis PPh yang boleh dipilih operator. Konstruksi tidak ikut:
-     * skema konstruksi sudah menentukannya sendiri.
-     */
     public static function pilihanJenisPph(): array
     {
         return [
@@ -173,7 +320,9 @@ class PajakPengadaan
 
     /**
      * Skema berlaku tiga lapis: pilihan manual pada pembayaran mengalahkan
-     * bawaan rekening belanja, yang mengalahkan skema standar.
+     * bawaan rekening belanja, yang mengalahkan skema standar. Sesudah
+     * pembayaran disimpan skema hanya jadi catatan prasetel — yang menghitung
+     * adalah baris pajaknya.
      */
     public static function skema(ProcurementPackage $pp): string
     {

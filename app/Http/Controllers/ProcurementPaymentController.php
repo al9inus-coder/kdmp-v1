@@ -56,6 +56,7 @@ class ProcurementPaymentController extends Controller
             'pangkat_golongan_pptk' => 'required|string',
             'skema_pajak' => 'nullable|string|in:' . implode(',', array_keys(\App\Services\Pajak\SkemaPajak::pilihan())),
             'jenis_pph' => 'nullable|string|in:' . implode(',', array_keys(\App\Services\Pajak\PajakPengadaan::pilihanJenisPph())),
+            ...\App\Services\Pajak\PajakPengadaan::aturanValidasi(),
             'kualifikasi_pajak' => 'nullable|string|max:255',
         ]);
 
@@ -83,8 +84,13 @@ class ProcurementPaymentController extends Controller
         );
 
         // Kunci seluruh keputusan pajaknya — alasannya di PajakPengadaan::bekukan().
-        $procurementPackage->refresh()->load('payment', 'package.account', 'procurementProcess');
-        \App\Services\Pajak\PajakPengadaan::bekukan($procurementPackage);
+        // Daftar kosong berarti user memang tidak menerapkan pajak apa pun, jadi
+        // dibedakan dari "tidak dikirim sama sekali" yang jatuh ke usulan sistem.
+        $procurementPackage->refresh()->load('payment.pajaks', 'package.account', 'procurementProcess');
+        \App\Services\Pajak\PajakPengadaan::bekukan(
+            $procurementPackage,
+            $request->has('pajak') ? $request->input('pajak', []) : null
+        );
 
         // Update workflow status
         $procurementPackage->update([
@@ -117,36 +123,54 @@ class ProcurementPaymentController extends Controller
         $data = $request->validate([
             'skema_pajak' => 'nullable|string|in:' . implode(',', array_keys(\App\Services\Pajak\SkemaPajak::pilihan())),
             'jenis_pph' => 'nullable|string|in:' . implode(',', array_keys(\App\Services\Pajak\PajakPengadaan::pilihanJenisPph())),
+            ...\App\Services\Pajak\PajakPengadaan::aturanValidasi(),
             'kualifikasi_pajak' => 'nullable|string|max:255',
         ]);
 
-        // Salinan di memori: pilihan dicoba tanpa menyentuh baris tersimpan,
-        // dan kolom beku dikosongkan supaya tarif hidup yang terpakai.
+        // Salinan di memori: pilihan dicoba tanpa menyentuh baris tersimpan.
+        // Baris pajaknya dikosongkan supaya yang dipakai pilihan yang sedang
+        // dilihat, bukan yang sudah beku, dan nilai kontraknya yang berlaku
+        // sekarang — pratinjau memang menjawab "kalau disimpan sekarang".
         $bayar = ($procurementPackage->payment?->replicate() ?? new ProcurementPayment())->forceFill([
             'skema_pajak' => $data['skema_pajak'] ?? null,
             'jenis_pph' => $data['jenis_pph'] ?? null,
             'kualifikasi_pajak' => $data['kualifikasi_pajak'] ?? null,
-            'persen_ppn_fix' => null,
-            'persen_restoran_fix' => null,
-            'persen_pph_fix' => null,
+            'nilai_kontrak_fix' => null,
         ]);
+        $bayar->setRelation('pajaks', collect());
 
-        $pajak = \App\Services\Pajak\PajakPengadaan::hitung(
-            $procurementPackage->setRelation('payment', $bayar)
+        $nilai = (float) ($procurementPackage->procurementProcess->nilai_kontrak ?? 0);
+        $salinan = (clone $procurementPackage)->setRelation('payment', $bayar);
+
+        $baris = \App\Services\Pajak\PajakPengadaan::nilaiBaris(
+            $request->has('pajak')
+                ? \App\Services\Pajak\PajakPengadaan::rapikan($request->input('pajak', []))
+                : \App\Services\Pajak\PajakPengadaan::usulan($salinan),
+            $nilai
         );
 
         $rp = fn ($n) => 'Rp ' . number_format((float) $n, 0, ',', '.');
+        $total = array_sum(array_column($baris, 'nominal'));
 
         return response()->json([
-            'nilaiKontrak' => $rp($pajak['nilaiKontrak']),
-            'dpp' => $rp($pajak['dpp']),
-            'labelKonsumsi' => $pajak['labelKonsumsi'],
-            'konsumsi' => $rp($pajak['konsumsi']),
-            'labelPph' => $pajak['labelPph'],
-            'pph' => $rp($pajak['pph']),
-            'totalPotongan' => $rp($pajak['totalPotongan']),
-            'jumlahBayar' => $rp($pajak['jumlahBayar']),
-            'adaNilaiKontrak' => (float) $pajak['nilaiKontrak'] > 0,
+            // Dipakai tombol "Pakai usulan sistem" untuk mengisi ulang form.
+            'usulan' => array_map(fn ($b) => [
+                'jenis' => $b['jenis'],
+                'kunci' => $b['kunci'] ?? '',
+                'persen' => rtrim(rtrim(number_format((float) $b['persen'], 2, '.', ''), '0'), '.'),
+                'dasar' => $b['dasar'],
+            ], $baris),
+            'nilaiKontrak' => $rp($nilai),
+            'baris' => array_map(fn ($b) => [
+                'jenis' => $b['jenis'],
+                'label' => \App\Services\Pajak\PajakPengadaan::labelBaris($b),
+                'dasar' => \App\Services\Pajak\PajakPengadaan::pilihanDasar()[$b['dasar']] ?? $b['dasar'],
+                'nilaiDasar' => $rp($b['nilaiDasar']),
+                'nominal' => $rp($b['nominal']),
+            ], $baris),
+            'totalPotongan' => $rp($total),
+            'jumlahBayar' => $rp($nilai - $total),
+            'adaNilaiKontrak' => $nilai > 0,
         ]);
     }
 

@@ -214,26 +214,44 @@
             $pajak = \App\Services\Pajak\PajakPengadaan::hitung($procurementPackage);
 
             $dpp = $pajak['dpp'];
-            $ppn = $pajak['konsumsi'];
-            $pph = $pajak['pph'];
-            $teksPph = $pajak['labelPph'];
-            $teksKonsumsi = $pajak['labelKonsumsi'];
             $totalPotongan = $pajak['totalPotongan'];
             $jumlahBayar = $pajak['jumlahBayar'];
+
+            // Barisnya mengikuti pajak yang benar-benar diterapkan. Pajak yang
+            // tidak dipungut tidak punya baris, jadi tidak tercetak "PPN 0%".
+            //
+            // Urutannya sengaja PPh dulu baru pajak konsumsi — mengikuti BAP
+            // yang sudah beredar, bukan urutan form. Dokumen yang sudah
+            // ditandatangani tidak boleh berubah susunannya.
+            $konsumsi = [\App\Models\TarifPajak::PPN, \App\Models\TarifPajak::PAJAK_RESTORAN];
+            $barisPajak = collect($pajak['baris'])
+                ->sortBy(fn ($b) => in_array($b['jenis'], $konsumsi, true) ? 1 : 0)
+                ->values()
+                ->all();
         @endphp
         <tr>
             <td style="text-align: center; vertical-align: top;">2.</td>
-            <td>Potongan-potongan<br>a. Pajak-Pajak<br>&nbsp;&nbsp;&nbsp;{{ $teksPph }}<br>&nbsp;&nbsp;&nbsp;{{ $teksKonsumsi }}<br>&nbsp;&nbsp;&nbsp;Retensi</td>
+            <td>
+                Potongan-potongan<br>a. Pajak-Pajak<br>
+                @forelse($barisPajak as $b)
+                    &nbsp;&nbsp;&nbsp;{{ $b['label'] }}<br>
+                @empty
+                    &nbsp;&nbsp;&nbsp;<em>Tidak ada pajak dipungut</em><br>
+                @endforelse
+                &nbsp;&nbsp;&nbsp;Retensi
+            </td>
             <td></td>
             <td>
                 <br>
-                Rp. <span style="float: right;">{{ number_format($pph, 0, ',', '.') }}</span><br>
-                Rp. <span style="float: right;">{{ number_format($ppn, 0, ',', '.') }}</span><br>
+                @foreach($barisPajak as $b)
+                    Rp. <span style="float: right;">{{ number_format($b['nominal'], 0, ',', '.') }}</span><br>
+                @endforeach
             </td>
             <td>
                 <br>
-                Rp. <span style="float: right;">{{ number_format($pph, 0, ',', '.') }}</span><br>
-                Rp. <span style="float: right;">{{ number_format($ppn, 0, ',', '.') }}</span><br>
+                @foreach($barisPajak as $b)
+                    Rp. <span style="float: right;">{{ number_format($b['nominal'], 0, ',', '.') }}</span><br>
+                @endforeach
             </td>
         </tr>
         <tr>
