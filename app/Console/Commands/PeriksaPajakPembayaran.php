@@ -78,6 +78,13 @@ class PeriksaPajakPembayaran extends Command
                 if ($butuh && !in_array($butuh, $ada, true)) {
                     $masalah[] = "{$p->jenis}: dasar '{$p->dasar}' tetapi baris {$butuh} tidak ada";
                 }
+
+                // 3. Tidak dipungut dinyatakan dengan MENGHAPUS barisnya, jadi
+                //    baris bertarif nol tidak punya arti lain selain kekeliruan
+                //    — dan ia tidak menimbulkan galat, hanya memotong nol.
+                if ((float) $p->persen == 0.0) {
+                    $masalah[] = "{$p->jenis}: tarif 0% (hapus barisnya bila memang tidak dipungut)";
+                }
             }
 
             if ($masalah) {
