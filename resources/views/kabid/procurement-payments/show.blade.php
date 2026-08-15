@@ -90,7 +90,7 @@
             this.barisPajak.splice(i, 1);
             this.muatPajak();
         },
-        /** Prasetel mengisi ulang daftarnya; sesudah itu user bebas menimpa. */
+        /** Acuan mengisi ulang daftarnya; sesudah itu operator bebas menimpa. */
         pakaiUsulan() {
             fetch(@js($rutePratinjauPajak), {
                 method: 'POST',
@@ -311,7 +311,7 @@
                         </div>
 
                         {{-- Satu baris per dokumen, bukan tiga kartu sejajar. Ketiganya tidak
-                             setara: invoice datang dari penyedia dengan format nomornya sendiri,
+                             setara: invoice diterbitkan penyedia dengan format nomornya sendiri,
                              sedangkan BAP dan kwitansi nomornya kita yang buat dengan buntut
                              tetap. Tanggalnya sekolom supaya urutannya terbaca sekaligus. --}}
                         <div class="rounded-xl border border-slate-200 overflow-hidden">
@@ -327,7 +327,7 @@
                                     <span class="flex-none w-[19px] h-[19px] mt-0.5 rounded-full bg-slate-200 text-slate-600 text-[10px] font-black flex items-center justify-center">1</span>
                                     <span>
                                         <span class="block text-xs font-bold text-slate-700 leading-tight">Invoice</span>
-                                        <span class="block text-[10px] text-slate-400">dari penyedia</span>
+                                        <span class="block text-[10px] text-slate-400">diterbitkan penyedia</span>
                                     </span>
                                 </div>
                                 <div class="sm:col-span-5">
@@ -350,7 +350,7 @@
                                     <span class="flex-none w-[19px] h-[19px] mt-0.5 rounded-full bg-slate-200 text-slate-600 text-[10px] font-black flex items-center justify-center">2</span>
                                     <span>
                                         <span class="block text-xs font-bold text-slate-700 leading-tight">Berita Acara Pembayaran</span>
-                                        <span class="block text-[10px] text-slate-400">nomor kita</span>
+                                        <span class="block text-[10px] text-slate-400">penomoran internal</span>
                                     </span>
                                 </div>
                                 <div class="sm:col-span-5">
@@ -374,7 +374,7 @@
                                     <span class="flex-none w-[19px] h-[19px] mt-0.5 rounded-full bg-slate-200 text-slate-600 text-[10px] font-black flex items-center justify-center">3</span>
                                     <span>
                                         <span class="block text-xs font-bold text-slate-700 leading-tight">Kwitansi</span>
-                                        <span class="block text-[10px] text-slate-400">nomor kita</span>
+                                        <span class="block text-[10px] text-slate-400">penomoran internal</span>
                                     </span>
                                 </div>
                                 <div class="sm:col-span-5">
@@ -386,7 +386,7 @@
                                     </div>
                                     <button type="button" x-show="kwitansiBedaDariBap" @click="samakanKwitansi()"
                                         style="display: none;"
-                                        class="mt-1 text-[10px] font-bold text-emerald-700 hover:text-emerald-800 underline">samakan dengan BAP</button>
+                                        class="mt-1 text-[10px] font-bold text-emerald-700 hover:text-emerald-800 underline">Samakan dengan BAP</button>
                                 </div>
                                 <div class="sm:col-span-3">
                                     <label class="sm:hidden block text-[10px] font-semibold text-slate-400 mb-1">Tanggal</label>
@@ -400,7 +400,7 @@
                             <template x-if="tanggalTakBerurut.length">
                                 <div class="px-4 py-2.5 bg-amber-50 border-t border-amber-200 text-[11px] text-amber-800 leading-relaxed">
                                     <template x-for="pesan in tanggalTakBerurut" :key="pesan">
-                                        <p><span class="font-bold" x-text="pesan"></span> — biasanya urutannya invoice, BAP, lalu kwitansi. Periksa kembali bila tidak disengaja.</p>
+                                        <p><span class="font-bold" x-text="pesan"></span> &mdash; urutan lazimnya invoice, BAP, kemudian kwitansi. Mohon diperiksa kembali.</p>
                                     </template>
                                 </div>
                             </template>
@@ -415,18 +415,18 @@
                         <div class="flex items-center gap-3 mb-3">
                             <p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Pajak &amp; Potongan</p>
                             <span class="flex-1 h-px bg-slate-100"></span>
-                            <span class="text-[11px] text-slate-400 whitespace-nowrap hidden sm:inline">menentukan jumlah yang dibayar</span>
+                            <span class="text-[11px] text-slate-400 whitespace-nowrap hidden sm:inline">menentukan nilai yang dibayarkan kepada penyedia</span>
                         </div>
 
                         <div class="rounded-xl border border-slate-200 overflow-hidden">
-                            {{-- Prasetel hanya mengisikan usulan lalu berhenti berperan,
+                            {{-- Acuan hanya mengisikan usulan lalu berhenti berperan,
                                  jadi ia bilah tipis — bukan tiga kotak sejajar yang
                                  terlihat seperti isian utama. --}}
                             <div class="px-3.5 py-2 bg-slate-50 border-b border-slate-200 flex items-center gap-2 flex-wrap">
-                                <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Prasetel</span>
+                                <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Acuan</span>
                                 <select name="skema_pajak" x-model="skemaPajak" @change="pakaiUsulan()"
                                     class="rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-[11px] py-1 pl-2 pr-7">
-                                    <option value="">Ikuti rekening ({{ \App\Services\Pajak\SkemaPajak::pilihan()[$skemaRekening] ?? 'Standar' }})</option>
+                                    <option value="">Mengikuti Rekening Belanja ({{ \App\Services\Pajak\SkemaPajak::pilihan()[$skemaRekening] ?? 'Standar' }})</option>
                                     @foreach(\App\Services\Pajak\SkemaPajak::pilihan() as $kode => $label)
                                         <option value="{{ $kode }}">{{ $label }}</option>
                                     @endforeach
@@ -434,7 +434,7 @@
                                 <select name="jenis_pph" x-model="jenisPph" @change="pakaiUsulan()"
                                     x-show="skemaPajak !== 'konstruksi'"
                                     class="rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-[11px] py-1 pl-2 pr-7">
-                                    <option value="">Ikuti jenis pengadaan ({{ $pilihanJenisPph[$jenisPphTurunan] ?? 'PPh 23 — Jasa' }})</option>
+                                    <option value="">Mengikuti Jenis Pengadaan ({{ $pilihanJenisPph[$jenisPphTurunan] ?? 'PPh 23 — Jasa' }})</option>
                                     @foreach($pilihanJenisPph as $kode => $label)
                                         <option value="{{ $kode }}">{{ $label }}</option>
                                     @endforeach
@@ -442,13 +442,13 @@
                                 <select name="kualifikasi_pajak" x-ref="kualifikasiPajak" @change="pakaiUsulan()"
                                     x-show="skemaPajak === 'konstruksi'" style="display: none;"
                                     class="rounded-lg border-slate-300 bg-white focus:border-emerald-500 focus:ring-emerald-500 text-[11px] py-1 pl-2 pr-7">
-                                    <option value="">Kualifikasi penyedia —</option>
+                                    <option value="">Pilih Kualifikasi Penyedia</option>
                                     @foreach($kualifikasiKonstruksi as $k)
                                         <option value="{{ $k }}" @selected(old('kualifikasi_pajak', $payment->kualifikasi_pajak) === $k)>{{ $k }}</option>
                                     @endforeach
                                 </select>
                                 <button type="button" @click="pakaiUsulan()"
-                                    class="ml-auto text-[11px] font-bold text-slate-500 hover:text-slate-700 underline">Pakai usulan</button>
+                                    class="ml-auto text-[11px] font-bold text-slate-500 hover:text-slate-700 underline">Terapkan Usulan</button>
                             </div>
 
                             {{-- Penanda bahwa daftar pajak ikut dikirim. Isian pajak[] hanya
@@ -467,7 +467,7 @@
 
                             <template x-if="barisPajak.length === 0">
                                 <p class="px-4 py-4 text-[11.5px] text-slate-400 text-center leading-relaxed">
-                                    Tidak ada pajak yang dipungut pada pembayaran ini.<br>
+                                    Tidak ada pajak yang dipungut untuk pembayaran ini.<br>
                                     <span class="text-[10.5px]">Baris potongan tidak akan muncul di BAP.</span>
                                 </p>
                             </template>
@@ -527,24 +527,24 @@
 
                             <div class="px-4 py-2 border-b border-slate-100">
                                 <button type="button" @click="tambahBaris()"
-                                    class="text-[11.5px] font-black text-emerald-700 hover:text-emerald-800">+ Tambah pajak</button>
+                                    class="text-[11.5px] font-black text-emerald-700 hover:text-emerald-800">Tambah Pajak</button>
                             </div>
 
                             {{-- Kaki menggantikan panel ringkasan yang dulu berdiri sendiri. --}}
                             <div class="px-4 py-3 bg-slate-50 space-y-1 text-xs">
                                 <div class="flex justify-between text-slate-500">
-                                    <span>Nilai kontrak</span>
+                                    <span>Nilai Kontrak</span>
                                     <span class="tabular-nums" x-text="pajak?.nilaiKontrak ?? '—'"></span>
                                 </div>
                                 <div class="flex justify-between text-slate-500">
-                                    <span>Total potongan</span>
+                                    <span>Total Potongan</span>
                                     <span class="tabular-nums" x-text="pajak?.totalPotongan ?? '—'"></span>
                                 </div>
                                 <div class="flex justify-between pt-1.5 border-t border-slate-200 font-black">
-                                    <span class="text-slate-600">Diterima penyedia</span>
+                                    <span class="text-slate-600">Diterima Penyedia</span>
                                     <span class="text-emerald-700 text-sm tabular-nums" x-text="pajak?.jumlahBayar ?? '—'"></span>
                                 </div>
-                                <p x-show="pajakMemuat" class="text-[10.5px] text-slate-400 pt-0.5">menghitung…</p>
+                                <p x-show="pajakMemuat" class="text-[10.5px] text-slate-400 pt-0.5">Menghitung&hellip;</p>
                                 <p x-show="pajakGagal" style="display: none;" class="text-[10.5px] text-rose-600 pt-0.5">
                                     Pratinjau gagal dimuat. Angka pastinya tetap dihitung saat disimpan.
                                 </p>
@@ -826,11 +826,11 @@
                                     <span class="text-slate-600 tabular-nums whitespace-nowrap">&minus; {{ number_format($b['nominal'], 0, ',', '.') }}</span>
                                 </div>
                                 <p class="text-[10px] text-slate-400 -mt-0.5">
-                                    {{ \App\Services\Pajak\PajakPengadaan::pilihanDasar()[$b['dasar']] ?? $b['dasar'] }}
-                                    &bull; dari Rp {{ number_format($b['nilaiDasar'], 0, ',', '.') }}
+                                    Dasar pengenaan Rp {{ number_format($b['nilaiDasar'], 0, ',', '.') }}
+                                    ({{ \App\Services\Pajak\PajakPengadaan::pilihanDasar()[$b['dasar']] ?? $b['dasar'] }})
                                 </p>
                             @empty
-                                <p class="text-[11px] text-slate-400">Tidak ada pajak dipungut.</p>
+                                <p class="text-[11px] text-slate-400">Tidak ada pajak yang dipungut.</p>
                             @endforelse
                         </div>
 

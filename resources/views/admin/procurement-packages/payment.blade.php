@@ -214,11 +214,11 @@
                                 <p class="text-xs text-slate-600 whitespace-nowrap">Rp {{ number_format($b['nominal'], 0, ',', '.') }}</p>
                             </div>
                             <p class="text-[10px] text-slate-400">
-                                {{ \App\Services\Pajak\PajakPengadaan::pilihanDasar()[$b['dasar']] ?? $b['dasar'] }}
-                                &bull; dasar Rp {{ number_format($b['nilaiDasar'], 0, ',', '.') }}
+                                Dasar pengenaan Rp {{ number_format($b['nilaiDasar'], 0, ',', '.') }}
+                                ({{ \App\Services\Pajak\PajakPengadaan::pilihanDasar()[$b['dasar']] ?? $b['dasar'] }})
                             </p>
                         @empty
-                            <p class="text-xs text-slate-500 mt-0.5">Tidak ada pajak dipungut</p>
+                            <p class="text-xs text-slate-500 mt-0.5">Tidak ada pajak yang dipungut</p>
                         @endforelse
                         <div class="mt-2 pt-2 border-t border-slate-100 flex items-baseline justify-between gap-2">
                             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Diterima Penyedia</p>
