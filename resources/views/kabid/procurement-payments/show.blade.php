@@ -19,6 +19,18 @@
         ->filter()
         ->values();
 
+    // Jenis PPh bawaan menurut jenis pengadaan paket. Dipakai dua hal:
+    // keterangan pada pilihan "Ikuti jenis pengadaan", dan penanda bila
+    // pembayaran ini memakai jenis yang berbeda dari paketnya.
+    $pilihanJenisPph = \App\Services\Pajak\PajakPengadaan::pilihanJenisPph();
+    $jenisPphTurunan = \App\Services\Pajak\PajakPengadaan::jenisPphTurunan($procurementPackage);
+    $jenisPphTersimpan = $payment->jenis_pph;
+    $jenisPphBeda = $jenisPphTersimpan
+        && isset($pilihanJenisPph[$jenisPphTersimpan])
+        && $jenisPphTersimpan !== $jenisPphTurunan;
+
+    $rutePratinjauPajak = route((auth()->user()->hasRole(['Admin', 'Super Admin']) ? 'admin.' : 'kabid.') . 'procurement-packages.payment.pratinjau-pajak', $package);
+
     $docs = [
         'bap' => ['label' => 'BAP', 'icon' => 'file-check-2'],
         'kwitansi' => ['label' => 'Kwitansi', 'icon' => 'receipt'],
@@ -46,6 +58,41 @@
         previewLoading: true,
         nonPkp: {{ old('is_non_pkp', $payment->is_non_pkp) ? 'true' : 'false' }},
         skemaPajak: @js(old('skema_pajak', $payment->skema_pajak ?? '')),
+        jenisPph: @js(old('jenis_pph', $jenisPphTersimpan ?? '')),
+        pajak: null,
+        pajakMemuat: false,
+        pajakGagal: false,
+        pajakTimer: null,
+        /**
+         * Angkanya dihitung server lewat PajakPengadaan — sengaja tidak
+         * disalin ke sini. Rumus DPP terikat pada tarif yang sama dengan yang
+         * memotong; menyalinnya ke JS akan menghidupkan lagi jebakan dua angka
+         * lepas yang dulu bisa membuat BAP salah tanpa galat.
+         */
+        muatPajak() {
+            clearTimeout(this.pajakTimer);
+            this.pajakTimer = setTimeout(() => {
+                this.pajakMemuat = true;
+                this.pajakGagal = false;
+                fetch(@js($rutePratinjauPajak), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ?? '',
+                    },
+                    body: JSON.stringify({
+                        skema_pajak: this.skemaPajak || null,
+                        jenis_pph: this.jenisPph || null,
+                        kualifikasi_pajak: this.$refs.kualifikasiPajak?.value || null,
+                    }),
+                })
+                .then(r => r.ok ? r.json() : Promise.reject(r.status))
+                .then(d => { this.pajak = d; })
+                .catch(() => { this.pajakGagal = true; this.pajak = null; })
+                .finally(() => { this.pajakMemuat = false; });
+            }, 300);
+        },
         bapNo: @js(old('nomor_bap', $payment->nomor_bap)),
         kwtNo: @js(old('nomor_kwitansi', $payment->nomor_kwitansi)),
         printBase: @js($printBase),
@@ -57,7 +104,7 @@
             this.$refs.docFrame.src = this.printBase + '?embed=1&type=' + type + '&t=' + Date.now();
         },
     }"
-    x-init="loadDoc('bap')">
+    x-init="loadDoc('bap'); muatPajak()">
     <x-ui.toast />
 
     {{-- Identitas Paket --}}
@@ -332,8 +379,8 @@
                                  saat skema lain dipilih. --}}
                             <div class="sm:col-span-2">
                                 <label class="block text-xs font-semibold text-slate-600 mb-1.5">Skema Pajak</label>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <select name="skema_pajak" x-model="skemaPajak"
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <select name="skema_pajak" x-model="skemaPajak" @change="muatPajak()"
                                         class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
                                         <option value="">Ikuti rekening belanja ({{ \App\Services\Pajak\SkemaPajak::pilihan()[$skemaRekening] ?? 'Standar' }})</option>
                                         @foreach(\App\Services\Pajak\SkemaPajak::pilihan() as $kode => $label)
@@ -341,8 +388,30 @@
                                         @endforeach
                                     </select>
 
+                                    {{-- Jenis PPh dulu tersirat dari jenis pengadaan paket. Dijadikan
+                                         pilihan tersendiri sebab jenis pengadaan tidak selalu bisa
+                                         dipercaya: belanja makan-minum yang sama terdaftar Barang di
+                                         satu paket dan Jasa Lainnya di paket lain. --}}
+                                    <div x-show="skemaPajak !== 'konstruksi'">
+                                        <select name="jenis_pph" x-model="jenisPph" @change="muatPajak()"
+                                            class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm">
+                                            <option value="">Ikuti jenis pengadaan ({{ $pilihanJenisPph[$jenisPphTurunan] ?? 'PPh 23 — Jasa' }})</option>
+                                            @foreach($pilihanJenisPph as $kode => $label)
+                                                <option value="{{ $kode }}">{{ $label }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    {{-- style="display:none" bukan x-cloak: atribut itu tidak
+                                         punya aturan CSS di proyek ini, jadi tidak menyembunyikan
+                                         apa pun sebelum Alpine jalan. --}}
+                                    <div x-show="skemaPajak === 'konstruksi'" style="display: none;"
+                                        class="flex items-center px-3 rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-500">
+                                        PPh Final Pasal 4(2)
+                                    </div>
+
                                     <div class="transition-opacity" :class="skemaPajak === 'konstruksi' ? 'opacity-100' : 'opacity-50'">
-                                        <select name="kualifikasi_pajak" :disabled="skemaPajak !== 'konstruksi'"
+                                        <select name="kualifikasi_pajak" x-ref="kualifikasiPajak" @change="muatPajak()"
+                                            :disabled="skemaPajak !== 'konstruksi'"
                                             class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm disabled:bg-slate-100 disabled:cursor-not-allowed">
                                             <option value="">Kualifikasi penyedia —</option>
                                             @foreach($kualifikasiKonstruksi as $k)
@@ -351,9 +420,40 @@
                                         </select>
                                     </div>
                                 </div>
+
+                                @if($jenisPphBeda)
+                                    <p class="mt-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-800 leading-relaxed">
+                                        Jenis pengadaan paket ini <b>{{ $package->jenis_pengadaan }}</b>
+                                        (bawaannya {{ $pilihanJenisPph[$jenisPphTurunan] ?? '—' }}), tetapi pembayaran
+                                        ini memakai <b>{{ $pilihanJenisPph[$jenisPphTersimpan] }}</b>. Perbedaannya
+                                        dipertahankan — ubah di sini bila tidak sengaja.
+                                    </p>
+                                @endif
+
+                                {{-- Ringkasan dihitung server supaya rumusnya tetap satu sumber. --}}
+                                <div class="mt-2.5 rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-3">
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Potongan menurut pilihan ini</span>
+                                        <span x-show="pajakMemuat" class="text-[11px] text-slate-400">menghitung…</span>
+                                    </div>
+                                    <p x-show="pajakGagal" style="display: none;" class="text-[11px] text-rose-600">Pratinjau gagal dimuat. Angka pastinya tetap dihitung saat disimpan.</p>
+                                    <template x-if="pajak && !pajak.adaNilaiKontrak">
+                                        <p class="text-[11px] text-slate-400">Nilai kontrak belum terisi, jadi potongannya belum bisa ditampilkan.</p>
+                                    </template>
+                                    <template x-if="pajak && pajak.adaNilaiKontrak">
+                                        <dl class="space-y-1 text-xs">
+                                            <div class="flex justify-between"><dt class="text-slate-500">Nilai kontrak</dt><dd class="font-semibold text-slate-700" x-text="pajak.nilaiKontrak"></dd></div>
+                                            <div class="flex justify-between"><dt class="text-slate-500">DPP</dt><dd class="font-semibold text-slate-700" x-text="pajak.dpp"></dd></div>
+                                            <div class="flex justify-between"><dt class="text-slate-500" x-text="pajak.labelKonsumsi"></dt><dd class="text-slate-700" x-text="pajak.konsumsi"></dd></div>
+                                            <div class="flex justify-between"><dt class="text-slate-500" x-text="pajak.labelPph"></dt><dd class="text-slate-700" x-text="pajak.pph"></dd></div>
+                                            <div class="flex justify-between pt-1 border-t border-slate-200"><dt class="font-bold text-slate-600">Diterima penyedia</dt><dd class="font-bold text-emerald-700" x-text="pajak.jumlahBayar"></dd></div>
+                                        </dl>
+                                    </template>
+                                </div>
+
                                 <p class="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
-                                    Tarif yang berlaku dibekukan saat disimpan, jadi menyesuaikan tarif
-                                    nanti tidak mengubah dokumen yang sudah dicetak.
+                                    Pilihan di sini dikunci saat disimpan, jadi menyesuaikan tarif, rekening,
+                                    atau jenis pengadaan nanti tidak mengubah dokumen yang sudah dicetak.
                                 </p>
                             </div>
                         </div>

@@ -23,6 +23,7 @@ class ProcurementPayment extends Model
         'nip_pptk',
         'pangkat_golongan_pptk',
         'skema_pajak',
+        'jenis_pph',
         'kualifikasi_pajak',
         'persen_ppn_fix',
         'persen_pph_fix',

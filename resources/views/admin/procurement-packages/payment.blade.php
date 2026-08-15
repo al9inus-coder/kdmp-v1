@@ -200,6 +200,19 @@
                             <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200">Tidak / PKP</span>
                         @endif
                     </div>
+                    {{-- Perlakuan pajak yang terkunci pada pembayaran ini. Ditampilkan
+                         di sini supaya halaman Admin tidak berbeda isi dengan halaman
+                         Kabid tempat pilihannya dibuat. --}}
+                    @php
+                        $pajakBeku = \App\Services\Pajak\PajakPengadaan::hitung($procurementPackage);
+                    @endphp
+                    <div class="px-4 py-2.5">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Perlakuan Pajak</p>
+                        <p class="text-xs font-semibold text-slate-700 mt-0.5">
+                            {{ \App\Services\Pajak\SkemaPajak::pilihan()[$pajakBeku['skema']] ?? $pajakBeku['skema'] }}
+                        </p>
+                        <p class="text-[11px] text-slate-400">{{ $pajakBeku['labelKonsumsi'] }} &bull; {{ $pajakBeku['labelPph'] }}</p>
+                    </div>
                     <div class="px-4 py-2.5">
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">PPTK</p>
                         <p class="text-xs font-semibold text-slate-700 mt-0.5">{{ $payment->nama_pptk ?? '-' }}</p>

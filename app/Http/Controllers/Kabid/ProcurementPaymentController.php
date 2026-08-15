@@ -99,6 +99,7 @@ class ProcurementPaymentController extends Controller
             'is_non_pkp' => 'nullable|boolean',
             'tanggal_non_pkp' => 'required_if:is_non_pkp,1|nullable|date',
             'skema_pajak' => 'nullable|string|in:' . implode(',', array_keys(\App\Services\Pajak\SkemaPajak::pilihan())),
+            'jenis_pph' => 'nullable|string|in:' . implode(',', array_keys(\App\Services\Pajak\PajakPengadaan::pilihanJenisPph())),
             'kualifikasi_pajak' => 'nullable|string|max:255',
             'nama_pptk' => 'nullable|string|max:255',
             'nip_pptk' => 'nullable|string|max:255',
@@ -123,19 +124,9 @@ class ProcurementPaymentController extends Controller
             $penagihan
         );
 
-        // Bekukan tarif yang dipakai. Nominal BAP tidak pernah disimpan —
-        // dihitung hidup dari nilai kontrak — jadi tanpa pembekuan ini,
-        // menyesuaikan tarif lewat /admin/pajak akan menulis ulang BAP yang
-        // sudah dicetak.
+        // Kunci seluruh keputusan pajaknya — alasannya di PajakPengadaan::bekukan().
         $procurementPackage->refresh()->load('payment', 'package.account', 'procurementProcess');
-        $pajak = \App\Services\Pajak\PajakPengadaan::hitung($procurementPackage);
-        $skema = $pajak['skema'];
-
-        $pembayaran->update([
-            'persen_ppn_fix' => $skema === \App\Services\Pajak\SkemaPajak::RESTORAN ? null : $pajak['persenKonsumsi'],
-            'persen_restoran_fix' => $skema === \App\Services\Pajak\SkemaPajak::RESTORAN ? $pajak['persenKonsumsi'] : null,
-            'persen_pph_fix' => $pajak['persenPph'],
-        ]);
+        \App\Services\Pajak\PajakPengadaan::bekukan($procurementPackage);
 
         return redirect()
             ->route('kabid.procurement-packages.payment.show', $package)

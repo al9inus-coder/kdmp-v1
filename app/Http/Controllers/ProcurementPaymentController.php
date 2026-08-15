@@ -55,6 +55,7 @@ class ProcurementPaymentController extends Controller
             'nip_pptk' => 'required|string',
             'pangkat_golongan_pptk' => 'required|string',
             'skema_pajak' => 'nullable|string|in:' . implode(',', array_keys(\App\Services\Pajak\SkemaPajak::pilihan())),
+            'jenis_pph' => 'nullable|string|in:' . implode(',', array_keys(\App\Services\Pajak\PajakPengadaan::pilihanJenisPph())),
             'kualifikasi_pajak' => 'nullable|string|max:255',
         ]);
 
@@ -76,20 +77,14 @@ class ProcurementPaymentController extends Controller
                 'nip_pptk' => $request->nip_pptk,
                 'pangkat_golongan_pptk' => $request->pangkat_golongan_pptk,
                 'skema_pajak' => $request->skema_pajak,
+                'jenis_pph' => $request->jenis_pph,
                 'kualifikasi_pajak' => $request->kualifikasi_pajak,
             ]
         );
 
-        // Bekukan tarif yang dipakai — lihat alasannya di controller Kabid.
+        // Kunci seluruh keputusan pajaknya — alasannya di PajakPengadaan::bekukan().
         $procurementPackage->refresh()->load('payment', 'package.account', 'procurementProcess');
-        $pajak = \App\Services\Pajak\PajakPengadaan::hitung($procurementPackage);
-        $skema = $pajak['skema'];
-
-        $procurementPackage->payment->update([
-            'persen_ppn_fix' => $skema === \App\Services\Pajak\SkemaPajak::RESTORAN ? null : $pajak['persenKonsumsi'],
-            'persen_restoran_fix' => $skema === \App\Services\Pajak\SkemaPajak::RESTORAN ? $pajak['persenKonsumsi'] : null,
-            'persen_pph_fix' => $pajak['persenPph'],
-        ]);
+        \App\Services\Pajak\PajakPengadaan::bekukan($procurementPackage);
 
         // Update workflow status
         $procurementPackage->update([
@@ -103,6 +98,56 @@ class ProcurementPaymentController extends Controller
             : 'kabid.procurement-packages.payment.show';
 
         return redirect()->route($tujuan, $package)->with('success', 'Pekerjaan dinyatakan Selesai. Selamat datang di tahap Pembayaran!');
+    }
+
+    /**
+     * Pratinjau potongan pajak untuk pilihan yang sedang dilihat operator,
+     * sebelum disimpan.
+     *
+     * Perhitungannya tetap lewat PajakPengadaan::hitung() — bukan salinan
+     * rumus di JavaScript. Rumus DPP terikat pada tarif yang sama dengan yang
+     * memotong, dan menyalinnya ke sisi klien akan menghidupkan kembali
+     * jebakan dua angka lepas yang dulu bisa membuat BAP salah diam-diam.
+     */
+    public function pratinjauPajak(Request $request, Package $package)
+    {
+        $procurementPackage = $package->procurementPackage;
+        abort_if(!$procurementPackage, 404);
+
+        $data = $request->validate([
+            'skema_pajak' => 'nullable|string|in:' . implode(',', array_keys(\App\Services\Pajak\SkemaPajak::pilihan())),
+            'jenis_pph' => 'nullable|string|in:' . implode(',', array_keys(\App\Services\Pajak\PajakPengadaan::pilihanJenisPph())),
+            'kualifikasi_pajak' => 'nullable|string|max:255',
+        ]);
+
+        // Salinan di memori: pilihan dicoba tanpa menyentuh baris tersimpan,
+        // dan kolom beku dikosongkan supaya tarif hidup yang terpakai.
+        $bayar = ($procurementPackage->payment?->replicate() ?? new ProcurementPayment())->forceFill([
+            'skema_pajak' => $data['skema_pajak'] ?? null,
+            'jenis_pph' => $data['jenis_pph'] ?? null,
+            'kualifikasi_pajak' => $data['kualifikasi_pajak'] ?? null,
+            'persen_ppn_fix' => null,
+            'persen_restoran_fix' => null,
+            'persen_pph_fix' => null,
+        ]);
+
+        $pajak = \App\Services\Pajak\PajakPengadaan::hitung(
+            $procurementPackage->setRelation('payment', $bayar)
+        );
+
+        $rp = fn ($n) => 'Rp ' . number_format((float) $n, 0, ',', '.');
+
+        return response()->json([
+            'nilaiKontrak' => $rp($pajak['nilaiKontrak']),
+            'dpp' => $rp($pajak['dpp']),
+            'labelKonsumsi' => $pajak['labelKonsumsi'],
+            'konsumsi' => $rp($pajak['konsumsi']),
+            'labelPph' => $pajak['labelPph'],
+            'pph' => $rp($pajak['pph']),
+            'totalPotongan' => $rp($pajak['totalPotongan']),
+            'jumlahBayar' => $rp($pajak['jumlahBayar']),
+            'adaNilaiKontrak' => (float) $pajak['nilaiKontrak'] > 0,
+        ]);
     }
 
     public function previewDocument(Package $package)

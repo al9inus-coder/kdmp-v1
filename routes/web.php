@@ -155,6 +155,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::post('/procurement-packages/{package}/adendum', [\App\Http\Controllers\ProcurementPaymentController::class, 'storeAddendum'])->name('procurement-packages.adendum.store');
         Route::post('/procurement-packages/{package}/payment', [\App\Http\Controllers\ProcurementPaymentController::class, 'storePayment'])->name('procurement-packages.payment.store');
         Route::get('/procurement-packages/{package}/payment', [\App\Http\Controllers\ProcurementPaymentController::class, 'show'])->name('procurement-packages.payment.show');
+        Route::post('/procurement-packages/{package}/payment/pratinjau-pajak', [\App\Http\Controllers\ProcurementPaymentController::class, 'pratinjauPajak'])->name('procurement-packages.payment.pratinjau-pajak');
         Route::get('/procurement-packages/{package}/payment/preview', [\App\Http\Controllers\ProcurementPaymentController::class, 'previewDocument'])->name('procurement-packages.payment.preview-document');
         Route::get('/procurement-packages/{package}/payment/print', [\App\Http\Controllers\ProcurementPaymentController::class, 'printDocument'])->name('procurement-packages.payment.print-document');
         Route::post('/procurement-packages/{package}/payment/complete', [\App\Http\Controllers\ProcurementPaymentController::class, 'complete'])->name('procurement-packages.payment.complete');
