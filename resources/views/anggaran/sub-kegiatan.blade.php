@@ -82,6 +82,25 @@
             'dppa', 'rka' => 'perubahan',
             default => 'pergeseran',
         };
+
+        // Tahap dokumen versus keadaan sub kegiatan. Dokumen perubahan yang
+        // masuk ke sub kegiatan kosong terbaca seluruhnya "baru", dan menyimpan
+        // begitu saja akan mencatat nilai SESUDAH sebagai pagu awal — riwayat
+        // murninya, yang justru tertulis di kolom Sebelum dokumen itu, hilang.
+        $tahapJanggal = null;
+        if ($impor) {
+            $punyaSebelum = $impor['dokumen']['punyaSebelum'] ?? false;
+            if ($punyaSebelum && $baris->isEmpty()) {
+                $tahapJanggal = 'dokumen-perubahan-di-sub-kosong';
+            } elseif (!$punyaSebelum && $baris->isNotEmpty()) {
+                $tahapJanggal = 'dokumen-murni-di-sub-terisi';
+            }
+        }
+
+        $totalDokumen = (float) ($impor['dokumen']['totalDokumen'] ?? 0);
+        $totalTerisi = collect($impor['baris'] ?? [])
+            ->whereIn('status', ['cocok', 'berubah', 'baru'])
+            ->sum(fn ($b) => (float) ($b['sesudah'] ?? 0));
         $lencanaStatus = [
             'cocok' => ['Sesuai dokumen', 'bg-slate-100 text-slate-500 border-slate-200'],
             'berubah' => ['Akan diperbarui', 'bg-emerald-50 text-emerald-700 border-emerald-200'],
@@ -109,6 +128,21 @@
                             </span>
                         @endforeach
                     </p>
+                    <div class="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs">
+                        <span class="text-slate-500">Total dokumen
+                            <b class="text-slate-800 tabular-nums">{{ $rupiah($totalDokumen) }}</b>
+                            <span class="text-slate-400">· {{ count($impor['baris']) }} rekening</span>
+                        </span>
+                        <span class="text-slate-500">Akan tersimpan
+                            <b class="text-emerald-700 tabular-nums">{{ $rupiah($totalTerisi) }}</b>
+                        </span>
+                        @if(abs($totalTerisi - $totalDokumen) >= 0.01)
+                            <span class="text-rose-600 font-semibold">
+                                selisih {{ $rupiah($totalDokumen - $totalTerisi) }} — ada baris yang tidak diterapkan
+                            </span>
+                        @endif
+                    </div>
+
                     <p class="text-[11px] text-slate-500 mt-2 leading-relaxed">
                         Angka di bawah sudah terisi dari dokumen. <b>Belum ada yang tersimpan</b> —
                         periksa dulu, lalu catat dasar hukumnya di bagian bawah dan tekan Simpan.
@@ -118,6 +152,22 @@
                             belum tercatat dan perlu Anda periksa sendiri.
                         @endif
                     </p>
+
+                    @if($tahapJanggal === 'dokumen-perubahan-di-sub-kosong')
+                        <p class="mt-2.5 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-800 leading-relaxed">
+                            <b>Dokumen ini dokumen perubahan, tetapi sub kegiatan masih kosong.</b>
+                            Karena belum ada pembanding, seluruh barisnya terbaca sebagai rekening baru dan
+                            yang akan tersimpan adalah nilai <i>sesudah</i>-nya. Pagu murni yang tertulis di
+                            kolom <i>sebelum</i> dokumen ini tidak ikut tercatat, jadi riwayatnya nanti hanya
+                            punya satu tahap. Impor DPA murni lebih dulu bila ingin riwayatnya utuh.
+                        </p>
+                    @elseif($tahapJanggal === 'dokumen-murni-di-sub-terisi')
+                        <p class="mt-2.5 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-800 leading-relaxed">
+                            <b>Dokumen ini DPA murni, tetapi sub kegiatan sudah punya pagu.</b>
+                            Menyimpannya akan mencatat nilai murni sebagai revisi terbaru — artinya anggaran
+                            mundur ke keadaan awal tahun. Periksa dulu apakah itu memang yang Anda maksud.
+                        </p>
+                    @endif
                 </div>
             </div>
         </div>
@@ -282,7 +332,10 @@
         </x-ui.card>
 
         {{-- Catat revisi untuk seluruh rekening yang berubah --}}
-        @if($baris->isNotEmpty())
+        {{-- Ikut tampil saat masih kosong tetapi ada rekening baru dari impor —
+             tanpa ini, hasil impor DPA murni tidak punya tombol simpan sama
+             sekali, dan justru itu keadaan yang paling sering diimpor. --}}
+        @if($baris->isNotEmpty() || $imporBaru->isNotEmpty())
             <x-ui.card padding="none" class="mt-5">
                 <div class="px-5 py-4 border-b border-slate-100 bg-blue-50/50 flex items-center gap-3">
                     <div class="w-9 h-9 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
