@@ -10,7 +10,9 @@ use App\Services\Anggaran\PembacaDpa;
 use App\Services\Anggaran\PencocokDpa;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use App\Models\BudgetRevision;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Throwable;
 
 /**
@@ -33,7 +35,8 @@ class ImporDpaController extends Controller
         $data = $request->validate([
             'berkas' => ['required', 'file', 'mimetypes:application/pdf', 'max:10240'],
             'tahun' => ['nullable', 'integer', 'exists:fiscal_years,id'],
-        ], [], ['berkas' => 'berkas DPA']);
+            'jenis' => ['required', Rule::in(array_keys(BudgetRevision::jenisOptions()))],
+        ], [], ['berkas' => 'berkas DPA', 'jenis' => 'tahap anggaran']);
 
         $tahunId = $data['tahun'] ?? (FiscalYear::where('is_active', true)->value('id')
             ?? FiscalYear::latest('tahun')->value('id'));
@@ -68,11 +71,18 @@ class ImporDpaController extends Controller
                 . "sedangkan halaman ini {$subActivity->kode}.";
         }
 
+        // DPA murni tidak punya kolom sebelum, jadi tidak bisa dipakai mencatat
+        // perubahan — tidak ada yang bisa dibandingkan.
+        if ($data['jenis'] !== 'murni' && !$hasil['punyaSebelum']) {
+            $keberatan[] = 'Dokumen ini tidak memuat kolom sebelum/sesudah, jadi tidak bisa'
+                . ' dipakai mencatat pergeseran atau perubahan. Pilih tahap APBD Murni.';
+        }
+
         if ($keberatan) {
             return $kembali()->with('error', 'Impor dibatalkan. ' . implode(' ', $keberatan));
         }
 
-        $cocok = $this->pencocok->cocokkan($hasil, $subActivity, $tahunId);
+        $cocok = $this->pencocok->cocokkan($hasil, $subActivity, $tahunId, $data['jenis']);
 
         $batch = ImportBatch::create([
             'fiscal_year_id' => $tahunId,
@@ -95,6 +105,7 @@ class ImporDpaController extends Controller
             'baris' => $cocok['baris'],
             'ringkasan' => $cocok['ringkasan'],
             'nama_berkas' => $namaAsli,
+            'jenis' => $data['jenis'],
         ]);
     }
 }

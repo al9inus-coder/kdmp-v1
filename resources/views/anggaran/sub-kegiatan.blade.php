@@ -75,32 +75,23 @@
         $impor = session('imporDpa');
         $imporKode = collect($impor['baris'] ?? [])->keyBy('kode');
         $imporBaru = collect($impor['baris'] ?? [])->where('status', 'baru')->values();
-        // DPA murni menetapkan pagu awal; DPPA dan RKA perubahan adalah
-        // tahap berikutnya. Hanya usulan — operator tetap yang memutuskan.
-        $jenisUsulan = match ($impor['dokumen']['jenisDokumen'] ?? null) {
-            'dpa' => 'murni',
-            'dppa', 'rka' => 'perubahan',
-            default => 'pergeseran',
-        };
+        // Tahap dinyatakan operator saat mengunggah; di sini tinggal dipakai.
+        $jenisUsulan = $impor['jenis'] ?? ($baris->isEmpty() ? 'murni' : 'perubahan');
 
         // Tahap dokumen versus keadaan sub kegiatan. Dokumen perubahan yang
         // masuk ke sub kegiatan kosong terbaca seluruhnya "baru", dan menyimpan
         // begitu saja akan mencatat nilai SESUDAH sebagai pagu awal — riwayat
         // murninya, yang justru tertulis di kolom Sebelum dokumen itu, hilang.
-        $tahapJanggal = null;
-        if ($impor) {
-            $punyaSebelum = $impor['dokumen']['punyaSebelum'] ?? false;
-            if ($punyaSebelum && $baris->isEmpty()) {
-                $tahapJanggal = 'dokumen-perubahan-di-sub-kosong';
-            } elseif (!$punyaSebelum && $baris->isNotEmpty()) {
-                $tahapJanggal = 'dokumen-murni-di-sub-terisi';
-            }
-        }
+        // Menyatakan murni di atas pagu yang sudah ada berarti memundurkan
+        // anggaran ke keadaan awal tahun — sah, tapi jarang disengaja.
+        $tahapJanggal = $impor && ($impor['jenis'] ?? null) === 'murni' && $baris->isNotEmpty()
+            ? 'murni-di-sub-terisi'
+            : null;
 
         $totalDokumen = (float) ($impor['dokumen']['totalDokumen'] ?? 0);
         $totalTerisi = collect($impor['baris'] ?? [])
             ->whereIn('status', ['cocok', 'berubah', 'baru'])
-            ->sum(fn ($b) => (float) ($b['sesudah'] ?? 0));
+            ->sum(fn ($b) => (float) ($b['nilai'] ?? 0));
         $lencanaStatus = [
             'cocok' => ['Sesuai dokumen', 'bg-slate-100 text-slate-500 border-slate-200'],
             'berubah' => ['Akan diperbarui', 'bg-emerald-50 text-emerald-700 border-emerald-200'],
@@ -153,19 +144,11 @@
                         @endif
                     </p>
 
-                    @if($tahapJanggal === 'dokumen-perubahan-di-sub-kosong')
+                    @if($tahapJanggal === 'murni-di-sub-terisi')
                         <p class="mt-2.5 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-800 leading-relaxed">
-                            <b>Dokumen ini dokumen perubahan, tetapi sub kegiatan masih kosong.</b>
-                            Karena belum ada pembanding, seluruh barisnya terbaca sebagai rekening baru dan
-                            yang akan tersimpan adalah nilai <i>sesudah</i>-nya. Pagu murni yang tertulis di
-                            kolom <i>sebelum</i> dokumen ini tidak ikut tercatat, jadi riwayatnya nanti hanya
-                            punya satu tahap. Impor DPA murni lebih dulu bila ingin riwayatnya utuh.
-                        </p>
-                    @elseif($tahapJanggal === 'dokumen-murni-di-sub-terisi')
-                        <p class="mt-2.5 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-800 leading-relaxed">
-                            <b>Dokumen ini DPA murni, tetapi sub kegiatan sudah punya pagu.</b>
-                            Menyimpannya akan mencatat nilai murni sebagai revisi terbaru — artinya anggaran
-                            mundur ke keadaan awal tahun. Periksa dulu apakah itu memang yang Anda maksud.
+                            <b>Anda memilih tahap APBD Murni, tetapi sub kegiatan ini sudah punya pagu.</b>
+                            Menyimpannya mencatat nilai murni sebagai revisi terbaru — artinya anggaran mundur
+                            ke keadaan awal tahun. Periksa dulu apakah itu memang yang Anda maksud.
                         </p>
                     @endif
                 </div>
@@ -222,7 +205,7 @@
                                         </span>
                                         @if($imp['status'] === 'menyimpang')
                                             <span class="block text-[10px] text-rose-600 mt-0.5">
-                                                dokumen: {{ $rupiah($imp['sebelum']) }} &rarr; {{ $rupiah($imp['sesudah']) }}
+                                                dokumen: {{ $rupiah($imp['pembanding'] ?? $imp['sebelum']) }} &rarr; {{ $rupiah($imp['nilai']) }}
                                             </span>
                                         @endif
                                     @endif
@@ -245,7 +228,7 @@
                                          diam-diam justru menghapus jejak yang perlu diperiksa. --}}
                                     @php
                                         $nilaiAwal = $imp && $imp['status'] === 'berubah'
-                                            ? $imp['sesudah']
+                                            ? $imp['nilai']
                                             : (float) $line->pagu_efektif;
                                     @endphp
                                     <input type="number" step="0.01" min="0"
@@ -304,7 +287,7 @@
                                     <input type="hidden" name="baru[{{ $i }}][kode]" value="{{ $nb['kode'] }}">
                                     <input type="hidden" name="baru[{{ $i }}][nama]" value="{{ $nb['nama'] }}">
                                     <input type="number" step="0.01" min="0" name="baru[{{ $i }}][pagu]"
-                                        value="{{ $nb['sesudah'] }}"
+                                        value="{{ $nb['nilai'] }}"
                                         class="w-full text-right font-bold rounded-lg border-blue-200 text-sm py-1.5 focus:border-emerald-500 focus:ring-emerald-500">
                                 </td>
                                 <td class="px-5 py-3 text-right text-xs text-slate-400">—</td>

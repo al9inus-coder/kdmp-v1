@@ -41,6 +41,37 @@
                     @enderror
                 </div>
 
+                {{-- Tahap dinyatakan di muka, bukan disimpulkan dari dokumen.
+                     Itu yang menentukan kolom mana yang dipakai: dokumen
+                     perubahan memuat dua keadaan sekaligus. --}}
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">Tahap anggaran</label>
+                    <div class="space-y-2">
+                        @php
+                            $tahapPilihan = [
+                                'murni' => ['APBD Murni', 'Menetapkan pagu awal tahun. Dari dokumen perubahan, yang diambil kolom <i>sebelum</i>-nya.'],
+                                'pergeseran' => ['Pergeseran', 'Perpindahan antar rekening dalam tahun berjalan. Diambil kolom <i>sesudah</i>.'],
+                                'perubahan' => ['APBD Perubahan', 'Perubahan APBD. Diambil kolom <i>sesudah</i>.'],
+                            ];
+                            $tahapAwal = $baris->isEmpty() ? 'murni' : 'perubahan';
+                        @endphp
+                        @foreach($tahapPilihan as $kode => [$judul, $ket])
+                            <label class="flex items-start gap-2.5 px-3 py-2 rounded-lg border cursor-pointer transition-colors
+                                {{ $kode === $tahapAwal ? 'border-emerald-300 bg-emerald-50/50' : 'border-slate-200 hover:bg-slate-50' }}">
+                                <input type="radio" name="jenis" value="{{ $kode }}" @checked($kode === $tahapAwal)
+                                    class="mt-0.5 text-emerald-600 focus:ring-emerald-500 border-slate-300">
+                                <span class="min-w-0">
+                                    <span class="block text-xs font-bold text-slate-700">{{ $judul }}</span>
+                                    <span class="block text-[11px] text-slate-500 leading-relaxed">{!! $ket !!}</span>
+                                </span>
+                            </label>
+                        @endforeach
+                    </div>
+                    @error('jenis')
+                        <p class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
                 <p class="text-[11px] text-slate-400 leading-relaxed">
                     Angkanya dibaca langsung dari teks di dalam PDF, bukan dikira-kira dari gambar.
                     Sesudah dibaca, form plafon di bawah akan terisi dan Anda meninjaunya dulu —

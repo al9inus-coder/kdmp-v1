@@ -40,8 +40,12 @@ class PencocokDpa
      *   ringkasan: array<string, int>
      * }
      */
-    public function cocokkan(array $hasil, SubActivity $subActivity, int $fiscalYearId): array
-    {
+    public function cocokkan(
+        array $hasil,
+        SubActivity $subActivity,
+        int $fiscalYearId,
+        string $jenis = 'perubahan',
+    ): array {
         $lines = BudgetLine::with('account')
             ->where('sub_activity_id', $subActivity->id)
             ->where('fiscal_year_id', $fiscalYearId)
@@ -60,15 +64,26 @@ class PencocokDpa
             $line = $lines->get($b['kode']);
             $sistem = $line ? (float) $line->pagu_efektif : null;
 
+            // Dokumen perubahan memuat DUA keadaan: kolom sebelum adalah pagu
+            // sebelum perubahan itu, kolom sesudah adalah hasilnya. Jadi berkas
+            // yang sama bisa dipakai dua kali — sekali menetapkan pagu murni
+            // dari kolom sebelum, sekali mencatat perubahannya dari kolom
+            // sesudah — dan riwayatnya utuh tanpa perlu berkas terpisah.
+            $murni = $jenis === 'murni';
+            $target = $murni && $b['sebelum'] !== null ? $b['sebelum'] : $b['sesudah'];
+            $pembanding = $murni ? null : $b['sebelum'];
+
             $baris[] = [
                 'kode' => $b['kode'],
                 'nama' => $b['nama'],
                 'sebelum' => $b['sebelum'],
                 'sesudah' => $b['sesudah'],
+                'nilai' => $target,
+                'pembanding' => $pembanding,
                 'sistem' => $sistem,
                 'budget_line_id' => $line?->id,
                 'account_id' => $akun->get($b['kode'])?->id,
-                'status' => $this->status($b, $sistem),
+                'status' => $this->status($target, $pembanding, $sistem),
             ];
         }
 
@@ -85,6 +100,8 @@ class PencocokDpa
                 'nama' => $line->account?->nama ?? '—',
                 'sebelum' => null,
                 'sesudah' => null,
+                'nilai' => null,
+                'pembanding' => null,
                 'sistem' => (float) $line->pagu_efektif,
                 'budget_line_id' => $line->id,
                 'account_id' => $line->account_id,
@@ -99,23 +116,28 @@ class PencocokDpa
         return ['baris' => $baris, 'ringkasan' => $ringkasan];
     }
 
-    private function status(array $b, ?float $sistem): string
+    /**
+     * @param  float  $target  nilai yang akan ditulis
+     * @param  ?float  $pembanding  nilai yang dokumen anggap berlaku sebelumnya
+     */
+    private function status(float $target, ?float $pembanding, ?float $sistem): string
     {
         if ($sistem === null) {
             return self::BARU;
         }
 
-        if (abs($sistem - $b['sesudah']) < 0.01) {
+        if (abs($sistem - $target) < 0.01) {
             return self::COCOK;
         }
 
-        // DPA murni tidak punya kolom Sebelum. Nilainya berbeda dari yang ada
-        // di sistem berarti dokumen ini tidak sejalan dengan riwayat yang
-        // tercatat — bukan sekadar perubahan biasa.
-        if ($b['sebelum'] === null) {
+        // Tanpa pembanding — DPA murni, atau dokumen perubahan yang dipakai
+        // untuk menetapkan pagu murni — tidak ada dasar untuk menyatakan ini
+        // perubahan yang wajar. Nilai sistem yang berbeda berarti ada riwayat
+        // yang tidak sejalan, dan itu perlu dilihat manusia.
+        if ($pembanding === null) {
             return self::MENYIMPANG;
         }
 
-        return abs($sistem - $b['sebelum']) < 0.01 ? self::BERUBAH : self::MENYIMPANG;
+        return abs($sistem - $pembanding) < 0.01 ? self::BERUBAH : self::MENYIMPANG;
     }
 }
