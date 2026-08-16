@@ -14,11 +14,16 @@
         <x-ui.button variant="secondary" size="md" href="{{ route('admin.anggaran.index', ['tahun' => $tahunId]) }}">
             <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
         </x-ui.button>
+        <x-ui.button variant="secondary" size="md" x-data @click="$dispatch('buka-impor-dpa')">
+            <i data-lucide="file-up" class="w-4 h-4 mr-2"></i> Impor DPA
+        </x-ui.button>
         <x-ui.button variant="primary" size="md"
             href="{{ route('admin.anggaran.create', ['sub_kegiatan' => $subActivity->id, 'tahun' => $tahunId]) }}">
             <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambah Rekening
         </x-ui.button>
     </x-slot:actions>
+
+    @include('anggaran._impor-dpa')
 
     {{-- Jejak hierarki --}}
     <div class="flex flex-wrap items-center gap-2 mb-5 text-xs font-semibold">
@@ -63,7 +68,65 @@
     </div>
 
     {{-- Tabel rekening + edit massal --}}
+    @php
+        // Hasil impor DPA, bila operator baru saja mengunggah berkas. Ia hanya
+        // mengisi form ini — tidak ada yang tersimpan sampai tombol Simpan
+        // ditekan, jadi tinjauannya adalah form yang sudah dikenal operator.
+        $impor = session('imporDpa');
+        $imporKode = collect($impor['baris'] ?? [])->keyBy('kode');
+        $imporBaru = collect($impor['baris'] ?? [])->where('status', 'baru')->values();
+        // DPA murni menetapkan pagu awal; DPPA dan RKA perubahan adalah
+        // tahap berikutnya. Hanya usulan — operator tetap yang memutuskan.
+        $jenisUsulan = match ($impor['dokumen']['jenisDokumen'] ?? null) {
+            'dpa' => 'murni',
+            'dppa', 'rka' => 'perubahan',
+            default => 'pergeseran',
+        };
+        $lencanaStatus = [
+            'cocok' => ['Sesuai dokumen', 'bg-slate-100 text-slate-500 border-slate-200'],
+            'berubah' => ['Akan diperbarui', 'bg-emerald-50 text-emerald-700 border-emerald-200'],
+            'baru' => ['Rekening baru', 'bg-blue-50 text-blue-700 border-blue-200'],
+            'menyimpang' => ['Menyimpang', 'bg-rose-50 text-rose-700 border-rose-200'],
+            'hilang' => ['Tak disebut dokumen', 'bg-amber-50 text-amber-700 border-amber-200'],
+        ];
+    @endphp
+
+    @if($impor)
+        <div class="mb-5 rounded-2xl border border-blue-200 bg-blue-50/70 px-5 py-4">
+            <div class="flex items-start gap-3">
+                <i data-lucide="file-check-2" class="w-5 h-5 text-blue-600 mt-0.5 shrink-0"></i>
+                <div class="min-w-0">
+                    <p class="text-sm font-bold text-slate-800">
+                        {{ $impor['nama_berkas'] }} terbaca
+                        @if($impor['dokumen']['nomor'])
+                            <span class="font-mono text-xs font-semibold text-slate-500">&bull; {{ $impor['dokumen']['nomor'] }}</span>
+                        @endif
+                    </p>
+                    <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+                        @foreach($impor['ringkasan'] as $status => $jumlah)
+                            <span class="inline-flex items-center px-2 py-0.5 mr-1.5 rounded-md text-[10px] font-bold border {{ $lencanaStatus[$status][1] ?? '' }}">
+                                {{ $jumlah }} {{ strtolower($lencanaStatus[$status][0] ?? $status) }}
+                            </span>
+                        @endforeach
+                    </p>
+                    <p class="text-[11px] text-slate-500 mt-2 leading-relaxed">
+                        Angka di bawah sudah terisi dari dokumen. <b>Belum ada yang tersimpan</b> —
+                        periksa dulu, lalu catat dasar hukumnya di bagian bawah dan tekan Simpan.
+                        @if(($impor['ringkasan']['menyimpang'] ?? 0) > 0)
+                            Baris bertanda <b>menyimpang</b> sengaja tidak diisi: nilainya di sistem tidak
+                            sama dengan kolom sebelum maupun sesudah pada dokumen, jadi ada riwayat yang
+                            belum tercatat dan perlu Anda periksa sendiri.
+                        @endif
+                    </p>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <form action="{{ route('admin.anggaran.revisi-massal', [$subActivity, 'tahun' => $tahunId]) }}" method="POST">
+        @if($impor)
+            <input type="hidden" name="import_batch_id" value="{{ $impor['batch_id'] }}">
+        @endif
         @csrf
         <x-ui.card padding="none">
             <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/60 flex flex-wrap items-center justify-between gap-3">
@@ -102,6 +165,17 @@
                                         <span class="font-mono text-emerald-700">{{ $line->account?->kode ?? '-' }}</span>
                                     </p>
                                     <p class="text-xs text-slate-500 mt-0.5">{{ $line->account?->nama ?? 'Rekening terhapus' }}</p>
+                                    @php $imp = $imporKode->get($line->account?->kode); @endphp
+                                    @if($imp)
+                                        <span class="inline-flex items-center mt-1 px-2 py-0.5 rounded-md text-[10px] font-bold border {{ $lencanaStatus[$imp['status']][1] ?? '' }}">
+                                            {{ $lencanaStatus[$imp['status']][0] ?? $imp['status'] }}
+                                        </span>
+                                        @if($imp['status'] === 'menyimpang')
+                                            <span class="block text-[10px] text-rose-600 mt-0.5">
+                                                dokumen: {{ $rupiah($imp['sebelum']) }} &rarr; {{ $rupiah($imp['sesudah']) }}
+                                            </span>
+                                        @endif
+                                    @endif
                                 </td>
                                 <td class="px-5 py-3 text-center">
                                     @if($revisi)
@@ -116,9 +190,17 @@
                                     @endif
                                 </td>
                                 <td class="px-5 py-3">
+                                    {{-- Hanya status "berubah" yang diisikan. Yang menyimpang
+                                         sengaja dibiarkan pada nilai sistem — mengisinya
+                                         diam-diam justru menghapus jejak yang perlu diperiksa. --}}
+                                    @php
+                                        $nilaiAwal = $imp && $imp['status'] === 'berubah'
+                                            ? $imp['sesudah']
+                                            : (float) $line->pagu_efektif;
+                                    @endphp
                                     <input type="number" step="0.01" min="0"
                                         name="pagu[{{ $line->id }}]"
-                                        value="{{ old('pagu.' . $line->id, (float) $line->pagu_efektif) }}"
+                                        value="{{ old('pagu.' . $line->id, $nilaiAwal) }}"
                                         data-awal="{{ (float) $line->pagu_efektif }}"
                                         class="pagu-input w-full text-right font-bold rounded-lg border-slate-200 text-sm py-1.5 focus:border-emerald-500 focus:ring-emerald-500">
                                 </td>
@@ -147,6 +229,41 @@
                                 </td>
                             </tr>
                         @empty
+                        @endforelse
+
+                        {{-- Rekening yang disebut dokumen tetapi belum terdaftar.
+                             Dibuat hanya bila tetap tercentang saat disimpan. --}}
+                        @foreach($imporBaru as $i => $nb)
+                            <tr class="bg-blue-50/40">
+                                <td class="px-5 py-3">
+                                    <p class="font-semibold text-slate-900 leading-snug">
+                                        <span class="font-mono text-blue-700">{{ $nb['kode'] }}</span>
+                                    </p>
+                                    <p class="text-xs text-slate-500 mt-0.5">{{ $nb['nama'] }}</p>
+                                    <label class="inline-flex items-center gap-1.5 mt-1 cursor-pointer">
+                                        <input type="checkbox" name="baru[{{ $i }}][aktif]" value="1" checked
+                                            class="rounded text-blue-600 focus:ring-blue-500 border-slate-300 w-3.5 h-3.5"
+                                            onchange="this.closest('tr').querySelectorAll('input[type=number],input[type=hidden]').forEach(e => e.disabled = !this.checked)">
+                                        <span class="text-[10px] font-bold text-blue-700">Buat rekening ini</span>
+                                    </label>
+                                </td>
+                                <td class="px-5 py-3 text-center">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border bg-blue-50 text-blue-700 border-blue-200">Baru</span>
+                                </td>
+                                <td class="px-5 py-3">
+                                    <input type="hidden" name="baru[{{ $i }}][kode]" value="{{ $nb['kode'] }}">
+                                    <input type="hidden" name="baru[{{ $i }}][nama]" value="{{ $nb['nama'] }}">
+                                    <input type="number" step="0.01" min="0" name="baru[{{ $i }}][pagu]"
+                                        value="{{ $nb['sesudah'] }}"
+                                        class="w-full text-right font-bold rounded-lg border-blue-200 text-sm py-1.5 focus:border-emerald-500 focus:ring-emerald-500">
+                                </td>
+                                <td class="px-5 py-3 text-right text-xs text-slate-400">—</td>
+                                <td class="px-5 py-3 text-right text-xs text-slate-400">—</td>
+                                <td class="px-5 py-3 text-center text-xs text-slate-300">—</td>
+                            </tr>
+                        @endforeach
+
+                        @if($baris->isEmpty() && $imporBaru->isEmpty())
                             <tr>
                                 <td colspan="6" class="px-6 py-12">
                                     <x-ui.empty-state icon="wallet" title="Belum Ada Rekening"
@@ -158,7 +275,7 @@
                                     </x-ui.empty-state>
                                 </td>
                             </tr>
-                        @endforelse
+                        @endif
                     </tbody>
                 </table>
             </div>
@@ -185,7 +302,7 @@
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Tahap Anggaran <span class="text-rose-500">*</span></label>
                         <x-ui.select name="jenis" required>
                             @foreach($jenisOptions as $key => $label)
-                                <option value="{{ $key }}" @selected(old('jenis', 'pergeseran') === $key)>{{ $label }}</option>
+                                <option value="{{ $key }}" @selected(old('jenis', $jenisUsulan) === $key)>{{ $label }}</option>
                             @endforeach
                         </x-ui.select>
                     </div>
@@ -195,7 +312,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Nomor Dasar Hukum</label>
-                        <x-ui.input type="text" name="nomor_dasar" :value="old('nomor_dasar')" placeholder="Perda / Perkada" />
+                        <x-ui.input type="text" name="nomor_dasar" :value="old('nomor_dasar', $impor['dokumen']['nomor'] ?? '')" placeholder="Perda / Perkada" />
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Keterangan</label>

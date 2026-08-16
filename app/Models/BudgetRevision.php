@@ -17,6 +17,7 @@ class BudgetRevision extends Model
         'urutan',
         'tanggal',
         'nomor_dasar',
+        'import_batch_id',
         'pagu',
         'keterangan',
         'created_by',

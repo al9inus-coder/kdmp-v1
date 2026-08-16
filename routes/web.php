@@ -393,6 +393,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::post('anggaran/sub-kegiatan', [\App\Http\Controllers\Admin\BudgetLineController::class, 'storeSubActivity'])->name('anggaran.sub-kegiatan.store');
         Route::get('anggaran/sub-kegiatan/{subActivity}', [\App\Http\Controllers\Admin\BudgetLineController::class, 'subActivity'])->name('anggaran.sub-kegiatan');
         Route::post('anggaran/sub-kegiatan/{subActivity}/revisi', [\App\Http\Controllers\Admin\BudgetLineController::class, 'bulkRevision'])->name('anggaran.revisi-massal');
+        Route::post('anggaran/sub-kegiatan/{subActivity}/impor-dpa', [\App\Http\Controllers\Admin\ImporDpaController::class, 'store'])->name('anggaran.impor-dpa');
         Route::post('anggaran/{anggaran}/revisions', [\App\Http\Controllers\Admin\BudgetLineController::class, 'storeRevision'])->name('anggaran.revisions.store');
         Route::delete('anggaran/{anggaran}/revisions/{revision}', [\App\Http\Controllers\Admin\BudgetLineController::class, 'destroyRevision'])->name('anggaran.revisions.destroy');
         Route::resource('anggaran', \App\Http\Controllers\Admin\BudgetLineController::class)
