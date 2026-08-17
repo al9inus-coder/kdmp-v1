@@ -9,6 +9,7 @@ use App\Models\Activity;
 use App\Models\BudgetLine;
 use App\Models\BudgetRevision;
 use App\Models\FiscalYear;
+use App\Models\ImportBatch;
 use App\Models\Package;
 use App\Models\Program;
 use App\Models\SubActivity;
@@ -317,13 +318,53 @@ class BudgetLineController extends Controller
             'tanggal' => ['nullable', 'date'],
             'nomor_dasar' => ['nullable', 'string', 'max:255'],
             'keterangan' => ['nullable', 'string', 'max:1000'],
-            'pagu' => ['required', 'array'],
+            'pagu' => ['nullable', 'array'],
             'pagu.*' => ['nullable', 'numeric', 'min:0'],
+            'import_batch_id' => ['nullable', 'integer', 'exists:import_batches,id'],
+            // Rekening yang belum terdaftar — datang dari impor DPA, dan hanya
+            // dibuat kalau operator membiarkannya tercentang saat meninjau.
+            'baru' => ['nullable', 'array'],
+            'baru.*.kode' => ['required', 'string', 'max:64'],
+            'baru.*.nama' => ['required', 'string', 'max:255'],
+            'baru.*.pagu' => ['required', 'numeric', 'min:0'],
         ], [], ['jenis' => 'tahap anggaran']);
 
+        $data['pagu'] ??= [];
         $berubah = 0;
+        $dibuat = 0;
+        $tahunId = $request->integer('tahun')
+            ?: (FiscalYear::where('is_active', true)->value('id') ?? FiscalYear::latest('tahun')->value('id'));
 
-        DB::transaction(function () use ($data, $subActivity, &$berubah) {
+        DB::transaction(function () use ($data, $subActivity, $tahunId, &$berubah, &$dibuat) {
+            // Rekening baru lebih dulu: kalau salah satunya gagal, tidak ada
+            // revisi yang terlanjur tercatat separuh.
+            foreach ($data['baru'] ?? [] as $b) {
+                $account = Account::firstOrCreate(
+                    ['kode' => $b['kode']],
+                    ['nama' => $b['nama'], 'is_active' => true],
+                );
+
+                $line = BudgetLine::firstOrCreate([
+                    'fiscal_year_id' => $tahunId,
+                    'sub_activity_id' => $subActivity->id,
+                    'account_id' => $account->id,
+                ], ['pagu_efektif' => 0]);
+
+                $line->revisions()->create([
+                    'jenis' => $data['jenis'],
+                    'urutan' => $line->revisions()->where('jenis', $data['jenis'])->count() + 1,
+                    'tanggal' => $data['tanggal'] ?? null,
+                    'nomor_dasar' => $data['nomor_dasar'] ?? null,
+                    'import_batch_id' => $data['import_batch_id'] ?? null,
+                    'pagu' => $b['pagu'],
+                    'keterangan' => $data['keterangan'] ?? null,
+                    'created_by' => auth()->id(),
+                ]);
+
+                $line->refresh()->recalcPaguEfektif();
+                $dibuat++;
+            }
+
             $lines = BudgetLine::whereIn('id', array_keys($data['pagu']))
                 ->where('sub_activity_id', $subActivity->id)
                 ->get();
@@ -342,6 +383,7 @@ class BudgetLineController extends Controller
                     'urutan' => $urutan,
                     'tanggal' => $data['tanggal'] ?? null,
                     'nomor_dasar' => $data['nomor_dasar'] ?? null,
+                    'import_batch_id' => $data['import_batch_id'] ?? null,
                     'pagu' => $baru,
                     'keterangan' => $data['keterangan'] ?? null,
                     'created_by' => auth()->id(),
@@ -352,11 +394,24 @@ class BudgetLineController extends Controller
             }
         });
 
-        if ($berubah === 0) {
+        if (($id = $data['import_batch_id'] ?? null)) {
+            ImportBatch::where('id', $id)->update([
+                'status' => ($berubah + $dibuat) > 0 ? 'completed' : 'dibatalkan',
+                'success_rows' => $berubah + $dibuat,
+                'imported_at' => now(),
+            ]);
+        }
+
+        if ($berubah === 0 && $dibuat === 0) {
             return back()->with('error', 'Tidak ada plafon yang berubah — revisi tidak dicatat.');
         }
 
-        return back()->with('success', "Revisi dicatat untuk {$berubah} rekening dengan dasar hukum yang sama.");
+        $pesan = "Revisi dicatat untuk {$berubah} rekening dengan dasar hukum yang sama.";
+        if ($dibuat > 0) {
+            $pesan .= " {$dibuat} rekening baru ditambahkan.";
+        }
+
+        return back()->with('success', $pesan);
     }
 
     public function create(Request $request): View
